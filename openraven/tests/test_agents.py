@@ -138,3 +138,31 @@ def test_rate_limiter_remaining_count() -> None:
     assert r1 == 2
     assert r2 == 1
     assert r3 == 0
+
+
+def test_tunnel_cloudflared_check() -> None:
+    from openraven.agents.tunnel import is_cloudflared_available
+    result = is_cloudflared_available()
+    assert isinstance(result, bool)
+
+
+def test_tunnel_pid_file_management(tmp_path) -> None:
+    from openraven.agents.tunnel import get_tunnel_pid, save_tunnel_pid, clear_tunnel_pid
+    pid_file = tmp_path / "tunnel.pid"
+    assert get_tunnel_pid(pid_file) is None
+    save_tunnel_pid(pid_file, 12345)
+    assert get_tunnel_pid(pid_file) == 12345
+    clear_tunnel_pid(pid_file)
+    assert get_tunnel_pid(pid_file) is None
+
+
+def test_tunnel_url_storage(tmp_path) -> None:
+    from openraven.agents.tunnel import save_tunnel_url, get_tunnel_url
+    url_file = tmp_path / "tunnel_url"
+    save_tunnel_url(url_file, "https://abc-xyz.trycloudflare.com")
+    assert get_tunnel_url(url_file) == "https://abc-xyz.trycloudflare.com"
+
+
+def test_tunnel_url_missing(tmp_path) -> None:
+    from openraven.agents.tunnel import get_tunnel_url
+    assert get_tunnel_url(tmp_path / "nope") == ""
