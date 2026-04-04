@@ -35,7 +35,11 @@ class PipelineResult:
         return len(self.errors) > 0
 
 
-def _detect_schema(file_path: Path, text: str = "") -> dict:
+def _detect_schema(file_path: Path, text: str = "", schema_name: str | None = None) -> dict:
+    if schema_name:
+        from openraven.extraction.schemas import get_schema
+        return get_schema(schema_name)
+
     name = file_path.name.lower()
     eng_keywords = ("adr", "architecture", "spec", "technical", "design", "system", "api", "infra")
     fin_keywords = (
@@ -50,8 +54,21 @@ def _detect_schema(file_path: Path, text: str = "") -> dict:
         return FINANCE_SCHEMA
 
     sample = text[:2000].lower() if text else ""
+
+    # Taiwan legal keywords — check before general finance to avoid misclassification
+    legal_tw_content = ("判決", "法條", "原告", "被告", "法院", "民法", "刑法")
+    if any(kw in sample for kw in legal_tw_content):
+        from openraven.extraction.schemas.legal_taiwan import LEGAL_TAIWAN_SCHEMA
+        return LEGAL_TAIWAN_SCHEMA
+
+    # Taiwan finance keywords — check before general finance for specificity
+    fin_tw_content = ("上市", "營收", "毛利率", "本益比", "台積電", "金管會", "股價")
+    if any(kw in sample for kw in fin_tw_content):
+        from openraven.extraction.schemas.finance_taiwan import FINANCE_TAIWAN_SCHEMA
+        return FINANCE_TAIWAN_SCHEMA
+
     fin_content = (
-        "revenue", "p/e", "earnings", "valuation", "market cap", "股價", "營收", "本益比", "殖利率"
+        "revenue", "p/e", "earnings", "valuation", "market cap", "殖利率"
     )
     eng_content = (
         "architecture", "microservice", "api endpoint", "database", "deploy", "kubernetes", "docker"
@@ -79,7 +96,7 @@ class RavenPipeline:
             ollama_base_url=config.ollama_base_url,
         )
 
-    async def add_files(self, paths: list[Path]) -> PipelineResult:
+    async def add_files(self, paths: list[Path], schema_name: str | None = None) -> PipelineResult:
         errors: list[str] = []
         all_entities: list[Entity] = []
         sources_map: dict[str, list[dict]] = {}
@@ -109,7 +126,7 @@ class RavenPipeline:
         # Stage 2: Extraction + Graph
         for doc in parsed_docs:
             try:
-                schema = _detect_schema(doc.source_path, text=doc.text)
+                schema = _detect_schema(doc.source_path, text=doc.text, schema_name=schema_name)
                 result = await extract_entities(
                     text=doc.text, source_document=str(doc.source_path),
                     schema=schema, model_id=self.config.llm_model,
