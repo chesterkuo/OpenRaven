@@ -168,43 +168,89 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
 
     simulation.on("tick", paint);
 
-    // Click hit-test
-    const handleClick = (e: MouseEvent) => {
+    // Interaction state
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+    let dragNode: SimNode | null = null;
+    let dragDistance = 0;
+    let mouseDownPos = { x: 0, y: 0 };
+
+    function hitTest(clientX: number, clientY: number): SimNode | null {
       const rect = canvas.getBoundingClientRect();
       const { x: tx, y: ty, k } = transformRef.current;
-      const mx = (e.clientX - rect.left - tx) / k;
-      const my = (e.clientY - rect.top - ty) / k;
-
+      const mx = (clientX - rect.left - tx) / k;
+      const my = (clientY - rect.top - ty) / k;
       for (const node of simNodes) {
         if (node.x == null) continue;
         const r = getRadius(node.id) + 4;
         const dx = mx - node.x;
         const dy = my - node.y!;
-        if (dx * dx + dy * dy < r * r) {
-          onNodeClick(node);
-          return;
-        }
+        if (dx * dx + dy * dy < r * r) return node;
       }
-    };
-    canvas.addEventListener("click", handleClick);
-
-    // Pan + zoom
-    let isPanning = false;
-    let panStart = { x: 0, y: 0 };
+      return null;
+    }
 
     const handleMouseDown = (e: MouseEvent) => {
-      if (e.button === 0) {
+      if (e.button !== 0) return;
+      dragDistance = 0;
+      mouseDownPos = { x: e.clientX, y: e.clientY };
+
+      const hit = hitTest(e.clientX, e.clientY);
+      if (hit) {
+        dragNode = hit;
+        simulation.alphaTarget(0.3).restart();
+      } else {
         isPanning = true;
         panStart = { x: e.clientX - transformRef.current.x, y: e.clientY - transformRef.current.y };
       }
     };
+
     const handleMouseMove = (e: MouseEvent) => {
-      if (!isPanning) return;
-      transformRef.current.x = e.clientX - panStart.x;
-      transformRef.current.y = e.clientY - panStart.y;
-      paint();
+      dragDistance += Math.abs(e.movementX) + Math.abs(e.movementY);
+
+      if (dragNode) {
+        const rect = canvas.getBoundingClientRect();
+        const { x: tx, y: ty, k } = transformRef.current;
+        dragNode.fx = (e.clientX - rect.left - tx) / k;
+        dragNode.fy = (e.clientY - rect.top - ty) / k;
+        return;
+      }
+
+      if (isPanning) {
+        transformRef.current.x = e.clientX - panStart.x;
+        transformRef.current.y = e.clientY - panStart.y;
+        paint();
+      }
     };
-    const handleMouseUp = () => { isPanning = false; };
+
+    const handleMouseUp = () => {
+      if (dragNode) {
+        simulation.alphaTarget(0);
+        // Pin the node where it was dropped
+        dragNode.fx = dragNode.x;
+        dragNode.fy = dragNode.y;
+        dragNode = null;
+      }
+      isPanning = false;
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      if (dragDistance > 3) return; // was a drag, not a click
+      const hit = hitTest(e.clientX, e.clientY);
+      if (hit) onNodeClick(hit);
+    };
+
+    const handleDblClick = (e: MouseEvent) => {
+      const hit = hitTest(e.clientX, e.clientY);
+      if (hit) {
+        // Unpin node on double-click
+        hit.fx = null;
+        hit.fy = null;
+        simulation.alphaTarget(0.3).restart();
+        setTimeout(() => { if (!dragNode) simulation.alphaTarget(0); }, 500);
+      }
+    };
+
     const handleWheel = (e: WheelEvent) => {
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
@@ -223,16 +269,19 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
     canvas.addEventListener("mousemove", handleMouseMove);
     canvas.addEventListener("mouseup", handleMouseUp);
     canvas.addEventListener("mouseleave", handleMouseUp);
+    canvas.addEventListener("click", handleClick);
+    canvas.addEventListener("dblclick", handleDblClick);
     canvas.addEventListener("wheel", handleWheel, { passive: false });
 
     return () => {
       simulation.stop();
       resizeObserver.disconnect();
-      canvas.removeEventListener("click", handleClick);
       canvas.removeEventListener("mousedown", handleMouseDown);
       canvas.removeEventListener("mousemove", handleMouseMove);
       canvas.removeEventListener("mouseup", handleMouseUp);
       canvas.removeEventListener("mouseleave", handleMouseUp);
+      canvas.removeEventListener("click", handleClick);
+      canvas.removeEventListener("dblclick", handleDblClick);
       canvas.removeEventListener("wheel", handleWheel);
     };
   }, [nodes, edges, getRadius, degreeMap]);
