@@ -51,6 +51,15 @@ def test_detect_schema_default() -> None:
     assert schema == BASE_SCHEMA
 
 
+def test_pipeline_passes_provider_to_graph(config: RavenConfig) -> None:
+    config.llm_provider = "ollama"
+    config.llm_model = "llama3.2:3b"
+    config.embedding_model = "nomic-embed-text"
+    pipeline = RavenPipeline(config)
+    # Pipeline should construct without error even with ollama provider
+    assert pipeline.graph is not None
+
+
 def test_pipeline_health_report(config: RavenConfig) -> None:
     pipeline = RavenPipeline(config)
     report = pipeline.get_health_report()

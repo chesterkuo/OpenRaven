@@ -74,7 +74,9 @@ class RavenPipeline:
         self.graph = RavenGraph.create_lazy(
             working_dir=config.lightrag_dir,
             llm_model=config.llm_model,
-            llm_api_key=config.gemini_api_key,
+            llm_api_key=config.llm_api_key,
+            provider=config.llm_provider,
+            ollama_base_url=config.ollama_base_url,
         )
 
     async def add_files(self, paths: list[Path]) -> PipelineResult:
@@ -139,10 +141,15 @@ class RavenPipeline:
         articles = []
         if entity_names:
             try:
+                wiki_base_url = (
+                    f"{self.config.ollama_base_url}/v1"
+                    if self.config.llm_provider == "ollama"
+                    else "https://generativelanguage.googleapis.com/v1beta/openai/"
+                )
                 articles = await compile_wiki_for_graph(
                     graph=self.graph, entities=entity_names, sources_map=sources_map,
-                    api_key=self.config.gemini_api_key, output_dir=self.config.wiki_dir,
-                    model=self.config.wiki_llm_model,
+                    api_key=self.config.llm_api_key, output_dir=self.config.wiki_dir,
+                    model=self.config.wiki_llm_model, base_url=wiki_base_url,
                 )
             except Exception as e:
                 errors.append(f"Wiki compilation failed: {e}")
