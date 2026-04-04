@@ -88,7 +88,7 @@ class TestTier2LLMJudge:
             pytest.skip("Tier 2 requires --llm-judge flag or -k tier2")
 
     def test_llm_judge_qa_accuracy_above_80_percent(self, benchmark_kb, ground_truth):
-        from openraven.tests.benchmark.conftest import llm_judge_score
+        from conftest import llm_judge_score
 
         pipeline, config, corpus_dir = benchmark_kb
         questions = ground_truth["questions"]
