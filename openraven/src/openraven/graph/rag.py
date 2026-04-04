@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
@@ -10,6 +11,12 @@ except ImportError:
     LIGHTRAG_AVAILABLE = False
 
 QueryMode = Literal["local", "global", "hybrid", "mix", "naive", "bypass"]
+
+
+@dataclass
+class QueryResult:
+    answer: str
+    sources: list[dict]
 
 
 class RavenGraph:
@@ -188,6 +195,41 @@ class RavenGraph:
             result = await self._rag.aquery(question, param=QueryParam(mode=mode))
             return result
         return ""
+
+    async def query_with_sources(self, question: str, mode: QueryMode = "mix") -> QueryResult:
+        await self.ensure_initialized()
+        if not self._rag:
+            return QueryResult(answer="", sources=[])
+        answer = await self._rag.aquery(question, param=QueryParam(mode=mode))
+        sources = self._extract_sources_from_answer(answer)
+        return QueryResult(answer=answer, sources=sources)
+
+    def _extract_sources_from_answer(self, answer: str) -> list[dict]:
+        import networkx as nx
+
+        graph_file = self.working_dir / "graph_chunk_entity_relation.graphml"
+        if not graph_file.exists():
+            return []
+        try:
+            graph = nx.read_graphml(str(graph_file))
+        except Exception:
+            return []
+        answer_lower = answer.lower()
+        sources: list[dict] = []
+        seen_docs: set[str] = set()
+        for node_id, attrs in graph.nodes(data=True):
+            if node_id.lower() in answer_lower:
+                file_path = attrs.get("file_path", "")
+                if not file_path or file_path in seen_docs:
+                    continue
+                seen_docs.add(file_path)
+                sources.append({
+                    "document": file_path,
+                    "excerpt": attrs.get("description", "")[:100],
+                    "char_start": 0,
+                    "char_end": 0,
+                })
+        return sources
 
     def export_graphml(self, output_path: Path) -> None:
         import networkx as nx

@@ -173,3 +173,41 @@ async def test_safe_gemini_embed_truncates_extra_vectors() -> None:
     # Multiple texts — should truncate from 4 to 3
     result = await func(["text one", "text two", "text three"])
     assert result.shape == (3, 768)
+
+
+def test_query_result_dataclass() -> None:
+    from openraven.graph.rag import QueryResult
+    qr = QueryResult(answer="test answer", sources=[{"document": "doc.md", "excerpt": "text", "char_start": 0, "char_end": 10}])
+    assert qr.answer == "test answer"
+    assert len(qr.sources) == 1
+    assert qr.sources[0]["document"] == "doc.md"
+
+
+def test_query_result_empty_sources() -> None:
+    from openraven.graph.rag import QueryResult
+    qr = QueryResult(answer="", sources=[])
+    assert qr.sources == []
+
+
+def test_extract_sources_from_answer_finds_matching_entities(tmp_path) -> None:
+    import networkx as nx
+    from openraven.graph.rag import RavenGraph
+    graph = nx.DiGraph()
+    graph.add_node("Apache Kafka", entity_type="technology", description="A distributed streaming platform", file_path="adr-kafka.md")
+    graph.add_node("Event-Driven Architecture", entity_type="concept", description="Architecture using events", file_path="adr-kafka.md")
+    graph.add_node("Unrelated Topic", entity_type="concept", description="Something else", file_path="other.md")
+    graph_file = tmp_path / "graph_chunk_entity_relation.graphml"
+    nx.write_graphml(graph, str(graph_file))
+    rg = RavenGraph(working_dir=tmp_path)
+    answer = "The system uses Apache Kafka for event streaming."
+    sources = rg._extract_sources_from_answer(answer)
+    doc_names = [s["document"] for s in sources]
+    assert any("adr-kafka" in d for d in doc_names)
+    assert not any("other.md" in d for d in doc_names)
+
+
+def test_extract_sources_empty_graph(tmp_path) -> None:
+    from openraven.graph.rag import RavenGraph
+    rg = RavenGraph(working_dir=tmp_path)
+    sources = rg._extract_sources_from_answer("Some answer text")
+    assert sources == []
