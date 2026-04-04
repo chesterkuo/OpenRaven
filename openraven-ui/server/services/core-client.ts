@@ -76,6 +76,29 @@ export async function ingestFiles(formData: FormData): Promise<IngestResponse> {
   return res.json();
 }
 
+export interface WikiListItem {
+  slug: string;
+  title: string;
+}
+
+export interface WikiArticle {
+  slug: string;
+  title: string;
+  content: string;
+}
+
+export async function getWikiList(): Promise<WikiListItem[]> {
+  const res = await fetch(`${CORE_API_URL}/api/wiki`);
+  if (!res.ok) throw new Error(`Core API error: ${res.status}`);
+  return res.json();
+}
+
+export async function getWikiArticle(slug: string): Promise<WikiArticle> {
+  const res = await fetch(`${CORE_API_URL}/api/wiki/${encodeURIComponent(slug)}`);
+  if (!res.ok) throw new Error(`Core API error: ${res.status}`);
+  return res.json();
+}
+
 export async function getDiscoveryInsights(): Promise<DiscoveryInsight[]> {
   const res = await fetch(`${CORE_API_URL}/api/discovery`);
   if (!res.ok) throw new Error(`Core API error: ${res.status}`);

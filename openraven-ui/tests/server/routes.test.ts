@@ -42,12 +42,21 @@ const mockGetGraphData = mock(async (_maxNodes: number) => ({
   is_truncated: false,
 }));
 
+const mockGetWikiList = mock(async () => [
+  { slug: "apache_kafka", title: "Apache Kafka" },
+]);
+const mockGetWikiArticle = mock(async (_slug: string) => ({
+  slug: "apache_kafka", title: "Apache Kafka", content: "# Apache Kafka\n\nStreaming platform.",
+}));
+
 mock.module("../../server/services/core-client", () => ({
   askQuestion: mockAskQuestion,
   getStatus: mockGetStatus,
   getDiscoveryInsights: mockGetDiscoveryInsights,
   ingestFiles: mockIngestFiles,
   getGraphData: mockGetGraphData,
+  getWikiList: mockGetWikiList,
+  getWikiArticle: mockGetWikiArticle,
 }));
 
 // Import app after mocking
@@ -195,5 +204,16 @@ describe("GET /api/graph", () => {
     expect(res.status).toBe(502);
     const body = await res.json();
     expect(body).toMatchObject({ error: expect.stringContaining("Core engine error") });
+  });
+});
+
+describe("GET /api/wiki", () => {
+  it("returns wiki article list", async () => {
+    const req = new Request("http://localhost/api/wiki");
+    const res = await appFetch(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body)).toBe(true);
+    expect(body[0]).toMatchObject({ slug: "apache_kafka" });
   });
 });

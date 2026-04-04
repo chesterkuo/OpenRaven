@@ -7,6 +7,7 @@ import ingestRouter from "./routes/ingest";
 import statusRouter from "./routes/status";
 import discoveryRouter from "./routes/discovery";
 import graphRouter from "./routes/graph";
+import wikiRouter from "./routes/wiki";
 
 const app = new Hono();
 
@@ -20,6 +21,7 @@ app.route("/api/ingest", ingestRouter);
 app.route("/api/status", statusRouter);
 app.route("/api/discovery", discoveryRouter);
 app.route("/api/graph", graphRouter);
+app.route("/api/wiki", wikiRouter);
 
 // Serve built frontend assets from dist/
 app.use("/assets/*", serveStatic({ root: "./dist" }));
