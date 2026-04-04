@@ -17,6 +17,7 @@ export default function GraphPage() {
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set(ENTITY_TYPES));
+  const [minDegree, setMinDegree] = useState(0);
 
   useEffect(() => {
     fetch("/api/graph?max_nodes=500")
@@ -30,11 +31,37 @@ export default function GraphPage() {
 
   const filteredNodes = useMemo(() => {
     if (!data) return [];
+
+    // Step 1: Get type-filtered node IDs
+    const typeFilteredNodeIds = new Set(
+      data.nodes
+        .filter((n) => {
+          const type = n.properties?.entity_type ?? n.labels[0] ?? "unknown";
+          return activeTypes.has(type);
+        })
+        .map((n) => n.id)
+    );
+
+    // Step 2: Get edges where both endpoints pass the type filter
+    const typeFilteredEdges = data.edges.filter(
+      (e) => typeFilteredNodeIds.has(e.source) && typeFilteredNodeIds.has(e.target)
+    );
+
+    // Step 3: Build degree map from type-filtered edges
+    const degrees = new Map<string, number>();
+    for (const e of typeFilteredEdges) {
+      degrees.set(e.source, (degrees.get(e.source) ?? 0) + 1);
+      degrees.set(e.target, (degrees.get(e.target) ?? 0) + 1);
+    }
+
+    // Step 4: Filter nodes by type AND minDegree
     return data.nodes.filter((n) => {
       const type = n.properties?.entity_type ?? n.labels[0] ?? "unknown";
-      return activeTypes.has(type);
+      if (!activeTypes.has(type)) return false;
+      if (minDegree > 0 && (degrees.get(n.id) ?? 0) < minDegree) return false;
+      return true;
     });
-  }, [data, activeTypes]);
+  }, [data, activeTypes, minDegree]);
 
   const filteredNodeIds = useMemo(() => new Set(filteredNodes.map((n) => n.id)), [filteredNodes]);
 
@@ -119,6 +146,18 @@ export default function GraphPage() {
               {type}
             </button>
           ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-500">Min connections:</label>
+          <input
+            type="range"
+            min={0}
+            max={10}
+            value={minDegree}
+            onChange={(e) => setMinDegree(Number(e.target.value))}
+            className="w-20 h-1 accent-blue-500"
+          />
+          <span className="text-xs text-gray-400 w-4">{minDegree}</span>
         </div>
         <a
           href="/api/graph/export"
