@@ -10,6 +10,43 @@ import pytest
 from openraven.graph.rag import QueryResult
 
 
+def _llm_judge_score(question: str, expected: str, actual: str) -> dict:
+    """Use Gemini to judge answer quality. Returns {score: 1-5, reason: str}."""
+    import openai
+
+    api_key = os.environ.get("GEMINI_API_KEY", "")
+    client = openai.OpenAI(
+        api_key=api_key,
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+    )
+
+    prompt = f"""Rate this answer on a 1-5 scale:
+- 5: Fully correct, complete, no hallucination
+- 4: Mostly correct, minor omissions
+- 3: Partially correct, some inaccuracies
+- 2: Mostly wrong or heavily hallucinated
+- 1: Completely wrong or irrelevant
+
+Question: {question}
+Expected answer: {expected}
+Actual answer: {actual}
+
+Respond with JSON only: {{"score": N, "reason": "brief explanation"}}"""
+
+    response = client.chat.completions.create(
+        model="gemini-2.5-flash",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0,
+    )
+
+    text = response.choices[0].message.content.strip()
+    if "```" in text:
+        text = text.split("```")[1]
+        if text.startswith("json"):
+            text = text[4:]
+    return json.loads(text)
+
+
 def evaluate_facts(answer: str, expected_facts: list[str]) -> bool:
     answer_lower = answer.lower()
     return all(fact.lower() in answer_lower for fact in expected_facts)
@@ -88,7 +125,7 @@ class TestTier2LLMJudge:
             pytest.skip("Tier 2 requires --llm-judge flag or -k tier2")
 
     def test_llm_judge_qa_accuracy_above_80_percent(self, benchmark_kb, ground_truth):
-        from conftest import llm_judge_score
+        llm_judge_score = _llm_judge_score
 
         pipeline, config, corpus_dir = benchmark_kb
         questions = ground_truth["questions"]
