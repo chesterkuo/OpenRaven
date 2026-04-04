@@ -10,7 +10,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-from fastapi import BackgroundTasks, FastAPI, File, Query, Request, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, Form, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -117,6 +117,11 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     async def health():
         return {"status": "ok", "version": "0.1.0"}
 
+    @app.get("/api/schemas")
+    async def schemas():
+        from openraven.extraction.schemas import list_schemas
+        return list_schemas()
+
     @app.get("/api/status", response_model=StatusResponse)
     async def status():
         report = pipeline.get_health_report()
@@ -157,7 +162,9 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         }
 
     @app.post("/api/ingest", response_model=IngestResponse)
-    async def ingest(files: list[UploadFile] = File(...)):
+    async def ingest(files: list[UploadFile] = File(...), schema: str | None = Form(default=None)):
+        schema_name: str | None = schema if schema and schema != "auto" else None
+
         saved_paths: list[Path] = []
         config.ingestion_dir.mkdir(parents=True, exist_ok=True)
         for upload in files:
@@ -170,7 +177,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         job = IngestJob(job_id=job_id, files_total=len(saved_paths), stage="processing")
         ingest_jobs[job_id] = job
 
-        result = await pipeline.add_files(saved_paths)
+        result = await pipeline.add_files(saved_paths, schema_name=schema_name)
 
         job.stage = "done"
         job.files_done = result.files_processed

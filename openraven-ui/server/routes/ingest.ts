@@ -6,8 +6,12 @@ const ingestRouter = new Hono();
 ingestRouter.post("/", async (c) => {
   const body = await c.req.formData();
   const coreForm = new FormData();
-  for (const [, value] of body.entries()) {
-    if (value instanceof File) coreForm.append("files", value);
+  for (const [key, value] of body.entries()) {
+    if (value instanceof File) {
+      coreForm.append("files", value);
+    } else if (key === "schema") {
+      coreForm.append("schema", value);
+    }
   }
   try {
     const result = await ingestFiles(coreForm);

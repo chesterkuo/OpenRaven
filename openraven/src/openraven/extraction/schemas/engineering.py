@@ -31,6 +31,8 @@ ENGINEERING_EXAMPLES = [
 ]
 
 ENGINEERING_SCHEMA: dict = {
+    "name": "Engineering",
+    "description": "Optimized for ADRs, tech specs, and architecture docs. Extracts architecture decisions, technology choices, trade-offs, performance metrics, and design patterns.",
     "prompt_description": (
         "Extract knowledge entities from this technical/engineering document. "
         "Focus on: architecture decisions (and their rationale), technology choices, "

@@ -129,6 +129,16 @@ app.get("/api/config/:path", async (c) => {
   }
 });
 
+// Proxy schemas endpoint to core API
+app.get("/api/schemas", async (c) => {
+  try {
+    const res = await fetch(`${CORE_API_URL}/api/schemas`);
+    return c.json(await res.json(), res.status as any);
+  } catch (e) {
+    return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502);
+  }
+});
+
 // Serve built frontend assets from dist/
 app.use("/assets/*", serveStatic({ root: "./dist" }));
 

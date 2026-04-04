@@ -60,6 +60,30 @@ def test_pipeline_passes_provider_to_graph(config: RavenConfig) -> None:
     assert pipeline.graph is not None
 
 
+def test_detect_schema_legal_taiwan_by_content() -> None:
+    from openraven.extraction.schemas.legal_taiwan import LEGAL_TAIWAN_SCHEMA
+    schema = _detect_schema(Path("document.md"), text="本案判決依據民法第 184 條，原告主張被告侵權")
+    assert schema == LEGAL_TAIWAN_SCHEMA
+
+
+def test_detect_schema_finance_taiwan_by_content() -> None:
+    from openraven.extraction.schemas.finance_taiwan import FINANCE_TAIWAN_SCHEMA
+    schema = _detect_schema(Path("quarterly.md"), text="台積電本季營收創新高，本益比回升至 25 倍")
+    assert schema == FINANCE_TAIWAN_SCHEMA
+
+
+def test_detect_schema_with_override() -> None:
+    from openraven.extraction.schemas.legal_taiwan import LEGAL_TAIWAN_SCHEMA
+    schema = _detect_schema(Path("generic.md"), text="just some text", schema_name="legal-taiwan")
+    assert schema == LEGAL_TAIWAN_SCHEMA
+
+
+def test_detect_schema_override_unknown_falls_back_to_base() -> None:
+    from openraven.extraction.schemas.base import BASE_SCHEMA
+    schema = _detect_schema(Path("generic.md"), text="", schema_name="nonexistent")
+    assert schema == BASE_SCHEMA
+
+
 def test_pipeline_health_report(config: RavenConfig) -> None:
     pipeline = RavenPipeline(config)
     report = pipeline.get_health_report()

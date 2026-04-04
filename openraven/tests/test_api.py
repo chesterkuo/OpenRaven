@@ -198,6 +198,22 @@ def test_otter_save_key_endpoint(client: TestClient) -> None:
     assert data["saved"] is True
 
 
+def test_schemas_endpoint(client: TestClient) -> None:
+    response = client.get("/api/schemas")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+    assert len(data) == 5
+    ids = [s["id"] for s in data]
+    assert "base" in ids
+    assert "legal-taiwan" in ids
+    assert "finance-taiwan" in ids
+    for s in data:
+        assert "id" in s
+        assert "name" in s
+        assert "description" in s
+
+
 def test_otter_sync_requires_key(client: TestClient) -> None:
     response = client.post("/api/connectors/otter/sync")
     assert response.status_code == 401

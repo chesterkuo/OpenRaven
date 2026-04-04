@@ -30,6 +30,8 @@ FINANCE_EXAMPLES = [
 ]
 
 FINANCE_SCHEMA: dict = {
+    "name": "Finance",
+    "description": "Optimized for financial research reports and earnings calls. Extracts companies, financial metrics, industry trends, analyst opinions, and risk factors.",
     "prompt_description": (
         "Extract knowledge entities from this financial/investment document. "
         "Focus on: companies and tickers, financial metrics (P/E, revenue, margins), "
