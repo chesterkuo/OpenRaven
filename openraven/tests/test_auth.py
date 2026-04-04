@@ -1,0 +1,25 @@
+import pytest
+from openraven.auth.db import create_tables, get_engine
+from openraven.auth.models import UserCreate
+
+
+def test_create_tables_creates_users_table():
+    """Tables should be created without error on a fresh SQLite DB."""
+    engine = get_engine("sqlite:///test_auth.db")
+    create_tables(engine)
+    from sqlalchemy import inspect
+    inspector = inspect(engine)
+    tables = inspector.get_table_names()
+    assert "users" in tables
+    assert "sessions" in tables
+    assert "tenants" in tables
+    assert "tenant_members" in tables
+    assert "password_reset_tokens" in tables
+    import os
+    os.remove("test_auth.db")
+
+
+def test_user_create_model_validates_email():
+    user = UserCreate(name="Test", email="test@example.com", password="securepass123")
+    assert user.email == "test@example.com"
+    assert user.name == "Test"
