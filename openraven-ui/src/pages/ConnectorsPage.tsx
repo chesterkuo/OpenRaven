@@ -41,7 +41,6 @@ export default function ConnectorsPage() {
           }
         } catch { /* ignore polling errors */ }
       }, 2000);
-      // Stop polling after 2 minutes to avoid leak if user closes popup
       setTimeout(() => clearInterval(poll), 120_000);
     }
   }
@@ -75,118 +74,101 @@ export default function ConnectorsPage() {
     }
   }
 
-  if (!status) return <div className="text-gray-500">Loading...</div>;
+  if (!status) return <div style={{ color: "var(--color-text-muted)" }}>Loading...</div>;
+
+  const connectorBtn = (connected: boolean, connector: string, label: string) => {
+    if (!connected) {
+      return (
+        <button onClick={handleConnect} disabled={!status.google_configured}
+          className="text-sm px-3 py-1.5 uppercase disabled:opacity-50"
+          style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}>Connect</button>
+      );
+    }
+    return (
+      <button onClick={() => handleSync(connector as "gdrive" | "gmail" | "meet" | "otter")} disabled={syncing !== null}
+        className="text-sm px-3 py-1.5 uppercase disabled:opacity-50"
+        style={{ background: "var(--bg-surface-warm)", color: "var(--color-text)" }}>
+        {syncing === connector ? "Syncing..." : label}
+      </button>
+    );
+  };
+
+  const statusBadge = (connected: boolean) => (
+    <span className="text-xs px-2 py-0.5 flex items-center gap-1.5"
+      style={{ background: connected ? "var(--bg-surface-warm)" : "var(--bg-surface-hover)", color: connected ? "var(--color-success)" : "var(--color-text-muted)" }}>
+      {connected && <span className="inline-block w-1.5 h-1.5" style={{ background: "var(--color-success)", borderRadius: "50%" }} />}
+      {connected ? "Connected" : "Not connected"}
+    </span>
+  );
+
+  const connectors = [
+    { key: "gdrive", name: "Google Drive", desc: "Import documents from your Google Drive (PDF, Docs, Sheets, Slides).", connected: status.gdrive.connected, syncLabel: "Sync Now" },
+    { key: "gmail", name: "Gmail", desc: "Import emails from your Gmail account as knowledge base entries.", connected: status.gmail.connected, syncLabel: "Sync Now" },
+    { key: "meet", name: "Google Meet", desc: "Import meeting transcripts from Google Meet.", connected: status.meet.connected, syncLabel: "Sync Transcripts" },
+  ];
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Connectors</h1>
-
+      <h1 className="text-3xl mb-6" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>Connectors</h1>
       {!status.google_configured && (
-        <div className="bg-amber-950/30 border border-amber-700 rounded-lg p-4 mb-6 text-sm text-amber-300">
+        <div className="p-4 mb-6 text-sm" style={{ background: "var(--bg-surface-warm)", borderLeft: "4px solid var(--color-brand-amber)", color: "var(--color-text)" }}>
           Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env to enable connectors.
         </div>
       )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        {/* Google Drive */}
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold">Google Drive</h2>
-            <span className={`text-xs px-2 py-0.5 rounded ${status.gdrive.connected ? "bg-green-900 text-green-400" : "bg-gray-800 text-gray-500"}`}>
-              {status.gdrive.connected ? "Connected" : "Not connected"}
-            </span>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        {connectors.map(c => (
+          <div key={c.key} className="p-4" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="text-lg" style={{ color: "var(--color-text)" }}>{c.name}</h2>
+              {statusBadge(c.connected)}
+            </div>
+            <p className="text-sm mb-3" style={{ color: "var(--color-text-muted)" }}>{c.desc}</p>
+            {connectorBtn(c.connected, c.key, c.syncLabel)}
           </div>
-          <p className="text-sm text-gray-400 mb-3">Import documents from your Google Drive (PDF, Docs, Sheets, Slides).</p>
-          {!status.gdrive.connected ? (
-            <button onClick={handleConnect} disabled={!status.google_configured} className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500">
-              Connect Google Account
-            </button>
-          ) : (
-            <button onClick={() => handleSync("gdrive")} disabled={syncing !== null} className="text-sm px-3 py-1.5 rounded bg-gray-700 text-gray-200 hover:bg-gray-600 disabled:opacity-50">
-              {syncing === "gdrive" ? "Syncing..." : "Sync Now"}
-            </button>
-          )}
-        </div>
-
-        {/* Gmail */}
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+        ))}
+        <div className="p-4" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold">Gmail</h2>
-            <span className={`text-xs px-2 py-0.5 rounded ${status.gmail.connected ? "bg-green-900 text-green-400" : "bg-gray-800 text-gray-500"}`}>
-              {status.gmail.connected ? "Connected" : "Not connected"}
-            </span>
+            <h2 className="text-lg" style={{ color: "var(--color-text)" }}>Otter.ai</h2>
+            {statusBadge(status.otter.connected)}
           </div>
-          <p className="text-sm text-gray-400 mb-3">Import emails from your Gmail account as knowledge base entries.</p>
-          {!status.gmail.connected ? (
-            <button onClick={handleConnect} disabled={!status.google_configured} className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500">
-              Connect Google Account
-            </button>
-          ) : (
-            <button onClick={() => handleSync("gmail")} disabled={syncing !== null} className="text-sm px-3 py-1.5 rounded bg-gray-700 text-gray-200 hover:bg-gray-600 disabled:opacity-50">
-              {syncing === "gmail" ? "Syncing..." : "Sync Now"}
-            </button>
-          )}
-        </div>
-
-        {/* Google Meet */}
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold">Google Meet</h2>
-            <span className={`text-xs px-2 py-0.5 rounded ${status.meet.connected ? "bg-green-900 text-green-400" : "bg-gray-800 text-gray-500"}`}>
-              {status.meet.connected ? "Connected" : "Not connected"}
-            </span>
-          </div>
-          <p className="text-sm text-gray-400 mb-3">Import meeting transcripts from Google Meet.</p>
-          {!status.meet.connected ? (
-            <button onClick={handleConnect} disabled={!status.google_configured} className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500">
-              Connect Google Account
-            </button>
-          ) : (
-            <button onClick={() => handleSync("meet")} disabled={syncing !== null} className="text-sm px-3 py-1.5 rounded bg-gray-700 text-gray-200 hover:bg-gray-600 disabled:opacity-50">
-              {syncing === "meet" ? "Syncing..." : "Sync Transcripts"}
-            </button>
-          )}
-        </div>
-
-        {/* Otter.ai */}
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="font-semibold">Otter.ai</h2>
-            <span className={`text-xs px-2 py-0.5 rounded ${status.otter.connected ? "bg-green-900 text-green-400" : "bg-gray-800 text-gray-500"}`}>
-              {status.otter.connected ? "Connected" : "Not connected"}
-            </span>
-          </div>
-          <p className="text-sm text-gray-400 mb-3">Import meeting transcripts from Otter.ai.</p>
+          <p className="text-sm mb-3" style={{ color: "var(--color-text-muted)" }}>Import meeting transcripts from Otter.ai.</p>
           {!status.otter.connected ? (
             <div className="flex gap-2">
-              <input
-                type="password"
-                value={otterKey}
-                onChange={(e) => setOtterKey(e.target.value)}
-                placeholder="Otter.ai API key"
-                className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
-              />
-              <button onClick={handleSaveOtterKey} disabled={savingKey || !otterKey.trim()} className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500">
+              <input type="password" value={otterKey} onChange={(e) => setOtterKey(e.target.value)} placeholder="Otter.ai API key"
+                className="flex-1 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
+                style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+              <button onClick={handleSaveOtterKey} disabled={savingKey || !otterKey.trim()}
+                className="text-sm px-3 py-1.5 uppercase disabled:opacity-50"
+                style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}>
                 {savingKey ? "Saving..." : "Save"}
               </button>
             </div>
           ) : (
-            <button onClick={() => handleSync("otter")} disabled={syncing !== null} className="text-sm px-3 py-1.5 rounded bg-gray-700 text-gray-200 hover:bg-gray-600 disabled:opacity-50">
+            <button onClick={() => handleSync("otter")} disabled={syncing !== null}
+              className="text-sm px-3 py-1.5 uppercase disabled:opacity-50"
+              style={{ background: "var(--bg-surface-warm)", color: "var(--color-text)" }}>
               {syncing === "otter" ? "Syncing..." : "Sync Now"}
             </button>
           )}
         </div>
       </div>
-
       {result && (
-        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
-          <h2 className="font-semibold mb-2">Sync Results</h2>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div><div className="text-2xl font-bold text-blue-400">{result.files_synced}</div><div className="text-xs text-gray-500">Files synced</div></div>
-            <div><div className="text-2xl font-bold text-green-400">{result.entities_extracted}</div><div className="text-xs text-gray-500">Entities</div></div>
-            <div><div className="text-2xl font-bold text-purple-400">{result.articles_generated}</div><div className="text-xs text-gray-500">Articles</div></div>
-          </div>
-          {result.errors.length > 0 && <div className="mt-3 text-red-400 text-sm">{result.errors.map((e, i) => <div key={i}>{e}</div>)}</div>}
+        <div className="grid grid-cols-3 gap-6 text-center">
+          {[
+            { label: "Files synced", value: result.files_synced },
+            { label: "Entities", value: result.entities_extracted },
+            { label: "Articles", value: result.articles_generated },
+          ].map(stat => (
+            <div key={stat.label} className="p-6" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-golden)" }}>
+              <div className="text-5xl" style={{ color: "var(--color-text)", letterSpacing: "-1.5px", lineHeight: 0.95 }}>{stat.value}</div>
+              <div className="text-sm mt-2" style={{ color: "var(--color-text-muted)" }}>{stat.label}</div>
+            </div>
+          ))}
+          {result.errors.length > 0 && (
+            <div className="col-span-3 text-sm" style={{ color: "var(--color-error)" }}>
+              {result.errors.map((e, i) => <div key={i}>{e}</div>)}
+            </div>
+          )}
         </div>
       )}
     </div>
