@@ -1,0 +1,45 @@
+:root {
+  /* Backgrounds */
+  --bg-page: #fef9ef;
+  --bg-surface: #ffffff;
+  --bg-surface-warm: #fff0c2;
+  --bg-surface-hover: #fffaeb;
+
+  /* Brand */
+  --color-brand: #fa520f;
+  --color-brand-flame: #fb6424;
+  --color-brand-amber: #ffa110;
+  --color-brand-gold: #ffd900;
+
+  /* Text */
+  --color-text: #1f1f1f;
+  --color-text-secondary: hsl(0, 0%, 24%);
+  --color-text-muted: hsl(0, 0%, 50%);
+  --color-text-on-brand: #ffffff;
+
+  /* Borders */
+  --color-border: hsl(240, 5.9%, 90%);
+
+  /* Functional */
+  --color-success: #16a34a;
+  --color-error: #dc2626;
+  --color-dark: #1f1f1f;
+
+  /* Shadows */
+  --shadow-golden: rgba(127,99,21,0.12) -8px 16px 39px,
+                    rgba(127,99,21,0.1) -33px 64px 72px,
+                    rgba(127,99,21,0.06) -73px 144px 97px;
+  --shadow-card: rgba(127,99,21,0.08) -4px 8px 20px;
+  --shadow-subtle: rgba(127,99,21,0.06) 0 2px 12px;
+
+  /* Typography */
+  --font-family: Arial, ui-sans-serif, system-ui, -apple-system, sans-serif;
+
+  /* Graph node colors */
+  --node-technology: #fa520f;
+  --node-concept: #1f1f1f;
+  --node-person: #ffa110;
+  --node-organization: #d94800;
+  --node-event: #b8860b;
+  --node-location: #8b6914;
+}
