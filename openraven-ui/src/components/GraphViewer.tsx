@@ -30,7 +30,7 @@ interface GraphViewerProps {
   edges: GraphEdge[];
   selectedNodeId: string | null;
   onNodeClick: (node: GraphNode) => void;
-  onNodeHover?: (node: GraphNode | null) => void;
+
   searchTerm: string;
 }
 
@@ -49,7 +49,7 @@ function getNodeColor(node: GraphNode): string {
   return TYPE_COLORS[type] ?? DEFAULT_COLOR;
 }
 
-export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick, onNodeHover, searchTerm }: GraphViewerProps) {
+export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick, searchTerm }: GraphViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const simNodesRef = useRef<SimNode[]>([]);
@@ -156,12 +156,12 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
         ctx.fill();
       }
 
+      const searchLower = searchTerm.toLowerCase();
       for (const node of simNodes) {
         if (node.x == null) continue;
         const radius = getRadius(node.id);
         const color = getNodeColor(node);
         const isSelected = node.id === selectedNodeId;
-        const searchLower = searchTerm.toLowerCase();
         const isMatch = searchTerm && (
           node.id.toLowerCase().includes(searchLower) ||
           (node.properties?.description ?? "").toLowerCase().includes(searchLower) ||
@@ -207,7 +207,6 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
     let panStart = { x: 0, y: 0 };
     let dragNode: SimNode | null = null;
     let dragDistance = 0;
-    let mouseDownPos = { x: 0, y: 0 };
 
     function hitTest(clientX: number, clientY: number): SimNode | null {
       const rect = canvas.getBoundingClientRect();
@@ -227,7 +226,6 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
     const handleMouseDown = (e: MouseEvent) => {
       if (e.button !== 0) return;
       dragDistance = 0;
-      mouseDownPos = { x: e.clientX, y: e.clientY };
 
       const hit = hitTest(e.clientX, e.clientY);
       if (hit) {
@@ -382,12 +380,12 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
       ctx.fill();
     }
 
+    const searchLower = searchTerm.toLowerCase();
     for (const node of simNodes) {
       if (node.x == null) continue;
       const radius = getRadius(node.id);
       const color = getNodeColor(node);
       const isSelected = node.id === selectedNodeId;
-      const searchLower = searchTerm.toLowerCase();
       const isMatch = searchTerm && (
         node.id.toLowerCase().includes(searchLower) ||
         (node.properties?.description ?? "").toLowerCase().includes(searchLower) ||
