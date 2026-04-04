@@ -104,3 +104,64 @@ async def test_plan_curriculum_handles_markdown_json() -> None:
 
     assert len(outline.chapters) == 1
     assert outline.chapters[0].title == "Ch1"
+
+
+# --- Task 2: Markdown renderer tests ---
+
+def test_render_readme() -> None:
+    from openraven.courses.planner import ChapterOutline, CurriculumOutline
+    from openraven.courses.renderer import render_readme
+
+    outline = CurriculumOutline(
+        title="Event-Driven Architecture",
+        audience="Backend Engineers",
+        objectives=["Understand EDA", "Implement Kafka"],
+        chapters=[
+            ChapterOutline(title="Chapter 1: Intro", sections=["What is EDA"], key_concepts=["EDA"]),
+            ChapterOutline(title="Chapter 2: Kafka", sections=["Setup"], key_concepts=["Kafka"]),
+        ],
+    )
+    md = render_readme(outline)
+    assert "# Event-Driven Architecture" in md
+    assert "Backend Engineers" in md
+    assert "Understand EDA" in md
+    assert "Chapter 1: Intro" in md
+    assert "Chapter 2: Kafka" in md
+
+
+def test_render_chapter_markdown() -> None:
+    from openraven.courses.renderer import render_chapter_markdown
+
+    md = render_chapter_markdown(
+        chapter_title="Chapter 1: Foundations",
+        chapter_num=1,
+        sections=[
+            {"heading": "What is EDA", "content": "EDA is a pattern [Source: arch-doc.md]"},
+            {"heading": "Benefits", "content": "Scalability and decoupling."},
+        ],
+        key_takeaways=["EDA enables scalability", "Kafka is the standard tool"],
+        review_questions=["What is event sourcing?", "Why use Kafka?"],
+    )
+    assert "# Chapter 1: Foundations" in md
+    assert "## What is EDA" in md
+    assert "[Source: arch-doc.md]" in md
+    assert "Key Takeaways" in md
+    assert "EDA enables scalability" in md
+    assert "Review Questions" in md
+    assert "What is event sourcing?" in md
+
+
+def test_render_chapter_markdown_writes_file(tmp_path: Path) -> None:
+    from openraven.courses.renderer import render_chapter_markdown
+
+    md = render_chapter_markdown(
+        chapter_title="Chapter 1: Intro",
+        chapter_num=1,
+        sections=[{"heading": "S1", "content": "Content here."}],
+        key_takeaways=["Takeaway 1"],
+        review_questions=["Q1?"],
+    )
+    out = tmp_path / "01-intro.md"
+    out.write_text(md, encoding="utf-8")
+    assert out.exists()
+    assert "# Chapter 1: Intro" in out.read_text(encoding="utf-8")
