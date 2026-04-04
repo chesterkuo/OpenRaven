@@ -1,0 +1,17 @@
+{
+  "name": "openraven-chrome",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "bun run build:popup && bun run build:background && bun run build:content",
+    "build:popup": "bun build src/popup.ts --outdir dist --target browser",
+    "build:background": "bun build src/background.ts --outdir dist --target browser",
+    "build:content": "bun build src/content.ts --outdir dist --target browser",
+    "package": "bun run build && cp manifest.json dist/ && cp -r icons dist/ && cp src/popup.html dist/",
+    "test": "bun test tests/"
+  },
+  "devDependencies": {
+    "@types/chrome": "latest",
+    "typescript": "^5.7.0"
+  }
+}

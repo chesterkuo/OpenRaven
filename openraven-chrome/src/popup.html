@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { width: 320px; padding: 16px; margin: 0; background: #030712; color: #e5e7eb; font-family: system-ui, sans-serif; font-size: 14px; }
+    .btn { width: 100%; padding: 10px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; }
+    .btn-primary { background: #2563eb; color: white; }
+    .btn-primary:hover { background: #1d4ed8; }
+    .btn-primary:disabled { background: #374151; color: #6b7280; cursor: not-allowed; }
+    .status { margin-top: 12px; padding: 8px; border-radius: 6px; font-size: 12px; }
+    .status-success { background: #064e3b; color: #6ee7b7; }
+    .status-error { background: #450a0a; color: #fca5a5; }
+    .status-loading { background: #1e1b4b; color: #a5b4fc; }
+    .title { font-size: 16px; font-weight: bold; margin-bottom: 4px; }
+    .subtitle { color: #6b7280; font-size: 12px; margin-bottom: 16px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 8px; text-align: center; }
+    .stat-value { font-size: 18px; font-weight: bold; }
+    .stat-label { font-size: 10px; color: #6b7280; }
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+  <div class="title">OpenRaven</div>
+  <div class="subtitle" id="page-title">Save this page to your knowledge base</div>
+  <button class="btn btn-primary" id="save-btn">Save to Knowledge Base</button>
+  <div id="status-loading" class="status status-loading hidden">Saving page...</div>
+  <div id="status-success" class="status status-success hidden">
+    Saved successfully!
+    <div class="stats">
+      <div><div class="stat-value" id="stat-entities" style="color:#60a5fa">0</div><div class="stat-label">Entities</div></div>
+      <div><div class="stat-value" id="stat-articles" style="color:#4ade80">0</div><div class="stat-label">Articles</div></div>
+      <div><div class="stat-value" id="stat-files" style="color:#c084fc">0</div><div class="stat-label">Files</div></div>
+    </div>
+  </div>
+  <div id="status-error" class="status status-error hidden"><span id="error-message"></span></div>
+  <script src="popup.js"></script>
+</body>
+</html>
