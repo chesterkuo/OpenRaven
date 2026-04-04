@@ -57,3 +57,14 @@ class RavenConfig:
     @property
     def google_token_path(self) -> Path:
         return self.working_dir / "google_token.json"
+
+    @property
+    def otter_key_path(self) -> Path:
+        return self.working_dir / "otter_api_key"
+
+    @property
+    def otter_api_key(self) -> str:
+        """Load Otter.ai API key from file. Returns empty string if not found."""
+        if not self.otter_key_path.exists():
+            return ""
+        return self.otter_key_path.read_text(encoding="utf-8").strip()

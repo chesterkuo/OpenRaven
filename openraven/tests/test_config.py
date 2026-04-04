@@ -54,3 +54,13 @@ def test_google_oauth_env_overrides(tmp_path, monkeypatch) -> None:
     config = RavenConfig(working_dir=tmp_path / "kb")
     assert config.google_client_id == "test-id-123"
     assert config.google_client_secret == "test-secret-456"
+
+
+def test_otter_key_path(tmp_path) -> None:
+    config = RavenConfig(working_dir=tmp_path / "kb")
+    assert config.otter_key_path == config.working_dir / "otter_api_key"
+
+
+def test_otter_api_key_returns_empty_when_no_file(tmp_path) -> None:
+    config = RavenConfig(working_dir=tmp_path / "kb")
+    assert config.otter_api_key == ""
