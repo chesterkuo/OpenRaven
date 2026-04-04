@@ -30,6 +30,7 @@ interface GraphViewerProps {
   edges: GraphEdge[];
   selectedNodeId: string | null;
   onNodeClick: (node: GraphNode) => void;
+  onNodeHover?: (node: GraphNode | null) => void;
   searchTerm: string;
 }
 
@@ -48,12 +49,13 @@ function getNodeColor(node: GraphNode): string {
   return TYPE_COLORS[type] ?? DEFAULT_COLOR;
 }
 
-export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick, searchTerm }: GraphViewerProps) {
+export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick, onNodeHover, searchTerm }: GraphViewerProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const simNodesRef = useRef<SimNode[]>([]);
   const simLinksRef = useRef<SimLink[]>([]);
   const transformRef = useRef({ x: 0, y: 0, k: 1 });
+  const hoveredNodeRef = useRef<SimNode | null>(null);
 
   const degreeMap = useMemo(() => {
     const m = new Map<string, number>();
@@ -132,6 +134,26 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
         ctx.strokeStyle = isConnected ? "#60a5fa66" : "#374151";
         ctx.lineWidth = isConnected ? 1.5 : 0.5;
         ctx.stroke();
+
+        // Draw arrowhead
+        const angle = Math.atan2(t.y! - s.y!, t.x! - s.x!);
+        const targetRadius = getRadius(t.id);
+        const arrowX = t.x! - Math.cos(angle) * targetRadius;
+        const arrowY = t.y! - Math.sin(angle) * targetRadius;
+        const arrowSize = isConnected ? 5 : 3;
+        ctx.beginPath();
+        ctx.moveTo(arrowX, arrowY);
+        ctx.lineTo(
+          arrowX - arrowSize * Math.cos(angle - Math.PI / 6),
+          arrowY - arrowSize * Math.sin(angle - Math.PI / 6),
+        );
+        ctx.lineTo(
+          arrowX - arrowSize * Math.cos(angle + Math.PI / 6),
+          arrowY - arrowSize * Math.sin(angle + Math.PI / 6),
+        );
+        ctx.closePath();
+        ctx.fillStyle = isConnected ? "#60a5fa66" : "#374151";
+        ctx.fill();
       }
 
       for (const node of simNodes) {
@@ -141,6 +163,7 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
         const isSelected = node.id === selectedNodeId;
         const isMatch = searchTerm && node.id.toLowerCase().includes(searchTerm.toLowerCase());
         const dimmed = searchTerm && !isMatch;
+        const isHovered = hoveredNodeRef.current && node.id === hoveredNodeRef.current.id;
 
         ctx.beginPath();
         ctx.arc(node.x, node.y!, radius, 0, 2 * Math.PI);
@@ -153,8 +176,14 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
           ctx.stroke();
         }
 
+        if (isHovered) {
+          ctx.strokeStyle = "#60a5fa";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        }
+
         const degree = degreeMap.get(node.id) ?? 1;
-        if (degree >= 3 || isSelected || isMatch) {
+        if (degree >= 3 || isSelected || isMatch || isHovered) {
           ctx.font = `${isSelected ? "bold " : ""}${Math.max(3, radius * 0.8)}px sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
@@ -220,6 +249,15 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
         transformRef.current.x = e.clientX - panStart.x;
         transformRef.current.y = e.clientY - panStart.y;
         paint();
+        return;
+      }
+
+      // Hover detection (only when not dragging or panning)
+      const hit = hitTest(e.clientX, e.clientY);
+      if (hit !== hoveredNodeRef.current) {
+        hoveredNodeRef.current = hit;
+        canvas.style.cursor = hit ? "pointer" : "grab";
+        paint(); // repaint to show hover highlight
       }
     };
 
@@ -317,6 +355,26 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
       ctx.strokeStyle = isConnected ? "#60a5fa66" : "#374151";
       ctx.lineWidth = isConnected ? 1.5 : 0.5;
       ctx.stroke();
+
+      // Draw arrowhead
+      const angle = Math.atan2(t.y! - s.y!, t.x! - s.x!);
+      const targetRadius = getRadius(t.id);
+      const arrowX = t.x! - Math.cos(angle) * targetRadius;
+      const arrowY = t.y! - Math.sin(angle) * targetRadius;
+      const arrowSize = isConnected ? 5 : 3;
+      ctx.beginPath();
+      ctx.moveTo(arrowX, arrowY);
+      ctx.lineTo(
+        arrowX - arrowSize * Math.cos(angle - Math.PI / 6),
+        arrowY - arrowSize * Math.sin(angle - Math.PI / 6),
+      );
+      ctx.lineTo(
+        arrowX - arrowSize * Math.cos(angle + Math.PI / 6),
+        arrowY - arrowSize * Math.sin(angle + Math.PI / 6),
+      );
+      ctx.closePath();
+      ctx.fillStyle = isConnected ? "#60a5fa66" : "#374151";
+      ctx.fill();
     }
 
     for (const node of simNodes) {
@@ -326,6 +384,7 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
       const isSelected = node.id === selectedNodeId;
       const isMatch = searchTerm && node.id.toLowerCase().includes(searchTerm.toLowerCase());
       const dimmed = searchTerm && !isMatch;
+      const isHovered = hoveredNodeRef.current && node.id === hoveredNodeRef.current.id;
 
       ctx.beginPath();
       ctx.arc(node.x, node.y!, radius, 0, 2 * Math.PI);
@@ -338,8 +397,14 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
         ctx.stroke();
       }
 
+      if (isHovered) {
+        ctx.strokeStyle = "#60a5fa";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+
       const degree = degreeMap.get(node.id) ?? 1;
-      if (degree >= 3 || isSelected || isMatch) {
+      if (degree >= 3 || isSelected || isMatch || isHovered) {
         ctx.font = `${isSelected ? "bold " : ""}${Math.max(3, radius * 0.8)}px sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
