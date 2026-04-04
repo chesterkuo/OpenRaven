@@ -191,3 +191,108 @@ def test_chat_page_escapes_html() -> None:
     )
     assert "<script>alert" not in html
     assert "&lt;script&gt;" in html
+
+
+from fastapi.testclient import TestClient
+from openraven.api.server import create_app
+from openraven.config import RavenConfig
+
+
+@pytest.fixture
+def agent_client(tmp_path) -> TestClient:
+    config = RavenConfig(working_dir=tmp_path / "kb", gemini_api_key="test-key")
+    app = create_app(config)
+    return TestClient(app)
+
+
+def test_api_create_agent(agent_client: TestClient) -> None:
+    response = agent_client.post("/api/agents", json={
+        "name": "Test Agent", "description": "For testing"
+    })
+    assert response.status_code == 200
+    data = response.json()
+    assert data["name"] == "Test Agent"
+    assert "id" in data
+
+
+def test_api_list_agents(agent_client: TestClient) -> None:
+    agent_client.post("/api/agents", json={"name": "A1", "description": "first"})
+    agent_client.post("/api/agents", json={"name": "A2", "description": "second"})
+    response = agent_client.get("/api/agents")
+    assert response.status_code == 200
+    assert len(response.json()) == 2
+
+
+def test_api_delete_agent(agent_client: TestClient) -> None:
+    resp = agent_client.post("/api/agents", json={"name": "Del", "description": "bye"})
+    agent_id = resp.json()["id"]
+    del_resp = agent_client.delete(f"/api/agents/{agent_id}")
+    assert del_resp.status_code == 200
+    assert agent_client.get("/api/agents").json() == []
+
+
+def test_api_generate_token(agent_client: TestClient) -> None:
+    resp = agent_client.post("/api/agents", json={"name": "Tok", "description": "tokens"})
+    agent_id = resp.json()["id"]
+    tok_resp = agent_client.post(f"/api/agents/{agent_id}/tokens")
+    assert tok_resp.status_code == 200
+    assert "token" in tok_resp.json()
+
+
+def test_api_agent_ask_public(agent_client: TestClient) -> None:
+    resp = agent_client.post("/api/agents", json={"name": "Q", "description": "query"})
+    agent_id = resp.json()["id"]
+    ask_resp = agent_client.post(f"/agents/{agent_id}/ask", json={"question": "test"})
+    assert ask_resp.status_code == 200
+    data = ask_resp.json()
+    assert "answer" in data
+    assert "sources" in data
+
+
+def test_api_agent_ask_rate_limited(agent_client: TestClient) -> None:
+    resp = agent_client.post("/api/agents", json={
+        "name": "Limited", "description": "rate test",
+        "rate_limit_anonymous": 2,
+    })
+    agent_id = resp.json()["id"]
+    for _ in range(2):
+        agent_client.post(f"/agents/{agent_id}/ask", json={"question": "q"})
+    blocked = agent_client.post(f"/agents/{agent_id}/ask", json={"question": "q"})
+    assert blocked.status_code == 429
+
+
+def test_api_agent_private_requires_token(agent_client: TestClient) -> None:
+    resp = agent_client.post("/api/agents", json={
+        "name": "Private", "description": "secret", "is_public": False
+    })
+    agent_id = resp.json()["id"]
+    ask_resp = agent_client.post(f"/agents/{agent_id}/ask", json={"question": "test"})
+    assert ask_resp.status_code == 403
+
+
+def test_api_agent_info(agent_client: TestClient) -> None:
+    resp = agent_client.post("/api/agents", json={"name": "Info", "description": "meta"})
+    agent_id = resp.json()["id"]
+    info = agent_client.get(f"/agents/{agent_id}/info")
+    assert info.status_code == 200
+    assert info.json()["name"] == "Info"
+    assert info.json()["description"] == "meta"
+
+
+def test_api_deploy_not_found(agent_client: TestClient) -> None:
+    resp = agent_client.post("/api/agents/nonexistent/deploy")
+    assert resp.status_code == 404
+
+
+def test_api_create_agent_requires_name(agent_client: TestClient) -> None:
+    resp = agent_client.post("/api/agents", json={"description": "no name"})
+    assert resp.status_code == 400
+
+
+def test_api_agent_chat_page(agent_client: TestClient) -> None:
+    resp = agent_client.post("/api/agents", json={"name": "Chat", "description": "page"})
+    agent_id = resp.json()["id"]
+    page_resp = agent_client.get(f"/agents/{agent_id}")
+    assert page_resp.status_code == 200
+    assert "text/html" in page_resp.headers["content-type"]
+    assert "Chat" in page_resp.text
