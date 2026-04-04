@@ -18,10 +18,10 @@ describe("ChatMessage", () => {
       expect(wrapper.className).toContain("justify-end");
     });
 
-    it("applies blue background for user messages", () => {
+    it("applies gradient background for user messages", () => {
       const { container } = render(<ChatMessage role="user" content="Hi" />);
-      const bubble = container.querySelector(".bg-blue-600");
-      expect(bubble).not.toBeNull();
+      const bubble = container.querySelector("[style]") as HTMLElement;
+      expect(bubble?.style.background).toContain("linear-gradient");
     });
 
     it("does not parse source citations in user messages", () => {
@@ -30,7 +30,7 @@ describe("ChatMessage", () => {
       );
       // Should render as plain text, not as a SourceCitation span
       expect(screen.getByText("[Source: document.md]")).toBeDefined();
-      const citation = container.querySelector(".bg-blue-500\\/10");
+      const citation = container.querySelector("span.cursor-help");
       expect(citation).toBeNull();
     });
   });
@@ -47,10 +47,10 @@ describe("ChatMessage", () => {
       expect(wrapper.className).toContain("justify-start");
     });
 
-    it("applies gray background for assistant messages", () => {
+    it("applies surface background for assistant messages", () => {
       const { container } = render(<ChatMessage role="assistant" content="Hi" />);
-      const bubble = container.querySelector(".bg-gray-800");
-      expect(bubble).not.toBeNull();
+      const bubble = container.querySelector("[style]") as HTMLElement;
+      expect(bubble?.style.background).toContain("var(--bg-surface)");
     });
 
     it("parses [Source: document.md] into a SourceCitation component", () => {
@@ -58,7 +58,7 @@ describe("ChatMessage", () => {
         <ChatMessage role="assistant" content="See [Source: document.md] for details." />
       );
       // SourceCitation renders as a span with the document name
-      const citation = container.querySelector(".bg-blue-500\\/10");
+      const citation = container.querySelector("span.cursor-help");
       expect(citation).not.toBeNull();
       expect(citation?.textContent).toContain("document.md");
     });
@@ -67,7 +67,7 @@ describe("ChatMessage", () => {
       const { container } = render(
         <ChatMessage role="assistant" content="Details at [Source: report.pdf:100-200]." />
       );
-      const citation = container.querySelector(".bg-blue-500\\/10");
+      const citation = container.querySelector("span.cursor-help");
       expect(citation).not.toBeNull();
       expect(citation?.textContent).toContain("report.pdf");
       // The title attribute should include the char range
@@ -94,7 +94,8 @@ describe("ChatMessage", () => {
           content="See [Source: first.md] and [Source: second.md:10-20]."
         />
       );
-      const citations = container.querySelectorAll(".bg-blue-500\\/10");
+      // Citation spans have cursor-help class from SourceCitation
+      const citations = container.querySelectorAll("span.cursor-help");
       expect(citations.length).toBe(2);
       expect(citations[0].textContent).toContain("first.md");
       expect(citations[1].textContent).toContain("second.md");
