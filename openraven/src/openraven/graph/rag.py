@@ -187,7 +187,7 @@ class RavenGraph:
     async def insert(self, text: str, source: str = "") -> None:
         await self.ensure_initialized()
         if self._rag:
-            await self._rag.ainsert(text)
+            await self._rag.ainsert(text, file_paths=source or None)
 
     async def query(self, question: str, mode: QueryMode = "mix") -> str:
         await self.ensure_initialized()
