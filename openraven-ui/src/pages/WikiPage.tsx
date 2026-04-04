@@ -31,7 +31,16 @@ export default function WikiPage() {
   return (
     <div className="flex gap-6">
       <div className="w-64 shrink-0">
-        <h2 className="text-lg font-semibold mb-3">Articles ({articles.length})</h2>
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-lg font-semibold">Articles ({articles.length})</h2>
+          <a
+            href="/api/wiki/export"
+            download
+            className="text-xs px-2 py-1 rounded border border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700"
+          >
+            Export
+          </a>
+        </div>
         <div className="flex flex-col gap-1">
           {articles.map((a) => (
             <button

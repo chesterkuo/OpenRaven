@@ -198,6 +198,25 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         )
         return GraphResponse(**data)
 
+    @app.get("/api/wiki/export")
+    async def wiki_export(background_tasks: BackgroundTasks):
+        """Download all wiki articles as a zip of markdown files."""
+        import os
+        import zipfile
+        wiki_dir = config.wiki_dir
+        tmp = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
+        tmp.close()
+        with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED) as zf:
+            if wiki_dir.exists():
+                for f in sorted(wiki_dir.glob("*.md")):
+                    zf.write(f, f.name)
+        background_tasks.add_task(os.unlink, tmp.name)
+        return FileResponse(
+            path=tmp.name,
+            media_type="application/zip",
+            filename="openraven-wiki.zip",
+        )
+
     @app.get("/api/wiki")
     async def wiki_list():
         wiki_dir = config.wiki_dir

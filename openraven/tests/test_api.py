@@ -84,6 +84,15 @@ def test_wiki_article_endpoint_not_found(client: TestClient) -> None:
     assert response.status_code == 404
 
 
+def test_wiki_export_endpoint(client: TestClient, config) -> None:
+    config.wiki_dir.mkdir(parents=True, exist_ok=True)
+    (config.wiki_dir / "test_article.md").write_text("# Test\n\nContent.")
+    response = client.get("/api/wiki/export")
+    assert response.status_code == 200
+    assert "zip" in response.headers.get("content-disposition", "").lower()
+    assert len(response.content) > 0
+
+
 def test_graph_export_endpoint(client: TestClient) -> None:
     response = client.get("/api/graph/export")
     assert response.status_code == 200
