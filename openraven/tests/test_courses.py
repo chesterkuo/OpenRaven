@@ -324,3 +324,59 @@ async def test_generate_course_creates_directory(tmp_path: Path) -> None:
     course_html = (course_dir / "course.html").read_text(encoding="utf-8")
     assert "<!DOCTYPE html>" in course_html
     assert "Test Course" in course_html
+
+
+# --- Task 5: API endpoint tests ---
+
+from fastapi.testclient import TestClient
+
+
+@pytest.fixture
+def course_client(tmp_path: Path) -> TestClient:
+    from openraven.api.server import create_app
+    from openraven.config import RavenConfig
+    config = RavenConfig(
+        working_dir=tmp_path / "kb",
+        gemini_api_key="test-key",
+    )
+    app = create_app(config)
+    return TestClient(app)
+
+
+def test_courses_list_empty(course_client: TestClient) -> None:
+    res = course_client.get("/api/courses")
+    assert res.status_code == 200
+    assert res.json() == []
+
+
+def test_courses_generate_missing_title(course_client: TestClient) -> None:
+    res = course_client.post("/api/courses/generate", json={
+        "audience": "Devs", "objectives": ["Learn X"]
+    })
+    assert res.status_code == 400
+
+
+def test_courses_generate_returns_job_id(course_client: TestClient) -> None:
+    res = course_client.post("/api/courses/generate", json={
+        "title": "Test Course",
+        "audience": "Developers",
+        "objectives": ["Learn X"],
+    })
+    assert res.status_code == 200
+    data = res.json()
+    assert "job_id" in data
+
+
+def test_courses_status_not_found(course_client: TestClient) -> None:
+    res = course_client.get("/api/courses/generate/nonexistent")
+    assert res.status_code == 404
+
+
+def test_courses_get_not_found(course_client: TestClient) -> None:
+    res = course_client.get("/api/courses/nonexistent")
+    assert res.status_code == 404
+
+
+def test_courses_delete_not_found(course_client: TestClient) -> None:
+    res = course_client.delete("/api/courses/nonexistent")
+    assert res.status_code == 404

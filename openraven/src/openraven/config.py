@@ -55,6 +55,10 @@ class RavenConfig:
         return self.working_dir / "ingested"
 
     @property
+    def courses_dir(self) -> Path:
+        return self.working_dir / "courses"
+
+    @property
     def google_token_path(self) -> Path:
         return self.working_dir / "google_token.json"
 

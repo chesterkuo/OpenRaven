@@ -622,6 +622,182 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
             "sources": [{"document": s["document"], "excerpt": s["excerpt"]} for s in result.sources],
         }
 
+    # --- Course Generation ---
+
+    @dataclass
+    class CourseJob:
+        job_id: str
+        stage: str = "planning"
+        chapters_total: int = 0
+        chapters_done: int = 0
+        course_id: str = ""
+        error: str = ""
+
+    course_jobs: dict[str, CourseJob] = {}
+
+    @app.post("/api/courses/generate")
+    async def courses_generate(body: dict):
+        from fastapi.responses import JSONResponse
+        title = body.get("title", "").strip()
+        audience = body.get("audience", "").strip()
+        objectives = body.get("objectives", [])
+        if not title:
+            return JSONResponse({"error": "title is required"}, status_code=400)
+
+        job_id = str(uuid.uuid4())[:8]
+        job = CourseJob(job_id=job_id)
+        course_jobs[job_id] = job
+
+        async def run_generation() -> None:
+            try:
+                from openraven.courses.planner import plan_curriculum
+                from openraven.courses.renderer import generate_course
+
+                base_url = (
+                    f"{config.ollama_base_url}/v1"
+                    if config.llm_provider == "ollama"
+                    else "https://generativelanguage.googleapis.com/v1beta/openai/"
+                )
+
+                # Get entity names from graph
+                graph_stats = pipeline.graph.get_stats()
+                entity_names = graph_stats.get("topics", [])[:100]
+
+                job.stage = "planning"
+                outline = await plan_curriculum(
+                    title=title, audience=audience or "General",
+                    objectives=objectives if objectives else [f"Learn about {title}"],
+                    entity_names=entity_names,
+                    api_key=config.llm_api_key,
+                    model=config.llm_model,
+                    base_url=base_url,
+                )
+
+                job.chapters_total = len(outline.chapters)
+                job.stage = "generating"
+
+                def on_progress(done: int, total: int) -> None:
+                    job.chapters_done = done
+
+                config.courses_dir.mkdir(parents=True, exist_ok=True)
+                course_dir = await generate_course(
+                    outline=outline,
+                    ask_fn=pipeline.ask_with_sources,
+                    output_dir=config.courses_dir,
+                    api_key=config.llm_api_key,
+                    model=config.llm_model,
+                    base_url=base_url,
+                    on_progress=on_progress,
+                )
+
+                job.course_id = course_dir.name
+                job.stage = "done"
+            except Exception as e:
+                logger.error(f"Course generation failed: {e}", exc_info=True)
+                job.stage = "error"
+                job.error = str(e)
+
+        asyncio.create_task(run_generation())
+        return {"job_id": job_id}
+
+    @app.get("/api/courses/generate/{job_id}")
+    async def courses_generate_status(job_id: str):
+        from fastapi.responses import JSONResponse
+        job = course_jobs.get(job_id)
+        if not job:
+            return JSONResponse({"error": "Job not found"}, status_code=404)
+        return {
+            "job_id": job.job_id,
+            "stage": job.stage,
+            "chapters_total": job.chapters_total,
+            "chapters_done": job.chapters_done,
+            "course_id": job.course_id,
+            "error": job.error,
+        }
+
+    @app.get("/api/courses")
+    async def courses_list():
+        courses_dir = config.courses_dir
+        if not courses_dir.exists():
+            return []
+        courses = []
+        for d in sorted(courses_dir.iterdir()):
+            meta_file = d / "metadata.json"
+            if d.is_dir() and meta_file.exists():
+                import json as _json
+                meta = _json.loads(meta_file.read_text(encoding="utf-8"))
+                # Get created_at from directory mtime
+                import datetime
+                created_at = datetime.datetime.fromtimestamp(
+                    d.stat().st_mtime, tz=datetime.timezone.utc
+                ).isoformat()
+                courses.append({
+                    "id": meta["id"],
+                    "title": meta["title"],
+                    "audience": meta.get("audience", ""),
+                    "chapter_count": len(meta.get("chapters", [])),
+                    "created_at": created_at,
+                })
+        return courses
+
+    @app.get("/api/courses/{course_id}")
+    async def courses_get(course_id: str):
+        from fastapi.responses import JSONResponse
+        course_dir = config.courses_dir / course_id
+        meta_file = course_dir / "metadata.json"
+        if not course_dir.exists() or not meta_file.exists():
+            return JSONResponse({"error": "Course not found"}, status_code=404)
+        import json as _json
+        meta = _json.loads(meta_file.read_text(encoding="utf-8"))
+        import datetime
+        created_at = datetime.datetime.fromtimestamp(
+            course_dir.stat().st_mtime, tz=datetime.timezone.utc
+        ).isoformat()
+        return {
+            "id": meta["id"],
+            "title": meta["title"],
+            "audience": meta.get("audience", ""),
+            "objectives": meta.get("objectives", []),
+            "chapters": meta.get("chapters", []),
+            "created_at": created_at,
+        }
+
+    @app.get("/api/courses/{course_id}/download")
+    async def courses_download(course_id: str, background_tasks: BackgroundTasks):
+        import os
+        import zipfile
+        from fastapi.responses import JSONResponse
+        course_dir = config.courses_dir / course_id
+        if not course_dir.exists():
+            return JSONResponse({"error": "Course not found"}, status_code=404)
+        tmp = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
+        tmp.close()
+        with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED) as zf:
+            for f in sorted(course_dir.rglob("*")):
+                if f.is_file():
+                    zf.write(f, f.relative_to(course_dir))
+        background_tasks.add_task(os.unlink, tmp.name)
+        import json as _json
+        meta_file = course_dir / "metadata.json"
+        safe_name = "course"
+        if meta_file.exists():
+            meta = _json.loads(meta_file.read_text(encoding="utf-8"))
+            safe_name = meta.get("title", "course").replace(" ", "-").lower()[:40]
+        return FileResponse(
+            path=tmp.name, media_type="application/zip",
+            filename=f"{safe_name}.zip",
+        )
+
+    @app.delete("/api/courses/{course_id}")
+    async def courses_delete(course_id: str):
+        import shutil
+        from fastapi.responses import JSONResponse
+        course_dir = config.courses_dir / course_id
+        if not course_dir.exists():
+            return JSONResponse({"error": "Course not found"}, status_code=404)
+        shutil.rmtree(course_dir)
+        return {"deleted": True}
+
     return app
 
 
