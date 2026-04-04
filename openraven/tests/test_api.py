@@ -44,3 +44,29 @@ def test_status_returns_zeros_on_empty_kb(client: TestClient) -> None:
     assert data["total_files"] == 0
     assert data["total_entities"] == 0
     assert data["topic_count"] == 0
+
+
+def test_graph_endpoint(client: TestClient) -> None:
+    response = client.get("/api/graph")
+    assert response.status_code == 200
+    data = response.json()
+    assert "nodes" in data
+    assert "edges" in data
+    assert "is_truncated" in data
+    assert isinstance(data["nodes"], list)
+    assert isinstance(data["edges"], list)
+
+
+def test_graph_endpoint_with_max_nodes(client: TestClient) -> None:
+    response = client.get("/api/graph?max_nodes=10")
+    assert response.status_code == 200
+    data = response.json()
+    assert "nodes" in data
+
+
+def test_graph_endpoint_rejects_invalid_max_nodes(client: TestClient) -> None:
+    response = client.get("/api/graph?max_nodes=0")
+    assert response.status_code == 422
+
+    response = client.get("/api/graph?max_nodes=-1")
+    assert response.status_code == 422

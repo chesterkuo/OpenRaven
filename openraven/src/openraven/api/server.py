@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import asyncio
 from pathlib import Path
 
-from fastapi import FastAPI, File, UploadFile
+from fastapi import FastAPI, File, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
@@ -41,6 +42,26 @@ class DiscoveryInsightResponse(BaseModel):
     title: str
     description: str
     related_entities: list[str]
+
+
+class GraphNodeResponse(BaseModel):
+    id: str
+    labels: list[str]
+    properties: dict
+
+
+class GraphEdgeResponse(BaseModel):
+    id: str
+    type: str
+    source: str
+    target: str
+    properties: dict
+
+
+class GraphResponse(BaseModel):
+    nodes: list[GraphNodeResponse]
+    edges: list[GraphEdgeResponse]
+    is_truncated: bool
 
 
 def create_app(config: RavenConfig | None = None) -> FastAPI:
@@ -99,6 +120,14 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
             articles_generated=result.articles_generated,
             errors=result.errors,
         )
+
+    @app.get("/api/graph", response_model=GraphResponse)
+    async def graph(max_nodes: int = Query(default=500, ge=1, le=5000)):
+        # Run blocking NetworkX read in thread pool to avoid blocking event loop
+        data = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: pipeline.graph.get_graph_data(max_nodes=max_nodes)
+        )
+        return GraphResponse(**data)
 
     @app.get("/api/discovery", response_model=list[DiscoveryInsightResponse])
     async def discovery():
