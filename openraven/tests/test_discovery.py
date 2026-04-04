@@ -28,3 +28,11 @@ def test_analyze_themes_from_graph_stats() -> None:
 def test_analyze_themes_empty_graph() -> None:
     insights = analyze_themes({"nodes": 0, "edges": 0, "topics": []})
     assert len(insights) == 0
+
+
+def test_analyzer_does_not_import_anthropic() -> None:
+    """The old analyzer used anthropic client which was never configured. Verify it's gone."""
+    import inspect
+    import openraven.discovery.analyzer as mod
+    source = inspect.getsource(mod)
+    assert "import anthropic" not in source

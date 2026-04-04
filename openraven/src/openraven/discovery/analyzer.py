@@ -4,7 +4,7 @@ import json
 import logging
 from dataclasses import dataclass, field
 
-import anthropic
+import openai
 
 logger = logging.getLogger(__name__)
 
@@ -60,23 +60,28 @@ def analyze_themes(graph_stats: dict) -> list[DiscoveryInsight]:
 
 
 async def discover_insights_with_llm(
-    graph, api_key: str, model: str = "claude-sonnet-4-6",
+    graph, api_key: str, model: str = "gemini-2.5-flash",
+    base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/",
 ) -> list[DiscoveryInsight]:
+    """Generate discovery insights using LLM analysis of the knowledge graph."""
     overview = await graph.query(
         "What are the main themes, recurring patterns, and frameworks in this knowledge base? "
         "Identify clusters of related topics and any notable connections between different areas.",
         mode="global",
     )
 
+    if not overview or not overview.strip():
+        return []
+
     prompt = _DISCOVER_PROMPT_TMPL.format(overview=overview)
 
-    client = anthropic.AsyncAnthropic(api_key=api_key)
-    response = await client.messages.create(
+    client = openai.AsyncOpenAI(api_key=api_key or "ollama", base_url=base_url)
+    response = await client.chat.completions.create(
         model=model, max_tokens=1500,
         messages=[{"role": "user", "content": prompt}],
     )
 
-    content = response.content[0].text
+    content = response.choices[0].message.content
     if "```json" in content:
         content = content.split("```json")[1].split("```")[0]
     elif "```" in content:
