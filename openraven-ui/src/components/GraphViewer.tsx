@@ -35,14 +35,14 @@ interface GraphViewerProps {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  technology: "#60a5fa",
-  concept: "#4ade80",
-  person: "#fbbf24",
-  organization: "#c084fc",
-  event: "#f87171",
-  location: "#22d3ee",
+  technology: "#fa520f",
+  concept: "#1f1f1f",
+  person: "#ffa110",
+  organization: "#d94800",
+  event: "#b8860b",
+  location: "#8b6914",
 };
-const DEFAULT_COLOR = "#9ca3af";
+const DEFAULT_COLOR = "#999999";
 
 function getNodeColor(node: GraphNode): string {
   const type = node.properties?.entity_type ?? node.labels[0] ?? "unknown";
@@ -118,7 +118,7 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
       const { x: tx, y: ty, k } = transformRef.current;
       ctx.save();
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = "#030712";
+      ctx.fillStyle = "#fef9ef";
       ctx.fillRect(0, 0, w, h);
       ctx.translate(tx, ty);
       ctx.scale(k, k);
@@ -131,7 +131,7 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
         ctx.beginPath();
         ctx.moveTo(s.x, s.y!);
         ctx.lineTo(t.x, t.y!);
-        ctx.strokeStyle = isConnected ? "#60a5fa66" : "#374151";
+        ctx.strokeStyle = isConnected ? "rgba(250, 82, 15, 0.4)" : "rgba(31, 31, 31, 0.15)";
         ctx.lineWidth = isConnected ? 1.5 : 0.5;
         ctx.stroke();
 
@@ -152,7 +152,7 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
           arrowY - arrowSize * Math.sin(angle + Math.PI / 6),
         );
         ctx.closePath();
-        ctx.fillStyle = isConnected ? "#60a5fa66" : "#374151";
+        ctx.fillStyle = isConnected ? "rgba(250, 82, 15, 0.4)" : "rgba(31, 31, 31, 0.15)";
         ctx.fill();
       }
 
@@ -176,13 +176,13 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
         ctx.fill();
 
         if (isSelected) {
-          ctx.strokeStyle = "#ffffff";
+          ctx.strokeStyle = "#fa520f";
           ctx.lineWidth = 2;
           ctx.stroke();
         }
 
         if (isHovered) {
-          ctx.strokeStyle = "#60a5fa";
+          ctx.strokeStyle = "#fa520f";
           ctx.lineWidth = 2;
           ctx.stroke();
         }
@@ -192,7 +192,7 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
           ctx.font = `${isSelected ? "bold " : ""}${Math.max(3, radius * 0.8)}px sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
-          ctx.fillStyle = dimmed ? "#9ca3af55" : "#e5e7eb";
+          ctx.fillStyle = dimmed ? "#1f1f1f33" : "#1f1f1f";
           ctx.fillText(node.id, node.x, node.y! + radius + 2);
         }
       }
@@ -342,7 +342,7 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
 
     ctx.save();
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = "#030712";
+    ctx.fillStyle = "#fef9ef";
     ctx.fillRect(0, 0, w, h);
     ctx.translate(tx, ty);
     ctx.scale(k, k);
@@ -355,7 +355,7 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
       ctx.beginPath();
       ctx.moveTo(s.x, s.y!);
       ctx.lineTo(t.x, t.y!);
-      ctx.strokeStyle = isConnected ? "#60a5fa66" : "#374151";
+      ctx.strokeStyle = isConnected ? "rgba(250, 82, 15, 0.4)" : "rgba(31, 31, 31, 0.15)";
       ctx.lineWidth = isConnected ? 1.5 : 0.5;
       ctx.stroke();
 
@@ -376,7 +376,7 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
         arrowY - arrowSize * Math.sin(angle + Math.PI / 6),
       );
       ctx.closePath();
-      ctx.fillStyle = isConnected ? "#60a5fa66" : "#374151";
+      ctx.fillStyle = isConnected ? "rgba(250, 82, 15, 0.4)" : "rgba(31, 31, 31, 0.15)";
       ctx.fill();
     }
 
@@ -400,13 +400,13 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
       ctx.fill();
 
       if (isSelected) {
-        ctx.strokeStyle = "#ffffff";
+        ctx.strokeStyle = "#fa520f";
         ctx.lineWidth = 2;
         ctx.stroke();
       }
 
       if (isHovered) {
-        ctx.strokeStyle = "#60a5fa";
+        ctx.strokeStyle = "#fa520f";
         ctx.lineWidth = 2;
         ctx.stroke();
       }
@@ -416,7 +416,7 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
         ctx.font = `${isSelected ? "bold " : ""}${Math.max(3, radius * 0.8)}px sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillStyle = dimmed ? "#9ca3af55" : "#e5e7eb";
+        ctx.fillStyle = dimmed ? "#1f1f1f33" : "#1f1f1f";
         ctx.fillText(node.id, node.x, node.y! + radius + 2);
       }
     }
@@ -425,10 +425,10 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
   }, [selectedNodeId, searchTerm, degreeMap, getRadius]);
 
   return (
-    <div ref={containerRef} className="flex-1 bg-gray-950 relative" data-testid="graph-viewer">
+    <div ref={containerRef} className="flex-1 relative" style={{ background: "#fef9ef" }} data-testid="graph-viewer">
       <canvas ref={canvasRef} className="absolute inset-0" />
       {nodes.length === 0 && (
-        <div className="absolute inset-0 flex items-center justify-center text-gray-600">
+        <div className="absolute inset-0 flex items-center justify-center" style={{ color: "var(--color-text-muted)" }}>
           No nodes to display
         </div>
       )}

@@ -11,12 +11,12 @@ interface GraphNodeDetailProps {
 }
 
 const TYPE_COLORS: Record<string, string> = {
-  technology: "text-blue-400",
-  concept: "text-green-400",
-  person: "text-amber-400",
-  organization: "text-purple-400",
-  event: "text-red-400",
-  location: "text-cyan-400",
+  technology: "#fa520f",
+  concept: "#1f1f1f",
+  person: "#ffa110",
+  organization: "#d94800",
+  event: "#b8860b",
+  location: "#8b6914",
 };
 
 export default function GraphNodeDetail({ node, neighbors, edges, onClose, onNavigate }: GraphNodeDetailProps) {
@@ -24,46 +24,47 @@ export default function GraphNodeDetail({ node, neighbors, edges, onClose, onNav
   const edgeList = edges ?? [];
 
   const entityType = node.properties.entity_type ?? node.labels[0] ?? "unknown";
-  // LightRAG stores "description" (not "entity_description") in GraphML
   const description = node.properties.description ?? "";
-  // file_path is human-readable; source_id is chunk hashes (fallback)
   const source = node.properties.file_path ?? node.properties.source_id ?? "";
-  const colorClass = TYPE_COLORS[entityType] ?? "text-gray-400";
+  const typeColor = TYPE_COLORS[entityType] ?? "var(--color-text-muted)";
 
   return (
-    <div className="w-80 bg-gray-900 border-l border-gray-800 p-4 overflow-y-auto">
+    <div className="w-80 p-4 overflow-y-auto" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-golden)" }}>
       <div className="flex items-center justify-between mb-4">
-        <span className={`text-xs font-medium uppercase tracking-wider ${colorClass}`}>{entityType}</span>
-        <button onClick={onClose} className="text-gray-500 hover:text-gray-300 text-sm">✕</button>
+        <span className="text-xs uppercase tracking-wider px-2 py-0.5" style={{ background: "var(--bg-surface-warm)", color: typeColor }}>
+          {entityType}
+        </span>
+        <button onClick={onClose} className="text-sm hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>✕</button>
       </div>
-      <h2 className="text-lg font-bold text-white mb-3">{node.id}</h2>
+      <h2 className="text-2xl mb-3" style={{ color: "var(--color-text)", lineHeight: 1.33 }}>{node.id}</h2>
       {description && (
-        <p className="text-sm text-gray-400 mb-4 leading-relaxed">{description}</p>
+        <p className="text-sm mb-4 leading-relaxed" style={{ color: "var(--color-text-secondary)" }}>{description}</p>
       )}
       {source && (
         <div className="mb-4">
-          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">Source</h3>
-          <p className="text-sm text-gray-400 break-all">{source}</p>
+          <h3 className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--color-text-muted)" }}>Source</h3>
+          <p className="text-sm break-all" style={{ color: "var(--color-text-secondary)" }}>{source}</p>
         </div>
       )}
       {neighbors.length > 0 && (
         <div>
-          <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+          <h3 className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--color-text-muted)" }}>
             Connected ({neighbors.length})
           </h3>
           <div className="flex flex-col gap-2">
             {neighbors.map((n) => {
               const edge = edgeList.find(e => e.target === n.id);
               return (
-                <div key={n.id}>
+                <div key={n.id} className="p-2" style={{ background: "var(--bg-surface-hover)", boxShadow: "var(--shadow-subtle)" }}>
                   <button
                     onClick={() => onNavigate(n.id)}
-                    className="text-left text-sm text-blue-400 hover:text-blue-300 truncate block"
+                    className="text-left text-sm truncate block hover:opacity-70"
+                    style={{ color: "var(--color-brand)" }}
                   >
                     {n.id}
                   </button>
                   {edge?.description && (
-                    <p className="text-xs text-gray-500 mt-0.5 ml-2">{edge.description}</p>
+                    <p className="text-xs mt-0.5 ml-2" style={{ color: "var(--color-text-muted)" }}>{edge.description}</p>
                   )}
                 </div>
               );
