@@ -28,6 +28,32 @@ export interface DiscoveryInsight {
   related_entities: string[];
 }
 
+export interface GraphNode {
+  id: string;
+  labels: string[];
+  properties: Record<string, any>;
+}
+
+export interface GraphEdge {
+  id: string;
+  type: string;
+  source: string;
+  target: string;
+  properties: Record<string, any>;
+}
+
+export interface GraphResponse {
+  nodes: GraphNode[];
+  edges: GraphEdge[];
+  is_truncated: boolean;
+}
+
+export async function getGraphData(maxNodes: number = 500): Promise<GraphResponse> {
+  const res = await fetch(`${CORE_API_URL}/api/graph?max_nodes=${maxNodes}`);
+  if (!res.ok) throw new Error(`Core API error: ${res.status}`);
+  return res.json();
+}
+
 export async function getStatus(): Promise<StatusResponse> {
   const res = await fetch(`${CORE_API_URL}/api/status`);
   if (!res.ok) throw new Error(`Core API error: ${res.status}`);

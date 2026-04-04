@@ -31,11 +31,23 @@ const mockIngestFiles = mock(async (_formData: FormData) => ({
   errors: [],
 }));
 
+const mockGetGraphData = mock(async (_maxNodes: number) => ({
+  nodes: [
+    { id: "KAFKA", labels: ["technology"], properties: { entity_type: "technology", description: "Event streaming" } },
+    { id: "EDA", labels: ["concept"], properties: { entity_type: "concept", description: "Event-driven architecture" } },
+  ],
+  edges: [
+    { id: "KAFKA-EDA", type: "DIRECTED", source: "KAFKA", target: "EDA", properties: { weight: "1.0", description: "Implements" } },
+  ],
+  is_truncated: false,
+}));
+
 mock.module("../../server/services/core-client", () => ({
   askQuestion: mockAskQuestion,
   getStatus: mockGetStatus,
   getDiscoveryInsights: mockGetDiscoveryInsights,
   ingestFiles: mockIngestFiles,
+  getGraphData: mockGetGraphData,
 }));
 
 // Import app after mocking
@@ -153,5 +165,35 @@ describe("GET /api/discovery", () => {
     const body = await res.json();
     expect(Array.isArray(body)).toBe(true);
     expect(body.length).toBe(0);
+  });
+});
+
+describe("GET /api/graph", () => {
+  it("returns graph data with nodes and edges", async () => {
+    const req = new Request("http://localhost/api/graph");
+    const res = await appFetch(req);
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(Array.isArray(body.nodes)).toBe(true);
+    expect(Array.isArray(body.edges)).toBe(true);
+    expect(typeof body.is_truncated).toBe("boolean");
+    expect(body.nodes.length).toBe(2);
+    expect(body.edges.length).toBe(1);
+  });
+
+  it("passes max_nodes query param to core", async () => {
+    const req = new Request("http://localhost/api/graph?max_nodes=10");
+    const res = await appFetch(req);
+    expect(res.status).toBe(200);
+    expect(mockGetGraphData).toHaveBeenCalledWith(10);
+  });
+
+  it("returns 502 when core engine throws", async () => {
+    mockGetGraphData.mockRejectedValueOnce(new Error("Core API error: 500"));
+    const req = new Request("http://localhost/api/graph");
+    const res = await appFetch(req);
+    expect(res.status).toBe(502);
+    const body = await res.json();
+    expect(body).toMatchObject({ error: expect.stringContaining("Core engine error") });
   });
 });
