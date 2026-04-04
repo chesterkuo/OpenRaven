@@ -16,10 +16,17 @@ function renderContentWithCitations(content: string) {
 }
 
 export default function ChatMessage({ role, content }: Props) {
+  const isUser = role === "user";
   return (
-    <div className={`flex ${role === "user" ? "justify-end" : "justify-start"}`}>
-      <div className={`max-w-[80%] rounded-lg px-4 py-2.5 text-sm leading-relaxed ${role === "user" ? "bg-blue-600 text-white" : "bg-gray-800 text-gray-200 border border-gray-700"}`}>
-        <div className="whitespace-pre-wrap">{role === "assistant" ? renderContentWithCitations(content) : content}</div>
+    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
+      <div
+        className="max-w-[80%] px-4 py-2.5 text-sm leading-relaxed"
+        style={isUser
+          ? { background: "linear-gradient(135deg, #fb6424, #fa520f)", color: "var(--color-text-on-brand)" }
+          : { background: "var(--bg-surface)", color: "var(--color-text)", boxShadow: "var(--shadow-card)" }
+        }
+      >
+        <div className="whitespace-pre-wrap">{isUser ? content : renderContentWithCitations(content)}</div>
       </div>
     </div>
   );

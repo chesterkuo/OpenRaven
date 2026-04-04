@@ -1,21 +1,36 @@
 interface Insight { insight_type: string; title: string; description: string; related_entities: string[]; }
 interface Props { insight: Insight; }
 
-const TYPE_COLORS: Record<string, string> = {
-  theme: "border-blue-500/30 bg-blue-500/5", cluster: "border-green-500/30 bg-green-500/5",
-  gap: "border-amber-500/30 bg-amber-500/5", trend: "border-purple-500/30 bg-purple-500/5",
+const TYPE_BORDERS: Record<string, string> = {
+  theme: "#fa520f",
+  cluster: "#ffa110",
+  gap: "#ffd900",
+  trend: "#1f1f1f",
 };
 
 export default function DiscoveryCard({ insight }: Props) {
-  const colorClass = TYPE_COLORS[insight.insight_type] ?? TYPE_COLORS.theme;
+  const borderColor = TYPE_BORDERS[insight.insight_type] ?? TYPE_BORDERS.theme;
   return (
-    <div className={`border rounded-lg p-4 ${colorClass}`}>
-      <span className="text-xs uppercase tracking-wider text-gray-500">{insight.insight_type}</span>
-      <h3 className="font-medium text-gray-200">{insight.title}</h3>
-      <p className="text-sm text-gray-400 mt-1">{insight.description}</p>
+    <div
+      className="p-4"
+      style={{
+        background: "var(--bg-surface)",
+        boxShadow: "var(--shadow-golden)",
+        borderLeft: `4px solid ${borderColor}`,
+      }}
+    >
+      <span className="text-xs uppercase tracking-wider" style={{ color: "var(--color-text-muted)" }}>
+        {insight.insight_type}
+      </span>
+      <h3 className="text-base" style={{ color: "var(--color-text)" }}>{insight.title}</h3>
+      <p className="text-sm mt-1" style={{ color: "var(--color-text-secondary)" }}>{insight.description}</p>
       {insight.related_entities.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-2">
-          {insight.related_entities.slice(0, 5).map(entity => <span key={entity} className="text-xs bg-gray-800 rounded px-2 py-0.5 text-gray-400">{entity}</span>)}
+          {insight.related_entities.slice(0, 5).map(entity => (
+            <span key={entity} className="text-xs px-2 py-0.5" style={{ background: "var(--bg-surface-warm)", color: "var(--color-text)" }}>
+              {entity}
+            </span>
+          ))}
         </div>
       )}
     </div>
