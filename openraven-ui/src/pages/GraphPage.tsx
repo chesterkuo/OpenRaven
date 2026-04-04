@@ -92,6 +92,18 @@ export default function GraphPage() {
       .map((n) => ({ id: n.id, labels: n.labels }));
   }, [selectedNode, data]);
 
+  const selectedEdges = useMemo(() => {
+    if (!selectedNode || !data) return [];
+    const id = selectedNode.id;
+    return data.edges
+      .filter(e => e.source === id || e.target === id)
+      .map(e => ({
+        target: e.source === id ? e.target : e.source,
+        description: e.properties?.description ?? "",
+        keywords: e.properties?.keywords ?? "",
+      }));
+  }, [selectedNode, data]);
+
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedNode(node);
   }, []);
@@ -184,6 +196,7 @@ export default function GraphPage() {
           <GraphNodeDetail
             node={selectedNode}
             neighbors={neighbors}
+            edges={selectedEdges}
             onClose={() => setSelectedNode(null)}
             onNavigate={handleNavigate}
           />
