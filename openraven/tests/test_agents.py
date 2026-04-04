@@ -166,3 +166,28 @@ def test_tunnel_url_storage(tmp_path) -> None:
 def test_tunnel_url_missing(tmp_path) -> None:
     from openraven.agents.tunnel import get_tunnel_url
     assert get_tunnel_url(tmp_path / "nope") == ""
+
+
+def test_chat_page_renders_html() -> None:
+    from openraven.agents.chat_page import render_chat_page
+    html = render_chat_page(
+        agent_id="test-123",
+        agent_name="Legal Expert",
+        agent_description="Answers legal questions",
+    )
+    assert "<!DOCTYPE html>" in html
+    assert "Legal Expert" in html
+    assert "Answers legal questions" in html
+    assert "test-123" in html
+    assert '"/agents/" + agentId + "/ask"' in html
+
+
+def test_chat_page_escapes_html() -> None:
+    from openraven.agents.chat_page import render_chat_page
+    html = render_chat_page(
+        agent_id="xss-test",
+        agent_name='<script>alert("xss")</script>',
+        agent_description="safe",
+    )
+    assert "<script>alert" not in html
+    assert "&lt;script&gt;" in html
