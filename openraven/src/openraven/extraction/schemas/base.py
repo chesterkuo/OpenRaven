@@ -27,6 +27,8 @@ BASE_EXAMPLES = [
 ]
 
 BASE_SCHEMA: dict = {
+    "name": "Base",
+    "description": "Generic knowledge extraction for any document type. Extracts concepts, decisions, methods, technologies, people, organizations, and claims.",
     "prompt_description": (
         "Extract key knowledge entities from this document. "
         "Identify: concepts, decisions, methods/frameworks, technologies, "

@@ -153,3 +153,18 @@ def test_finance_taiwan_schema_covers_required_entity_types() -> None:
     ]
     for entity_type in required_types:
         assert entity_type in prompt, f"Missing entity type '{entity_type}' in prompt_description"
+
+
+def test_all_schemas_have_name_and_description() -> None:
+    for schema_id, schema in SCHEMA_REGISTRY.items():
+        assert "name" in schema, f"Schema '{schema_id}' missing 'name'"
+        assert "description" in schema, f"Schema '{schema_id}' missing 'description'"
+        assert isinstance(schema["name"], str) and len(schema["name"]) > 0
+        assert isinstance(schema["description"], str) and len(schema["description"]) > 0
+
+
+def test_all_schemas_have_prompt_and_examples() -> None:
+    for schema_id, schema in SCHEMA_REGISTRY.items():
+        assert "prompt_description" in schema, f"Schema '{schema_id}' missing 'prompt_description'"
+        assert "examples" in schema, f"Schema '{schema_id}' missing 'examples'"
+        assert len(schema["examples"]) >= 1, f"Schema '{schema_id}' has no examples"
