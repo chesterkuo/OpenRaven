@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import FileUploader from "../components/FileUploader";
 
 interface IngestResult { files_processed: number; entities_extracted: number; articles_generated: number; errors: string[]; }
+interface SchemaOption { id: string; name: string; description: string; }
 
 const STAGE_LABELS: Record<string, string> = {
   uploading: "Uploading files...",
@@ -14,11 +15,21 @@ export default function IngestPage() {
   const [result, setResult] = useState<IngestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState<string | null>(null);
+  const [schemas, setSchemas] = useState<SchemaOption[]>([]);
+  const [selectedSchema, setSelectedSchema] = useState("auto");
+
+  useEffect(() => {
+    fetch("/api/schemas")
+      .then((res) => res.json())
+      .then((data: SchemaOption[]) => setSchemas(data))
+      .catch(() => setSchemas([]));
+  }, []);
 
   async function handleUpload(files: File[]) {
     setLoading(true); setResult(null); setStage("uploading");
     const formData = new FormData();
     for (const file of files) formData.append("files", file);
+    formData.append("schema", selectedSchema);
     try {
       setStage("processing");
       const res = await fetch("/api/ingest", { method: "POST", body: formData });
@@ -36,6 +47,42 @@ export default function IngestPage() {
   return (
     <div>
       <h1 className="text-3xl mb-6" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>Add Documents</h1>
+
+      <div className="mb-6">
+        <label
+          htmlFor="schema-select"
+          className="block text-sm mb-2"
+          style={{ color: "var(--color-text-secondary)" }}
+        >
+          Extraction Schema
+        </label>
+        <select
+          id="schema-select"
+          value={selectedSchema}
+          onChange={(e) => setSelectedSchema(e.target.value)}
+          disabled={loading}
+          className="w-full max-w-xs px-3 py-2 text-sm"
+          style={{
+            background: "var(--bg-surface)",
+            color: "var(--color-text)",
+            border: "1px solid var(--color-border)",
+            borderRadius: "4px",
+          }}
+        >
+          <option value="auto">Auto-detect (default)</option>
+          {schemas.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name}
+            </option>
+          ))}
+        </select>
+        {selectedSchema !== "auto" && (
+          <p className="text-xs mt-1" style={{ color: "var(--color-text-muted)" }}>
+            {schemas.find((s) => s.id === selectedSchema)?.description ?? ""}
+          </p>
+        )}
+      </div>
+
       <FileUploader onUpload={handleUpload} disabled={loading} />
       {loading && stage && (
         <div className="mt-6">
