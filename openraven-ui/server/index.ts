@@ -39,7 +39,11 @@ app.all("/api/health/*", async (c) => {
 app.all("/api/connectors/*", async (c) => {
   try {
     const url = `${CORE_API_URL}${c.req.path}${c.req.url.includes("?") ? "?" + c.req.url.split("?")[1] : ""}`;
-    const res = await fetch(url, { method: c.req.method });
+    const headers: Record<string, string> = {};
+    const ct = c.req.header("content-type");
+    if (ct) headers["content-type"] = ct;
+    const body = c.req.method === "GET" || c.req.method === "HEAD" ? undefined : await c.req.text();
+    const res = await fetch(url, { method: c.req.method, headers, body });
     const data = await res.json();
     return c.json(data, res.status as any);
   } catch (e) {
