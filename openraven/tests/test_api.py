@@ -70,3 +70,28 @@ def test_graph_endpoint_rejects_invalid_max_nodes(client: TestClient) -> None:
 
     response = client.get("/api/graph?max_nodes=-1")
     assert response.status_code == 422
+
+
+def test_wiki_list_endpoint(client: TestClient) -> None:
+    response = client.get("/api/wiki")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+
+
+def test_wiki_article_endpoint_not_found(client: TestClient) -> None:
+    response = client.get("/api/wiki/nonexistent-article")
+    assert response.status_code == 404
+
+
+def test_wiki_article_endpoint_reads_file(client: TestClient, config) -> None:
+    config.wiki_dir.mkdir(parents=True, exist_ok=True)
+    (config.wiki_dir / "apache_kafka.md").write_text(
+        "# Apache Kafka\n\n**Confidence:** 85%\n\nA streaming platform.\n"
+    )
+    response = client.get("/api/wiki/apache_kafka")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["slug"] == "apache_kafka"
+    assert data["title"] == "Apache Kafka"
+    assert "streaming platform" in data["content"]

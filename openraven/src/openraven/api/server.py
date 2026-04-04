@@ -129,6 +129,29 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         )
         return GraphResponse(**data)
 
+    @app.get("/api/wiki")
+    async def wiki_list():
+        wiki_dir = config.wiki_dir
+        if not wiki_dir.exists():
+            return []
+        articles = []
+        for f in sorted(wiki_dir.glob("*.md")):
+            first_line = f.read_text(encoding="utf-8").split("\n", 1)[0]
+            title = first_line.lstrip("# ").strip() if first_line.startswith("#") else f.stem
+            articles.append({"slug": f.stem, "title": title})
+        return articles
+
+    @app.get("/api/wiki/{slug}")
+    async def wiki_article(slug: str):
+        from fastapi.responses import JSONResponse
+        wiki_file = config.wiki_dir / f"{slug}.md"
+        if not wiki_file.exists():
+            return JSONResponse({"error": "Article not found"}, status_code=404)
+        content = wiki_file.read_text(encoding="utf-8")
+        first_line = content.split("\n", 1)[0]
+        title = first_line.lstrip("# ").strip() if first_line.startswith("#") else slug
+        return {"slug": slug, "title": title, "content": content}
+
     @app.get("/api/discovery", response_model=list[DiscoveryInsightResponse])
     async def discovery():
         from openraven.discovery.analyzer import analyze_themes
