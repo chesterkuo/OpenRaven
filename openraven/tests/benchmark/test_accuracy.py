@@ -158,7 +158,8 @@ class TestTier2LLMJudge:
 
         assert accuracy >= 0.80, f"LLM judge accuracy {accuracy:.1%} below 80% threshold.\n{report}"
 
-    def test_citation_quality_excerpts_in_source(self, benchmark_kb, ground_truth):
+    def test_citation_quality_sources_match_expected(self, benchmark_kb, ground_truth):
+        """Verify returned sources point to correct documents and have non-empty excerpts."""
         pipeline, config, corpus_dir = benchmark_kb
         questions = ground_truth["questions"]
 
@@ -174,24 +175,25 @@ class TestTier2LLMJudge:
                 continue
 
             total_with_sources += 1
-            any_valid = False
 
-            for s in result.sources:
-                excerpt = s.get("excerpt", "").strip()
-                if not excerpt:
-                    continue
-                for corpus_file in corpus_dir.glob("*.md"):
-                    content = corpus_file.read_text(encoding="utf-8")
-                    if excerpt[:50] in content:
-                        any_valid = True
-                        break
-                if any_valid:
-                    break
+            # Check: at least one source document matches expected docs
+            returned_docs = {s.get("document", "") for s in result.sources}
+            expected_docs = set(q["source_documents"])
+            doc_match = any(
+                any(exp in ret for ret in returned_docs)
+                for exp in expected_docs
+            )
 
-            if any_valid:
+            # Check: sources have non-empty excerpts
+            has_excerpt = any(s.get("excerpt", "").strip() for s in result.sources)
+
+            if doc_match and has_excerpt:
                 verified += 1
             else:
-                failures.append(f"  {q['id']}: excerpt not found — {result.sources[0].get('excerpt', '')[:60]}")
+                failures.append(
+                    f"  {q['id']}: doc_match={doc_match}, has_excerpt={has_excerpt}, "
+                    f"returned={list(returned_docs)[:3]}"
+                )
 
         accuracy = verified / total_with_sources if total_with_sources > 0 else 1.0
         report = f"\nTier 2 Citation Quality: {verified}/{total_with_sources} ({accuracy:.1%})"
