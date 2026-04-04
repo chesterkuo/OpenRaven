@@ -138,3 +138,23 @@ def test_health_run_endpoint(client: TestClient) -> None:
     assert response.status_code == 200
     data = response.json()
     assert "insights_count" in data
+
+
+def test_connectors_status_endpoint(client: TestClient) -> None:
+    response = client.get("/api/connectors/status")
+    assert response.status_code == 200
+    data = response.json()
+    assert "gdrive" in data
+    assert "gmail" in data
+    assert data["gdrive"]["connected"] is False
+    assert data["gmail"]["connected"] is False
+
+
+def test_connectors_auth_url_requires_credentials(client: TestClient) -> None:
+    response = client.get("/api/connectors/google/auth-url")
+    assert response.status_code == 400
+
+
+def test_connectors_sync_requires_auth(client: TestClient) -> None:
+    response = client.post("/api/connectors/gdrive/sync")
+    assert response.status_code == 401

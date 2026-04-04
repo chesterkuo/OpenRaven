@@ -276,6 +276,93 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
             for i in insights
         ]}
 
+    # --- Google Connectors ---
+
+    @app.get("/api/connectors/status")
+    async def connectors_status():
+        from openraven.connectors.google_auth import load_token
+        token = load_token(config.google_token_path)
+        connected = token is not None
+        return {
+            "gdrive": {"connected": connected},
+            "gmail": {"connected": connected},
+            "google_configured": bool(config.google_client_id),
+        }
+
+    @app.get("/api/connectors/google/auth-url")
+    async def google_auth_url():
+        from fastapi.responses import JSONResponse
+        if not config.google_client_id:
+            return JSONResponse({"error": "GOOGLE_CLIENT_ID not configured"}, status_code=400)
+        from openraven.connectors.google_auth import ALL_SCOPES, build_auth_url
+        url = build_auth_url(
+            client_id=config.google_client_id,
+            scopes=ALL_SCOPES,
+        )
+        return {"auth_url": url}
+
+    @app.get("/api/connectors/google/callback")
+    async def google_callback(code: str):
+        from fastapi.responses import HTMLResponse
+        from openraven.connectors.google_auth import exchange_code, save_token
+        token_data = await exchange_code(
+            code=code,
+            client_id=config.google_client_id,
+            client_secret=config.google_client_secret,
+        )
+        save_token(token_data, config.google_token_path)
+        return HTMLResponse(
+            "<html><body><h2>Connected successfully.</h2>"
+            "<p>You can close this window.</p>"
+            "<script>window.close();</script></body></html>"
+        )
+
+    @app.post("/api/connectors/gdrive/sync")
+    async def gdrive_sync():
+        from fastapi.responses import JSONResponse
+        from openraven.connectors.gdrive import sync_drive
+        from openraven.connectors.google_auth import get_credentials
+        creds = get_credentials(
+            config.google_token_path, config.google_client_id, config.google_client_secret
+        )
+        if not creds:
+            return JSONResponse(
+                {"error": "Not authenticated. Connect Google account first."}, status_code=401
+            )
+        files = await sync_drive(credentials=creds, output_dir=config.ingestion_dir / "gdrive")
+        if files:
+            result = await pipeline.add_files(files)
+            return {
+                "files_synced": len(files),
+                "entities_extracted": result.entities_extracted,
+                "articles_generated": result.articles_generated,
+                "errors": result.errors,
+            }
+        return {"files_synced": 0, "entities_extracted": 0, "articles_generated": 0, "errors": []}
+
+    @app.post("/api/connectors/gmail/sync")
+    async def gmail_sync():
+        from fastapi.responses import JSONResponse
+        from openraven.connectors.gmail import sync_gmail
+        from openraven.connectors.google_auth import get_credentials
+        creds = get_credentials(
+            config.google_token_path, config.google_client_id, config.google_client_secret
+        )
+        if not creds:
+            return JSONResponse(
+                {"error": "Not authenticated. Connect Google account first."}, status_code=401
+            )
+        files = await sync_gmail(credentials=creds, output_dir=config.ingestion_dir / "gmail")
+        if files:
+            result = await pipeline.add_files(files)
+            return {
+                "files_synced": len(files),
+                "entities_extracted": result.entities_extracted,
+                "articles_generated": result.articles_generated,
+                "errors": result.errors,
+            }
+        return {"files_synced": 0, "entities_extracted": 0, "articles_generated": 0, "errors": []}
+
     @app.get("/api/discovery", response_model=list[DiscoveryInsightResponse])
     async def discovery():
         from openraven.discovery.analyzer import analyze_themes
