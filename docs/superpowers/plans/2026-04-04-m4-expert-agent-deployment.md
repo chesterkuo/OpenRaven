@@ -162,7 +162,7 @@ class AgentConfig:
     is_public: bool = True
     rate_limit_anonymous: int = 10
     rate_limit_token: int = 100
-    access_tokens: list[str] = field(default_factory=list)
+    access_tokens: list[dict] = field(default_factory=list)  # [{"hash": str, "last4": str}]
     tunnel_url: str = ""
     created_at: str = ""
 
@@ -222,12 +222,15 @@ def list_agents(agents_dir: Path) -> list[AgentConfig]:
     return agents
 
 
+_UPDATABLE_FIELDS = {"name", "description", "is_public", "rate_limit_anonymous", "rate_limit_token", "tunnel_url"}
+
+
 def update_agent(agents_dir: Path, agent_id: str, **kwargs) -> AgentConfig | None:
     agent = get_agent(agents_dir, agent_id)
     if not agent:
         return None
     for key, value in kwargs.items():
-        if hasattr(agent, key):
+        if key in _UPDATABLE_FIELDS:
             setattr(agent, key, value)
     _save_agent(agents_dir, agent)
     return agent
@@ -251,7 +254,7 @@ def generate_token(agents_dir: Path, agent_id: str) -> str:
     if not agent:
         raise ValueError(f"Agent {agent_id} not found")
     raw_token = secrets.token_urlsafe(32)
-    agent.access_tokens.append(_hash_token(raw_token))
+    agent.access_tokens.append({"hash": _hash_token(raw_token), "last4": raw_token[-4:]})
     _save_agent(agents_dir, agent)
     return raw_token
 
@@ -260,7 +263,8 @@ def verify_token(agents_dir: Path, agent_id: str, token: str) -> bool:
     agent = get_agent(agents_dir, agent_id)
     if not agent:
         return False
-    return _hash_token(token) in agent.access_tokens
+    token_hash = _hash_token(token)
+    return any(t["hash"] == token_hash for t in agent.access_tokens)
 ```
 
 - [ ] **Step 4: Run tests**
@@ -831,6 +835,25 @@ def test_api_agent_private_requires_token(agent_client: TestClient) -> None:
     assert ask_resp.status_code == 403
 
 
+def test_api_agent_info(agent_client: TestClient) -> None:
+    resp = agent_client.post("/api/agents", json={"name": "Info", "description": "meta"})
+    agent_id = resp.json()["id"]
+    info = agent_client.get(f"/agents/{agent_id}/info")
+    assert info.status_code == 200
+    assert info.json()["name"] == "Info"
+    assert info.json()["description"] == "meta"
+
+
+def test_api_deploy_not_found(agent_client: TestClient) -> None:
+    resp = agent_client.post("/api/agents/nonexistent/deploy")
+    assert resp.status_code == 404
+
+
+def test_api_create_agent_requires_name(agent_client: TestClient) -> None:
+    resp = agent_client.post("/api/agents", json={"description": "no name"})
+    assert resp.status_code == 400
+
+
 def test_api_agent_chat_page(agent_client: TestClient) -> None:
     resp = agent_client.post("/api/agents", json={"name": "Chat", "description": "page"})
     agent_id = resp.json()["id"]
@@ -875,7 +898,10 @@ Then add inside `create_app()`, after the connector endpoints section (after the
 
     @app.post("/api/agents")
     async def create_agent_endpoint(body: dict):
+        from fastapi.responses import JSONResponse
         from openraven.agents.registry import create_agent
+        if not body.get("name", "").strip():
+            return JSONResponse({"error": "name is required"}, status_code=400)
         agent = create_agent(
             agents_dir=agents_dir,
             name=body.get("name", ""),
@@ -917,6 +943,7 @@ Then add inside `create_app()`, after the connector endpoints section (after the
             "rate_limit_anonymous": agent.rate_limit_anonymous,
             "rate_limit_token": agent.rate_limit_token,
             "token_count": len(agent.access_tokens),
+            "tokens": [{"last4": t["last4"]} for t in agent.access_tokens],
             "created_at": agent.created_at,
         }
 
@@ -1408,4 +1435,8 @@ curl -sf -X DELETE http://localhost:8741/api/agents/$AGENT_ID | python3 -m json.
 | 7 | AgentsPage UI + routing | Build check |
 | 8 | E2E Verification | Full suite |
 
-**Total new tests: 29**
+**Total new tests: 32**
+
+**Architecture note:** The Cloudflare Tunnel is server-wide (one tunnel per OpenRaven instance), not per-agent. All agents share the same tunnel URL. Deploy/undeploy is managed via CLI (`raven deploy`/`raven undeploy`) or the `/api/agents/{id}/deploy` endpoint. The AgentsPage UI shows the tunnel URL per agent but deploy control is via CLI for MVP.
+
+**Public agent access:** The chat page at `/agents/{id}` is served directly by the FastAPI server (port 8741) and through the Cloudflare Tunnel. It is NOT proxied through the Hono UI server (port 3002) — this is intentional since the tunnel points directly to FastAPI.
