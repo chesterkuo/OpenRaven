@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 interface ConnectorStatus {
   gdrive: { connected: boolean };
   gmail: { connected: boolean };
+  meet: { connected: boolean };
+  otter: { connected: boolean };
   google_configured: boolean;
 }
 
@@ -17,6 +19,8 @@ export default function ConnectorsPage() {
   const [status, setStatus] = useState<ConnectorStatus | null>(null);
   const [syncing, setSyncing] = useState<string | null>(null);
   const [result, setResult] = useState<SyncResult | null>(null);
+  const [otterKey, setOtterKey] = useState("");
+  const [savingKey, setSavingKey] = useState(false);
 
   useEffect(() => {
     fetch("/api/connectors/status").then(r => r.json()).then(setStatus).catch(() => {});
@@ -42,7 +46,23 @@ export default function ConnectorsPage() {
     }
   }
 
-  async function handleSync(connector: "gdrive" | "gmail") {
+  async function handleSaveOtterKey() {
+    if (!otterKey.trim()) return;
+    setSavingKey(true);
+    try {
+      await fetch("/api/connectors/otter/save-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ api_key: otterKey.trim() }),
+      });
+      const statusRes = await fetch("/api/connectors/status");
+      setStatus(await statusRes.json());
+      setOtterKey("");
+    } catch { /* ignore */ }
+    finally { setSavingKey(false); }
+  }
+
+  async function handleSync(connector: "gdrive" | "gmail" | "meet" | "otter") {
     setSyncing(connector);
     setResult(null);
     try {
@@ -104,6 +124,55 @@ export default function ConnectorsPage() {
           ) : (
             <button onClick={() => handleSync("gmail")} disabled={syncing !== null} className="text-sm px-3 py-1.5 rounded bg-gray-700 text-gray-200 hover:bg-gray-600 disabled:opacity-50">
               {syncing === "gmail" ? "Syncing..." : "Sync Now"}
+            </button>
+          )}
+        </div>
+
+        {/* Google Meet */}
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold">Google Meet</h2>
+            <span className={`text-xs px-2 py-0.5 rounded ${status.meet.connected ? "bg-green-900 text-green-400" : "bg-gray-800 text-gray-500"}`}>
+              {status.meet.connected ? "Connected" : "Not connected"}
+            </span>
+          </div>
+          <p className="text-sm text-gray-400 mb-3">Import meeting transcripts from Google Meet.</p>
+          {!status.meet.connected ? (
+            <button onClick={handleConnect} disabled={!status.google_configured} className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500">
+              Connect Google Account
+            </button>
+          ) : (
+            <button onClick={() => handleSync("meet")} disabled={syncing !== null} className="text-sm px-3 py-1.5 rounded bg-gray-700 text-gray-200 hover:bg-gray-600 disabled:opacity-50">
+              {syncing === "meet" ? "Syncing..." : "Sync Transcripts"}
+            </button>
+          )}
+        </div>
+
+        {/* Otter.ai */}
+        <div className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold">Otter.ai</h2>
+            <span className={`text-xs px-2 py-0.5 rounded ${status.otter.connected ? "bg-green-900 text-green-400" : "bg-gray-800 text-gray-500"}`}>
+              {status.otter.connected ? "Connected" : "Not connected"}
+            </span>
+          </div>
+          <p className="text-sm text-gray-400 mb-3">Import meeting transcripts from Otter.ai.</p>
+          {!status.otter.connected ? (
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={otterKey}
+                onChange={(e) => setOtterKey(e.target.value)}
+                placeholder="Otter.ai API key"
+                className="flex-1 bg-gray-800 border border-gray-700 rounded px-2 py-1.5 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500"
+              />
+              <button onClick={handleSaveOtterKey} disabled={savingKey || !otterKey.trim()} className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500">
+                {savingKey ? "Saving..." : "Save"}
+              </button>
+            </div>
+          ) : (
+            <button onClick={() => handleSync("otter")} disabled={syncing !== null} className="text-sm px-3 py-1.5 rounded bg-gray-700 text-gray-200 hover:bg-gray-600 disabled:opacity-50">
+              {syncing === "otter" ? "Syncing..." : "Sync Now"}
             </button>
           )}
         </div>
