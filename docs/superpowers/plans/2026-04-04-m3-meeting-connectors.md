@@ -16,11 +16,12 @@
 |---|---|---|
 | `openraven/src/openraven/connectors/gdrive.py` | Modify | Add `MEET_QUERY`, `sync_meet_transcripts()` |
 | `openraven/src/openraven/connectors/otter.py` | Create | `transcript_to_markdown()`, `sync_otter()`, `save_api_key()`, `load_api_key()` |
-| `openraven/src/openraven/config.py` | Modify | Add `otter_key_path` property |
+| `openraven/src/openraven/config.py` | Modify | Add `otter_key_path` property, `otter_api_key` property |
 | `openraven/src/openraven/api/server.py` | Modify | Add Meet sync, Otter save-key + sync endpoints, update status |
 | `openraven/tests/test_connectors.py` | Modify | Add Meet + Otter unit tests |
 | `openraven/tests/test_api.py` | Modify | Add Meet + Otter endpoint tests |
 | `openraven-ui/src/pages/ConnectorsPage.tsx` | Modify | Add Google Meet + Otter.ai cards |
+| `openraven-ui/server/index.ts` | Modify | Fix proxy to forward POST request bodies |
 | `openraven/.env.example` | Modify | Document Otter.ai setup |
 
 ---
@@ -39,6 +40,11 @@ Add to `openraven/tests/test_config.py`:
 def test_otter_key_path(tmp_path) -> None:
     config = RavenConfig(working_dir=tmp_path / "kb")
     assert config.otter_key_path == config.working_dir / "otter_api_key"
+
+
+def test_otter_api_key_returns_empty_when_no_file(tmp_path) -> None:
+    config = RavenConfig(working_dir=tmp_path / "kb")
+    assert config.otter_api_key == ""
 ```
 
 - [ ] **Step 2: Run to verify failure**
@@ -53,6 +59,13 @@ Add to `RavenConfig` in `openraven/src/openraven/config.py`, after the `google_t
     @property
     def otter_key_path(self) -> Path:
         return self.working_dir / "otter_api_key"
+
+    @property
+    def otter_api_key(self) -> str:
+        """Load Otter.ai API key from file. Returns empty string if not found."""
+        if not self.otter_key_path.exists():
+            return ""
+        return self.otter_key_path.read_text(encoding="utf-8").strip()
 ```
 
 - [ ] **Step 4: Run tests**
@@ -194,12 +207,13 @@ def test_otter_transcript_to_markdown() -> None:
         title="Q1 Planning Meeting",
         date="2026-03-15",
         speakers=[
-            {"name": "Alice", "text": "Let's review the Q1 roadmap."},
-            {"name": "Bob", "text": "I think we should prioritize the API redesign."},
+            {"name": "Alice", "timestamp": "00:01:23", "text": "Let's review the Q1 roadmap."},
+            {"name": "Bob", "timestamp": "00:02:05", "text": "I think we should prioritize the API redesign."},
         ],
     )
     assert "Q1 Planning Meeting" in md
     assert "Alice" in md
+    assert "00:01:23" in md
     assert "Bob" in md
     assert "API redesign" in md
 
@@ -260,11 +274,13 @@ def transcript_to_markdown(title: str, date: str, speakers: list[dict]) -> str:
     Args:
         title: Meeting title
         date: Meeting date string
-        speakers: List of dicts with 'name' and 'text' keys
+        speakers: List of dicts with 'name', 'text', and optional 'timestamp' keys
     """
     lines = [f"# {title}", f"\n**Date:** {date}\n"]
     for entry in speakers:
-        lines.append(f"**{entry['name']}:** {entry['text']}\n")
+        ts = entry.get("timestamp", "")
+        label = f"**{entry['name']} ({ts}):**" if ts else f"**{entry['name']}:**"
+        lines.append(f"{label} {entry['text']}\n")
     return "\n".join(lines)
 
 
@@ -302,53 +318,53 @@ async def sync_otter(
         downloaded = []
         output_dir.mkdir(parents=True, exist_ok=True)
 
+        # NOTE: Otter.ai API endpoints are based on their documented API.
+        # If the API structure changes, update the base_url and endpoint paths.
         try:
-            client = httpx.Client(
+            with httpx.Client(
                 base_url="https://otter.ai/forward/api/v1",
                 headers={"Authorization": f"Bearer {api_key}"},
                 timeout=30,
-            )
+            ) as client:
+                # List recent speeches/transcripts
+                response = client.get("/speeches", params={"page_size": max_transcripts})
+                response.raise_for_status()
+                data = response.json()
 
-            # List recent speeches/transcripts
-            response = client.get("/speeches", params={"page_size": max_transcripts})
-            response.raise_for_status()
-            data = response.json()
+                speeches = data.get("speeches", data.get("results", []))
 
-            speeches = data.get("speeches", data.get("results", []))
+                for speech in speeches:
+                    try:
+                        speech_id = speech.get("otid", speech.get("id", ""))
+                        title = speech.get("title", "Untitled Meeting")
+                        created = speech.get("created_at", speech.get("start_time", ""))
 
-            for speech in speeches:
-                try:
-                    speech_id = speech.get("otid", speech.get("id", ""))
-                    title = speech.get("title", "Untitled Meeting")
-                    created = speech.get("created_at", speech.get("start_time", ""))
+                        # Fetch full transcript
+                        detail_resp = client.get(f"/speeches/{speech_id}")
+                        detail_resp.raise_for_status()
+                        detail = detail_resp.json()
 
-                    # Fetch full transcript
-                    detail_resp = client.get(f"/speeches/{speech_id}")
-                    detail_resp.raise_for_status()
-                    detail = detail_resp.json()
+                        # Extract speaker segments with timestamps
+                        transcripts = detail.get("transcripts", detail.get("segments", []))
+                        speakers = []
+                        for segment in transcripts:
+                            speakers.append({
+                                "name": segment.get("speaker", segment.get("speaker_name", "Speaker")),
+                                "text": segment.get("text", segment.get("transcript", "")),
+                                "timestamp": segment.get("timestamp", segment.get("start_time", "")),
+                            })
 
-                    # Extract speaker segments
-                    transcripts = detail.get("transcripts", detail.get("segments", []))
-                    speakers = []
-                    for segment in transcripts:
-                        speakers.append({
-                            "name": segment.get("speaker", segment.get("speaker_name", "Speaker")),
-                            "text": segment.get("text", segment.get("transcript", "")),
-                        })
+                        if not speakers:
+                            continue
 
-                    if not speakers:
-                        continue
-
-                    md = transcript_to_markdown(title=title, date=created, speakers=speakers)
-                    safe_name = title.replace("/", "_").replace("\\", "_")[:80].strip()
-                    dest = output_dir / f"{safe_name}_{speech_id[:8]}.md"
-                    dest.write_text(md, encoding="utf-8")
-                    downloaded.append(dest)
-                    logger.info(f"Downloaded Otter transcript: {title} ({speech_id})")
-                except Exception as e:
-                    logger.warning(f"Failed to process Otter transcript {speech.get('title', '?')}: {e}")
-
-            client.close()
+                        md = transcript_to_markdown(title=title, date=created, speakers=speakers)
+                        safe_name = title.replace("/", "_").replace("\\", "_")[:80].strip()
+                        dest = output_dir / f"{safe_name}_{speech_id[:8]}.md"
+                        dest.write_text(md, encoding="utf-8")
+                        downloaded.append(dest)
+                        logger.info(f"Downloaded Otter transcript: {title} ({speech_id})")
+                    except Exception as e:
+                        logger.warning(f"Failed to process Otter transcript {speech.get('title', '?')}: {e}")
         except Exception as e:
             logger.warning(f"Otter.ai API error: {e}")
 
@@ -420,15 +436,13 @@ In `openraven/src/openraven/api/server.py`, update the `connectors_status` funct
     @app.get("/api/connectors/status")
     async def connectors_status():
         from openraven.connectors.google_auth import load_token
-        from openraven.connectors.otter import load_api_key
         token = load_token(config.google_token_path)
         google_connected = token is not None
-        otter_key = load_api_key(config.otter_key_path)
         return {
             "gdrive": {"connected": google_connected},
             "gmail": {"connected": google_connected},
             "meet": {"connected": google_connected},
-            "otter": {"connected": bool(otter_key)},
+            "otter": {"connected": bool(config.otter_api_key)},
             "google_configured": bool(config.google_client_id and config.google_client_secret),
         }
 ```
@@ -482,8 +496,8 @@ Add after the Meet sync endpoint:
     @app.post("/api/connectors/otter/sync")
     async def otter_sync():
         from fastapi.responses import JSONResponse
-        from openraven.connectors.otter import load_api_key, sync_otter
-        api_key = load_api_key(config.otter_key_path)
+        from openraven.connectors.otter import sync_otter
+        api_key = config.otter_api_key
         if not api_key:
             return JSONResponse(
                 {"error": "Otter.ai API key not configured. Save your key first."}, status_code=401
@@ -657,14 +671,33 @@ Add to `openraven/.env.example` after the Google Connectors section:
 
 ```bash
 # === Otter.ai (M3) ===
-# Get your API key from Otter.ai account settings
-# Or enter it through the Connectors page in the UI
-# OTTER_API_KEY is managed through the UI, not this file
+# Get your API key from your Otter.ai account settings.
+# Enter it through the Connectors page in the OpenRaven UI.
+# The key is stored locally at <working_dir>/otter_api_key.
 ```
 
-- [ ] **Step 2: Add connector proxy route for new endpoints**
+- [ ] **Step 2: Fix Hono proxy to forward request bodies**
 
-Read `openraven-ui/server/index.ts` to verify the existing `/api/connectors/*` wildcard proxy covers the new endpoints. It should already work since the proxy uses `app.all("/api/connectors/*", ...)`.
+Read `openraven-ui/server/index.ts`. The existing `/api/connectors/*` proxy does NOT forward request bodies — it uses `fetch(url, { method: c.req.method })` with no body. This will break `POST /api/connectors/otter/save-key` which expects a JSON body.
+
+Update the proxy route to forward body and content-type:
+
+```typescript
+app.all("/api/connectors/*", async (c) => {
+  try {
+    const url = `${CORE_API_URL}${c.req.path}${c.req.url.includes("?") ? "?" + c.req.url.split("?")[1] : ""}`;
+    const headers: Record<string, string> = {};
+    const ct = c.req.header("content-type");
+    if (ct) headers["content-type"] = ct;
+    const body = c.req.method === "GET" || c.req.method === "HEAD" ? undefined : await c.req.text();
+    const res = await fetch(url, { method: c.req.method, headers, body });
+    const data = await res.json();
+    return c.json(data, res.status as any);
+  } catch (e) {
+    return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502);
+  }
+});
+```
 
 - [ ] **Step 3: Run full test suite**
 
@@ -695,11 +728,11 @@ git commit -m "docs: add Otter.ai config to .env.example"
 
 | Task | What | Tests Added |
 |---|---|---|
-| 1 | Config: otter_key_path property | 1 config test |
+| 1 | Config: otter_key_path + otter_api_key properties | 2 config tests |
 | 2 | Google Meet transcript sync in gdrive.py | 2 connector tests |
 | 3 | Otter.ai connector module | 5 connector tests |
 | 4 | API: Meet sync + Otter save-key/sync endpoints | 4 API tests |
 | 5 | ConnectorsPage UI: Meet + Otter cards | Build check |
 | 6 | .env.example + E2E verification | Full suite |
 
-**Total new tests: 12**
+**Total new tests: 13**
