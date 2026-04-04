@@ -126,7 +126,7 @@ const handleDblClick = (e: MouseEvent) => {
     hit.fx = null;
     hit.fy = null;
     simulation.alphaTarget(0.3).restart();
-    setTimeout(() => simulation.alphaTarget(0), 500);
+    setTimeout(() => { if (!dragNode) simulation.alphaTarget(0); }, 500);
   }
 };
 
@@ -170,8 +170,12 @@ git commit -m "feat(graph): add node drag-to-reposition with click/drag disambig
 
 ## Task 2: Hover tooltip + edge arrows
 
+**Depends on:** Task 1 must be completed first
+
 **Files:**
 - Modify: `openraven-ui/src/components/GraphViewer.tsx`
+
+> **IMPORTANT: Apply arrow rendering and hover highlight to BOTH the main paint function AND the repaint useEffect.** All edge arrow code and hover highlight code shown below must be duplicated into both paint locations. If you only add it to one, the arrows/highlights will disappear or flicker when the other paint path runs.
 
 - [ ] **Step 1: Add hover state tracking**
 
@@ -181,30 +185,50 @@ Add a new prop to `GraphViewerProps`:
 onNodeHover?: (node: GraphNode | null) => void;
 ```
 
-In the main `useEffect`, track hover state:
+In the main `useEffect`, track hover state using a `useRef` so both paint paths can access it:
 
 ```typescript
-let hoveredNode: SimNode | null = null;
+// Above the useEffect, declare the ref:
+const hoveredNodeRef = useRef<SimNode | null>(null);
+```
 
-const handleMouseMoveHover = (e: MouseEvent) => {
-  if (dragNode || isPanning) return;
+Then inside the useEffect, replace the `handleMouseMove` from Task 1 with this combined version that handles BOTH drag/pan AND hover:
+
+```typescript
+const handleMouseMove = (e: MouseEvent) => {
+  dragDistance += Math.abs(e.movementX) + Math.abs(e.movementY);
+
+  if (dragNode) {
+    const rect = canvas.getBoundingClientRect();
+    const { x: tx, y: ty, k } = transformRef.current;
+    dragNode.fx = (e.clientX - rect.left - tx) / k;
+    dragNode.fy = (e.clientY - rect.top - ty) / k;
+    return;
+  }
+
+  if (isPanning) {
+    transformRef.current.x = e.clientX - panStart.x;
+    transformRef.current.y = e.clientY - panStart.y;
+    paint();
+    return;
+  }
+
+  // Hover detection (only when not dragging or panning)
   const hit = hitTest(e.clientX, e.clientY);
-  if (hit !== hoveredNode) {
-    hoveredNode = hit;
+  if (hit !== hoveredNodeRef.current) {
+    hoveredNodeRef.current = hit;
     canvas.style.cursor = hit ? "pointer" : "grab";
     paint(); // repaint to show hover highlight
   }
 };
 ```
 
-Merge this into the existing `handleMouseMove`.
-
 - [ ] **Step 2: Add hover highlight to paint function**
 
-In the node paint loop, add hover ring:
+In the node paint loop of the **main paint function**, add hover ring:
 
 ```typescript
-const isHovered = hoveredNode && node.id === hoveredNode.id;
+const isHovered = hoveredNodeRef.current && node.id === hoveredNodeRef.current.id;
 if (isHovered) {
   ctx.strokeStyle = "#60a5fa";
   ctx.lineWidth = 2;
@@ -218,16 +242,53 @@ Show labels for hovered nodes (add to the label condition):
 if (degree >= 3 || isSelected || isMatch || isHovered) {
 ```
 
+In the **repaint useEffect's** node paint loop, also add the same hover check:
+
+```typescript
+const isHovered = hoveredNodeRef.current && node.id === hoveredNodeRef.current.id;
+if (isHovered) {
+  ctx.strokeStyle = "#60a5fa";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+// ... and update the label condition similarly:
+if (degree >= 3 || isSelected || isMatch || isHovered) {
+```
+
 - [ ] **Step 3: Add edge arrows**
 
-In the edge paint loop, add arrowheads:
+In the edge paint loop of the **main paint function**, add arrowheads:
 
 ```typescript
 // Draw arrowhead
 const angle = Math.atan2(t.y! - s.y!, t.x! - s.x!);
 const targetRadius = getRadius(t.id);
 const arrowX = t.x! - Math.cos(angle) * targetRadius;
-const arrowY = t.y! - Math.cos(angle) * targetRadius;
+const arrowY = t.y! - Math.sin(angle) * targetRadius;
+const arrowSize = isConnected ? 5 : 3;
+ctx.beginPath();
+ctx.moveTo(arrowX, arrowY);
+ctx.lineTo(
+  arrowX - arrowSize * Math.cos(angle - Math.PI / 6),
+  arrowY - arrowSize * Math.sin(angle - Math.PI / 6),
+);
+ctx.lineTo(
+  arrowX - arrowSize * Math.cos(angle + Math.PI / 6),
+  arrowY - arrowSize * Math.sin(angle + Math.PI / 6),
+);
+ctx.closePath();
+ctx.fillStyle = isConnected ? "#60a5fa66" : "#374151";
+ctx.fill();
+```
+
+In the **repaint useEffect's** edge paint loop, add the same arrowhead code:
+
+```typescript
+// Draw arrowhead (repaint useEffect)
+const angle = Math.atan2(t.y! - s.y!, t.x! - s.x!);
+const targetRadius = getRadius(t.id);
+const arrowX = t.x! - Math.cos(angle) * targetRadius;
+const arrowY = t.y! - Math.sin(angle) * targetRadius;
 const arrowSize = isConnected ? 5 : 3;
 ctx.beginPath();
 ctx.moveTo(arrowX, arrowY);
@@ -270,17 +331,35 @@ Add state in `GraphPage`:
 const [minDegree, setMinDegree] = useState(0);
 ```
 
-Update `filteredNodes` memo to also filter by degree:
+Update `filteredNodes` memo to also filter by degree. **Important:** The degree map must be computed from type-filtered edges (after `activeTypes` filtering but before `minDegree` filtering), so that degree counts reflect the visible subgraph:
 
 ```tsx
 const filteredNodes = useMemo(() => {
   if (!data) return [];
-  // Build degree map from unfiltered edges
+
+  // Step 1: Get type-filtered node IDs
+  const typeFilteredNodeIds = new Set(
+    data.nodes
+      .filter((n) => {
+        const type = n.properties?.entity_type ?? n.labels[0] ?? "unknown";
+        return activeTypes.has(type);
+      })
+      .map((n) => n.id)
+  );
+
+  // Step 2: Get edges where both endpoints pass the type filter
+  const typeFilteredEdges = data.edges.filter(
+    (e) => typeFilteredNodeIds.has(e.source) && typeFilteredNodeIds.has(e.target)
+  );
+
+  // Step 3: Build degree map from type-filtered edges
   const degrees = new Map<string, number>();
-  for (const e of data.edges) {
+  for (const e of typeFilteredEdges) {
     degrees.set(e.source, (degrees.get(e.source) ?? 0) + 1);
     degrees.set(e.target, (degrees.get(e.target) ?? 0) + 1);
   }
+
+  // Step 4: Filter nodes by type AND minDegree
   return data.nodes.filter((n) => {
     const type = n.properties?.entity_type ?? n.labels[0] ?? "unknown";
     if (!activeTypes.has(type)) return false;
@@ -333,10 +412,16 @@ git commit -m "feat(graph): add min-degree slider filter"
 Add to `GraphNodeDetailProps`:
 
 ```typescript
-edges: { target: string; description: string; keywords: string }[];
+edges?: { target: string; description: string; keywords: string }[];
 ```
 
-In the "Connected" section, show edge descriptions:
+At the top of the `GraphNodeDetail` component, add a default:
+
+```typescript
+const edgeList = edges ?? [];
+```
+
+In the "Connected" section, show edge descriptions (use `edgeList` instead of `edges`):
 
 ```tsx
 {neighbors.length > 0 && (
@@ -346,7 +431,7 @@ In the "Connected" section, show edge descriptions:
     </h3>
     <div className="flex flex-col gap-2">
       {neighbors.map((n) => {
-        const edge = edges.find(e => e.target === n.id);
+        const edge = edgeList.find(e => e.target === n.id);
         return (
           <div key={n.id}>
             <button
@@ -482,6 +567,8 @@ const isMatch = searchTerm && (
 
 Apply this change in BOTH paint locations (main useEffect paint + repaint useEffect).
 
+> **Note (MEDIUM-2 — stale closure for search):** The repaint useEffect captures `searchTerm` at render time, so if the user types a new search term while the simulation is still ticking, the repaint useEffect will use the stale value until the next render. This is an existing architectural issue caused by the duplicated paint logic and would require refactoring to a single shared paint function (out of scope for this plan).
+
 - [ ] **Step 2: Update tests**
 
 Add to `openraven-ui/tests/components/GraphViewer.test.tsx`:
@@ -496,15 +583,151 @@ it("renders with selected node without crashing", () => {
 });
 ```
 
-- [ ] **Step 3: Run tests and build**
+- [ ] **Step 3: Add testable utility tests**
+
+Extract the following logic as pure functions (or test inline equivalents) in `openraven-ui/tests/components/GraphViewer.test.tsx`:
+
+```tsx
+// --- Test: min-degree filtering logic ---
+describe("minDegreeFilter", () => {
+  function filterByMinDegree(
+    nodes: { id: string }[],
+    edges: { source: string; target: string }[],
+    minDegree: number,
+  ) {
+    const degrees = new Map<string, number>();
+    for (const e of edges) {
+      degrees.set(e.source, (degrees.get(e.source) ?? 0) + 1);
+      degrees.set(e.target, (degrees.get(e.target) ?? 0) + 1);
+    }
+    return nodes.filter((n) => (degrees.get(n.id) ?? 0) >= minDegree);
+  }
+
+  it("returns all nodes when minDegree is 0", () => {
+    const nodes = [{ id: "A" }, { id: "B" }, { id: "C" }];
+    const edges = [{ source: "A", target: "B" }];
+    expect(filterByMinDegree(nodes, edges, 0)).toEqual(nodes);
+  });
+
+  it("filters out low-degree nodes", () => {
+    const nodes = [{ id: "A" }, { id: "B" }, { id: "C" }];
+    const edges = [
+      { source: "A", target: "B" },
+      { source: "A", target: "C" },
+    ];
+    const result = filterByMinDegree(nodes, edges, 2);
+    expect(result.map((n) => n.id)).toEqual(["A"]);
+  });
+
+  it("excludes isolated nodes when minDegree is 1", () => {
+    const nodes = [{ id: "A" }, { id: "B" }, { id: "C" }];
+    const edges = [{ source: "A", target: "B" }];
+    const result = filterByMinDegree(nodes, edges, 1);
+    expect(result.map((n) => n.id)).toEqual(["A", "B"]);
+  });
+});
+
+// --- Test: selectedEdges memo logic ---
+describe("selectedEdges", () => {
+  function computeSelectedEdges(
+    selectedNodeId: string,
+    edges: { source: string; target: string; properties?: { description?: string; keywords?: string } }[],
+  ) {
+    return edges
+      .filter((e) => e.source === selectedNodeId || e.target === selectedNodeId)
+      .map((e) => ({
+        target: e.source === selectedNodeId ? e.target : e.source,
+        description: e.properties?.description ?? "",
+        keywords: e.properties?.keywords ?? "",
+      }));
+  }
+
+  it("returns edges connected to the selected node with normalized target", () => {
+    const edges = [
+      { source: "A", target: "B", properties: { description: "relates to", keywords: "k1" } },
+      { source: "C", target: "A", properties: { description: "derived from", keywords: "k2" } },
+      { source: "B", target: "C", properties: { description: "unrelated", keywords: "k3" } },
+    ];
+    const result = computeSelectedEdges("A", edges);
+    expect(result).toEqual([
+      { target: "B", description: "relates to", keywords: "k1" },
+      { target: "C", description: "derived from", keywords: "k2" },
+    ]);
+  });
+
+  it("returns empty array when no edges match", () => {
+    const edges = [
+      { source: "B", target: "C", properties: { description: "x", keywords: "y" } },
+    ];
+    expect(computeSelectedEdges("A", edges)).toEqual([]);
+  });
+
+  it("handles missing properties gracefully", () => {
+    const edges = [{ source: "A", target: "B" }];
+    const result = computeSelectedEdges("A", edges);
+    expect(result).toEqual([{ target: "B", description: "", keywords: "" }]);
+  });
+});
+
+// --- Test: search predicate across id + description + entity_type ---
+describe("searchPredicate", () => {
+  function matchesSearch(
+    node: { id: string; properties?: { description?: string; entity_type?: string } },
+    searchTerm: string,
+  ): boolean {
+    if (!searchTerm) return false;
+    const s = searchTerm.toLowerCase();
+    return (
+      node.id.toLowerCase().includes(s) ||
+      (node.properties?.description ?? "").toLowerCase().includes(s) ||
+      (node.properties?.entity_type ?? "").toLowerCase().includes(s)
+    );
+  }
+
+  it("matches by node id", () => {
+    expect(matchesSearch({ id: "KAFKA" }, "kafka")).toBe(true);
+  });
+
+  it("matches by description", () => {
+    expect(
+      matchesSearch({ id: "X", properties: { description: "Message broker system" } }, "broker"),
+    ).toBe(true);
+  });
+
+  it("matches by entity_type", () => {
+    expect(
+      matchesSearch({ id: "X", properties: { entity_type: "TECHNOLOGY" } }, "tech"),
+    ).toBe(true);
+  });
+
+  it("returns false for empty search term", () => {
+    expect(matchesSearch({ id: "KAFKA" }, "")).toBe(false);
+  });
+
+  it("returns false when nothing matches", () => {
+    expect(
+      matchesSearch(
+        { id: "KAFKA", properties: { description: "streaming", entity_type: "TOOL" } },
+        "database",
+      ),
+    ).toBe(false);
+  });
+
+  it("is case-insensitive", () => {
+    expect(matchesSearch({ id: "Kafka" }, "KAFKA")).toBe(true);
+  });
+});
+```
+
+- [ ] **Step 4: Run tests and build**
 
 Run: `cd openraven-ui && bun test tests/ && bun run build`
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
 git add openraven-ui/src/components/GraphViewer.tsx openraven-ui/tests/components/GraphViewer.test.tsx
-git commit -m "feat(graph): expand search to description and entity type"
+git commit -m "feat(graph): expand search to description and entity type, add utility tests"
 ```
 
 ---
@@ -548,10 +771,10 @@ Open `http://localhost:3002/graph` in browser. Verify:
 | 3 | Min-degree slider filter | Build check |
 | 4 | Edge descriptions in detail panel | Build check |
 | 5 | Canvas PNG export | Build check |
-| 6 | Extended search scope | 1 component test |
+| 6 | Extended search scope + utility tests | 1 component test + 3 utility test suites |
 | 7 | E2E verification | Full suite |
 
-**Total new tests: 1** (most features are canvas-rendering which can't be unit-tested without a real browser)
+**Total new tests: 1 component test + 3 utility test suites** (minDegreeFilter, selectedEdges, searchPredicate) covering pure logic that can be tested without a real browser
 
 **Advanced features NOT included (future):**
 - Community detection clustering (Louvain) — would need a Python API addition

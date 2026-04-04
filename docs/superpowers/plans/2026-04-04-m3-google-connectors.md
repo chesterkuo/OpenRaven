@@ -145,9 +145,7 @@ def test_google_auth_build_flow(tmp_path) -> None:
     from openraven.connectors.google_auth import build_auth_url
     url = build_auth_url(
         client_id="test-id",
-        client_secret="test-secret",
         scopes=["https://www.googleapis.com/auth/drive.readonly"],
-        redirect_port=8742,
     )
     assert "accounts.google.com" in url
     assert "test-id" in url
@@ -205,16 +203,17 @@ GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 ALL_SCOPES = DRIVE_SCOPES + GMAIL_SCOPES
 
 
+OAUTH_REDIRECT_URI = "http://localhost:8741/api/connectors/google/callback"
+
+
 def build_auth_url(
     client_id: str,
-    client_secret: str,
     scopes: list[str],
-    redirect_port: int = 8742,
 ) -> str:
     """Build the Google OAuth2 authorization URL."""
     params = {
         "client_id": client_id,
-        "redirect_uri": f"http://localhost:{redirect_port}/callback",
+        "redirect_uri": OAUTH_REDIRECT_URI,
         "response_type": "code",
         "scope": " ".join(scopes),
         "access_type": "offline",
@@ -227,7 +226,6 @@ async def exchange_code(
     code: str,
     client_id: str,
     client_secret: str,
-    redirect_port: int = 8742,
 ) -> dict:
     """Exchange authorization code for tokens."""
     import httpx
@@ -238,7 +236,7 @@ async def exchange_code(
                 "code": code,
                 "client_id": client_id,
                 "client_secret": client_secret,
-                "redirect_uri": f"http://localhost:{redirect_port}/callback",
+                "redirect_uri": OAUTH_REDIRECT_URI,
                 "grant_type": "authorization_code",
             },
         )
@@ -532,9 +530,10 @@ async def sync_gmail(
                 if not body or len(body.strip()) < 20:
                     continue
 
+                msg_id = msg_stub["id"]
                 md = message_to_markdown(subject=subject, sender=sender, date=date, body=body)
                 safe_name = subject.replace("/", "_").replace("\\", "_")[:80].strip()
-                dest = output_dir / f"{safe_name}.md"
+                dest = output_dir / f"{safe_name}_{msg_id[:8]}.md"
                 dest.write_text(md, encoding="utf-8")
                 downloaded.append(dest)
                 logger.info(f"Downloaded Gmail: {subject} ({msg_stub['id']})")
@@ -546,19 +545,41 @@ async def sync_gmail(
     return await asyncio.to_thread(_list_and_download)
 
 
+def _strip_html_tags(html: str) -> str:
+    """Strip HTML tags using regex, returning plain text."""
+    import re
+    text = re.sub(r"<br\s*/?>", "\n", html, flags=re.IGNORECASE)
+    text = re.sub(r"<[^>]+>", "", text)
+    return text.strip()
+
+
 def _extract_body(payload: dict) -> str:
-    """Extract plain text body from Gmail payload, handling multipart."""
+    """Extract plain text body from Gmail payload, handling multipart.
+
+    Tries text/plain first, then falls back to text/html with tag stripping.
+    """
     if payload.get("mimeType") == "text/plain" and payload.get("body", {}).get("data"):
         return base64.urlsafe_b64decode(payload["body"]["data"]).decode("utf-8", errors="replace")
 
+    if payload.get("mimeType") == "text/html" and payload.get("body", {}).get("data"):
+        html = base64.urlsafe_b64decode(payload["body"]["data"]).decode("utf-8", errors="replace")
+        return _strip_html_tags(html)
+
+    # Check parts: prefer text/plain, fall back to text/html
+    html_fallback = None
     for part in payload.get("parts", []):
         if part.get("mimeType") == "text/plain" and part.get("body", {}).get("data"):
             return base64.urlsafe_b64decode(part["body"]["data"]).decode("utf-8", errors="replace")
+        if part.get("mimeType") == "text/html" and part.get("body", {}).get("data") and html_fallback is None:
+            html_fallback = base64.urlsafe_b64decode(part["body"]["data"]).decode("utf-8", errors="replace")
         # Recurse into nested multipart
         if part.get("parts"):
             result = _extract_body(part)
             if result:
                 return result
+
+    if html_fallback:
+        return _strip_html_tags(html_fallback)
 
     return ""
 ```
@@ -600,7 +621,7 @@ def test_connectors_status_endpoint(client: TestClient) -> None:
 def test_connectors_auth_url_requires_credentials(client: TestClient) -> None:
     response = client.get("/api/connectors/google/auth-url")
     # Should fail if no client_id configured
-    assert response.status_code in (200, 400)
+    assert response.status_code == 400
 
 
 def test_connectors_sync_requires_auth(client: TestClient) -> None:
@@ -632,13 +653,13 @@ async def google_auth_url():
     from openraven.connectors.google_auth import build_auth_url, ALL_SCOPES
     url = build_auth_url(
         client_id=config.google_client_id,
-        client_secret=config.google_client_secret,
         scopes=ALL_SCOPES,
     )
     return {"auth_url": url}
 
 @app.get("/api/connectors/google/callback")
 async def google_callback(code: str):
+    from fastapi.responses import HTMLResponse
     from openraven.connectors.google_auth import exchange_code, save_token
     token_data = await exchange_code(
         code=code,
@@ -646,7 +667,11 @@ async def google_callback(code: str):
         client_secret=config.google_client_secret,
     )
     save_token(token_data, config.google_token_path)
-    return {"status": "connected"}
+    return HTMLResponse(
+        "<html><body><h2>Connected successfully.</h2>"
+        "<p>You can close this window.</p>"
+        "<script>window.close();</script></body></html>"
+    )
 
 @app.post("/api/connectors/gdrive/sync")
 async def gdrive_sync():
@@ -656,7 +681,7 @@ async def gdrive_sync():
     creds = get_credentials(config.google_token_path, config.google_client_id, config.google_client_secret)
     if not creds:
         return JSONResponse({"error": "Not authenticated. Connect Google account first."}, status_code=401)
-    files = await sync_drive(credentials=creds, output_dir=config.ingestion_dir)
+    files = await sync_drive(credentials=creds, output_dir=config.ingestion_dir / "gdrive")
     if files:
         result = await pipeline.add_files(files)
         return {
@@ -675,7 +700,7 @@ async def gmail_sync():
     creds = get_credentials(config.google_token_path, config.google_client_id, config.google_client_secret)
     if not creds:
         return JSONResponse({"error": "Not authenticated. Connect Google account first."}, status_code=401)
-    files = await sync_gmail(credentials=creds, output_dir=config.ingestion_dir)
+    files = await sync_gmail(credentials=creds, output_dir=config.ingestion_dir / "gmail")
     if files:
         result = await pipeline.add_files(files)
         return {
@@ -745,6 +770,17 @@ export default function ConnectorsPage() {
     const data = await res.json();
     if (data.auth_url) {
       window.open(data.auth_url, "_blank", "width=500,height=600");
+      // Poll for connection status every 2 seconds until connected
+      const poll = setInterval(async () => {
+        try {
+          const statusRes = await fetch("/api/connectors/status");
+          const statusData = await statusRes.json();
+          if (statusData.gdrive?.connected) {
+            clearInterval(poll);
+            setStatus(statusData);
+          }
+        } catch { /* ignore polling errors */ }
+      }, 2000);
     }
   }
 
@@ -888,7 +924,12 @@ Add to `openraven/.env.example`:
 
 ```bash
 # === Google Connectors (M3) ===
-# Create OAuth credentials at https://console.cloud.google.com/apis/credentials
+# 1. Go to https://console.cloud.google.com/apis/credentials
+# 2. Create an OAuth 2.0 Client ID (type: Web application)
+# 3. Add authorized redirect URI: http://localhost:8741/api/connectors/google/callback
+# 4. Enable these APIs in your project:
+#    - Google Drive API (https://console.cloud.google.com/apis/library/drive.googleapis.com)
+#    - Gmail API (https://console.cloud.google.com/apis/library/gmail.googleapis.com)
 # GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 # GOOGLE_CLIENT_SECRET=your-client-secret
 ```
