@@ -107,3 +107,62 @@ async def sync_drive(
         return downloaded
 
     return await asyncio.to_thread(_list_and_download)
+
+
+MEET_QUERY = "name contains 'Meeting transcript' and mimeType='application/vnd.google-apps.document'"
+
+
+async def sync_meet_transcripts(
+    credentials,
+    output_dir: Path,
+    max_files: int = 50,
+) -> list[Path]:
+    """Sync Google Meet transcripts from Drive to local directory."""
+    if credentials is None:
+        return []
+
+    import asyncio
+    from googleapiclient.discovery import build
+
+    def _list_and_download():
+        service = build("drive", "v3", credentials=credentials)
+        downloaded = []
+
+        results = (
+            service.files()
+            .list(
+                q=MEET_QUERY,
+                pageSize=max_files,
+                orderBy="modifiedTime desc",
+                fields="files(id, name, mimeType, modifiedTime)",
+            )
+            .execute()
+        )
+
+        files = results.get("files", [])
+        output_dir.mkdir(parents=True, exist_ok=True)
+
+        for file_info in files:
+            try:
+                file_id = file_info["id"]
+                name = file_info["name"]
+
+                content = (
+                    service.files()
+                    .export(fileId=file_id, mimeType="text/plain")
+                    .execute()
+                )
+
+                safe_name = name.replace("/", "_").replace("\\", "_")[:80].strip()
+                dest = output_dir / f"{safe_name}_{file_id[:8]}.txt"
+                dest.write_bytes(
+                    content if isinstance(content, bytes) else content.encode("utf-8")
+                )
+                downloaded.append(dest)
+                logger.info(f"Downloaded Meet transcript: {name} ({file_id})")
+            except Exception as e:
+                logger.warning(f"Failed to download Meet transcript {file_info.get('name', '?')}: {e}")
+
+        return downloaded
+
+    return await asyncio.to_thread(_list_and_download)

@@ -83,3 +83,15 @@ async def test_gmail_sync_requires_credentials() -> None:
     from openraven.connectors.gmail import sync_gmail
     result = await sync_gmail(credentials=None, output_dir=Path("/tmp"), max_messages=10)
     assert result == []
+
+
+def test_meet_transcript_query() -> None:
+    from openraven.connectors.gdrive import MEET_QUERY
+    assert "Meeting transcript" in MEET_QUERY
+    assert "google-apps.document" in MEET_QUERY
+
+
+async def test_meet_sync_requires_credentials() -> None:
+    from openraven.connectors.gdrive import sync_meet_transcripts
+    result = await sync_meet_transcripts(credentials=None, output_dir=Path("/tmp"), max_files=10)
+    assert result == []
