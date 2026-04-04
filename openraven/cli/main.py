@@ -171,5 +171,79 @@ def export_cmd(working_dir: str, fmt: str, output: str):
         click.echo("No wiki articles found. Run 'raven add' first.")
 
 
+@cli.command()
+@click.option("--working-dir", "-w", default="~/my-knowledge", help="Knowledge base directory")
+def agents(working_dir: str):
+    """List all deployed agents."""
+    from openraven.agents.registry import list_agents
+
+    config = RavenConfig(working_dir=_resolve_working_dir(working_dir))
+    agent_list = list_agents(config.working_dir / "agents")
+
+    if not agent_list:
+        click.echo("No agents configured. Create one in the UI or use 'raven deploy'.")
+        return
+
+    for agent in agent_list:
+        status = "ACTIVE" if agent.tunnel_url else "stopped"
+        url = agent.tunnel_url or "(not deployed)"
+        click.echo(f"  {agent.name} [{status}]")
+        click.echo(f"    ID:  {agent.id}")
+        click.echo(f"    URL: {url}")
+        click.echo("")
+
+
+@cli.command()
+@click.argument("name")
+@click.option("--working-dir", "-w", default="~/my-knowledge", help="Knowledge base directory")
+@click.option("--description", "-d", default="", help="Agent description")
+def deploy(name: str, working_dir: str, description: str):
+    """Deploy a knowledge base as a public Expert Agent."""
+    from openraven.agents.registry import create_agent, list_agents, update_agent
+    from openraven.agents.tunnel import start_tunnel
+
+    config = RavenConfig(working_dir=_resolve_working_dir(working_dir))
+    agents_dir = config.working_dir / "agents"
+
+    existing = [a for a in list_agents(agents_dir) if a.name == name]
+    if existing:
+        agent = existing[0]
+        click.echo(f"Found existing agent: {agent.name} ({agent.id})")
+    else:
+        desc = description or f"Expert Agent: {name}"
+        agent = create_agent(
+            agents_dir=agents_dir, name=name, description=desc,
+            kb_path=str(config.working_dir),
+        )
+        click.echo(f"Created agent: {agent.name} ({agent.id})")
+
+    click.echo(f"Starting tunnel on port {config.api_port}...")
+    try:
+        url = start_tunnel(port=config.api_port, working_dir=config.working_dir)
+        update_agent(agents_dir, agent.id, tunnel_url=url)
+        click.echo("")
+        click.echo(f"Agent deployed!")
+        click.echo(f"  Chat:  {url}/agents/{agent.id}")
+        click.echo(f"  API:   POST {url}/agents/{agent.id}/ask")
+        click.echo("")
+        click.echo("Keep this terminal open. Press Ctrl+C to stop.")
+    except RuntimeError as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
+@click.option("--working-dir", "-w", default="~/my-knowledge", help="Knowledge base directory")
+def undeploy(working_dir: str):
+    """Stop the deployed agent tunnel."""
+    from openraven.agents.tunnel import stop_tunnel
+
+    config = RavenConfig(working_dir=_resolve_working_dir(working_dir))
+    if stop_tunnel(config.working_dir):
+        click.echo("Tunnel stopped.")
+    else:
+        click.echo("No active tunnel found.")
+
+
 if __name__ == "__main__":
     cli()

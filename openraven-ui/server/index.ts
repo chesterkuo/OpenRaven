@@ -50,6 +50,35 @@ app.all("/api/connectors/*", async (c) => {
     return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502);
   }
 });
+// Proxy agent management endpoints to core API
+app.all("/api/agents/*", async (c) => {
+  try {
+    const url = `${CORE_API_URL}${c.req.path}${c.req.url.includes("?") ? "?" + c.req.url.split("?")[1] : ""}`;
+    const headers: Record<string, string> = {};
+    const ct = c.req.header("content-type");
+    if (ct) headers["content-type"] = ct;
+    const body = c.req.method === "GET" || c.req.method === "HEAD" ? undefined : await c.req.text();
+    const res = await fetch(url, { method: c.req.method, headers, body });
+    const data = await res.json();
+    return c.json(data, res.status as any);
+  } catch (e) {
+    return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502);
+  }
+});
+app.all("/api/agents", async (c) => {
+  try {
+    const url = `${CORE_API_URL}${c.req.path}`;
+    const headers: Record<string, string> = {};
+    const ct = c.req.header("content-type");
+    if (ct) headers["content-type"] = ct;
+    const body = c.req.method === "GET" || c.req.method === "HEAD" ? undefined : await c.req.text();
+    const res = await fetch(url, { method: c.req.method, headers, body });
+    const data = await res.json();
+    return c.json(data, res.status as any);
+  } catch (e) {
+    return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502);
+  }
+});
 // Proxy config endpoint to core API
 app.get("/api/config/:path", async (c) => {
   try {

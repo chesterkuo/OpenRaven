@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 import tempfile
 import uuid
@@ -9,7 +10,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-from fastapi import BackgroundTasks, FastAPI, File, Query, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
@@ -457,6 +458,169 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
             )
             for i in insights
         ]
+
+    # --- Agent Deployment ---
+
+    agents_dir = config.working_dir / "agents"
+    agents_dir.mkdir(parents=True, exist_ok=True)
+
+    from openraven.agents.ratelimit import RateLimiter
+    agent_rate_limiter = RateLimiter()
+
+    @app.post("/api/agents")
+    async def create_agent_endpoint(body: dict):
+        from fastapi.responses import JSONResponse
+        from openraven.agents.registry import create_agent
+        if not body.get("name", "").strip():
+            return JSONResponse({"error": "name is required"}, status_code=400)
+        agent = create_agent(
+            agents_dir=agents_dir,
+            name=body.get("name", ""),
+            description=body.get("description", ""),
+            kb_path=str(config.working_dir),
+            is_public=body.get("is_public", True),
+            rate_limit_anonymous=body.get("rate_limit_anonymous", 10),
+            rate_limit_token=body.get("rate_limit_token", 100),
+        )
+        return {
+            "id": agent.id, "name": agent.name, "description": agent.description,
+            "is_public": agent.is_public, "tunnel_url": agent.tunnel_url,
+            "rate_limit_anonymous": agent.rate_limit_anonymous,
+            "rate_limit_token": agent.rate_limit_token,
+            "created_at": agent.created_at,
+        }
+
+    @app.get("/api/agents")
+    async def list_agents_endpoint():
+        from openraven.agents.registry import list_agents
+        agents = list_agents(agents_dir)
+        return [
+            {"id": a.id, "name": a.name, "description": a.description,
+             "is_public": a.is_public, "tunnel_url": a.tunnel_url,
+             "created_at": a.created_at}
+            for a in agents
+        ]
+
+    @app.get("/api/agents/{agent_id}")
+    async def get_agent_endpoint(agent_id: str):
+        from fastapi.responses import JSONResponse
+        from openraven.agents.registry import get_agent
+        agent = get_agent(agents_dir, agent_id)
+        if not agent:
+            return JSONResponse({"error": "Agent not found"}, status_code=404)
+        return {
+            "id": agent.id, "name": agent.name, "description": agent.description,
+            "is_public": agent.is_public, "tunnel_url": agent.tunnel_url,
+            "rate_limit_anonymous": agent.rate_limit_anonymous,
+            "rate_limit_token": agent.rate_limit_token,
+            "token_count": len(agent.access_tokens),
+            "tokens": [{"last4": t["last4"]} for t in agent.access_tokens],
+            "created_at": agent.created_at,
+        }
+
+    @app.delete("/api/agents/{agent_id}")
+    async def delete_agent_endpoint(agent_id: str):
+        from fastapi.responses import JSONResponse
+        from openraven.agents.registry import delete_agent
+        if delete_agent(agents_dir, agent_id):
+            return {"deleted": True}
+        return JSONResponse({"error": "Agent not found"}, status_code=404)
+
+    @app.post("/api/agents/{agent_id}/tokens")
+    async def generate_token_endpoint(agent_id: str):
+        from fastapi.responses import JSONResponse
+        from openraven.agents.registry import generate_token
+        try:
+            token = generate_token(agents_dir, agent_id)
+            return {"token": token}
+        except ValueError:
+            return JSONResponse({"error": "Agent not found"}, status_code=404)
+
+    @app.post("/api/agents/{agent_id}/deploy")
+    async def deploy_agent_endpoint(agent_id: str):
+        from fastapi.responses import JSONResponse
+        from openraven.agents.registry import get_agent, update_agent
+        from openraven.agents.tunnel import start_tunnel
+        agent = get_agent(agents_dir, agent_id)
+        if not agent:
+            return JSONResponse({"error": "Agent not found"}, status_code=404)
+        try:
+            url = start_tunnel(port=config.api_port, working_dir=config.working_dir)
+            update_agent(agents_dir, agent_id, tunnel_url=url)
+            return {"tunnel_url": url}
+        except RuntimeError as e:
+            return JSONResponse({"error": str(e)}, status_code=500)
+
+    @app.post("/api/agents/{agent_id}/undeploy")
+    async def undeploy_agent_endpoint(agent_id: str):
+        from openraven.agents.registry import update_agent
+        from openraven.agents.tunnel import stop_tunnel
+        stop_tunnel(config.working_dir)
+        update_agent(agents_dir, agent_id, tunnel_url="")
+        return {"undeployed": True}
+
+    # --- Public Agent Endpoints (exposed via tunnel) ---
+
+    @app.get("/agents/{agent_id}")
+    async def agent_chat_page(agent_id: str):
+        from fastapi.responses import HTMLResponse, JSONResponse
+        from openraven.agents.chat_page import render_chat_page
+        from openraven.agents.registry import get_agent
+        agent = get_agent(agents_dir, agent_id)
+        if not agent:
+            return JSONResponse({"error": "Agent not found"}, status_code=404)
+        page_html = render_chat_page(agent.id, agent.name, agent.description)
+        return HTMLResponse(page_html)
+
+    @app.get("/agents/{agent_id}/info")
+    async def agent_info(agent_id: str):
+        from fastapi.responses import JSONResponse
+        from openraven.agents.registry import get_agent
+        agent = get_agent(agents_dir, agent_id)
+        if not agent:
+            return JSONResponse({"error": "Agent not found"}, status_code=404)
+        return {"name": agent.name, "description": agent.description}
+
+    @app.post("/agents/{agent_id}/ask")
+    async def agent_ask(agent_id: str, body: dict, request: Request):
+        from fastapi.responses import JSONResponse
+        from openraven.agents.registry import get_agent, verify_token
+
+        agent = get_agent(agents_dir, agent_id)
+        if not agent:
+            return JSONResponse({"error": "Agent not found"}, status_code=404)
+
+        auth_header = request.headers.get("authorization", "")
+        token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
+
+        if not agent.is_public and not token:
+            return JSONResponse({"error": "This agent requires an access token."}, status_code=403)
+        if token and not verify_token(agents_dir, agent_id, token):
+            return JSONResponse({"error": "Invalid access token."}, status_code=403)
+
+        if token:
+            rate_key = f"token:{hashlib.sha256(token.encode()).hexdigest()[:16]}"
+            limit = agent.rate_limit_token
+        else:
+            client_ip = request.client.host if request.client else "unknown"
+            rate_key = f"ip:{client_ip}:{agent_id}"
+            limit = agent.rate_limit_anonymous
+
+        allowed, remaining = agent_rate_limiter.check(rate_key, limit=limit)
+        if not allowed:
+            return JSONResponse(
+                {"error": "Rate limit exceeded. Try again later."},
+                status_code=429,
+                headers={"Retry-After": "3600", "X-RateLimit-Remaining": "0"},
+            )
+
+        question = body.get("question", "")
+        mode = body.get("mode", "mix")
+        result = await pipeline.ask_with_sources(question, mode=mode)
+        return {
+            "answer": result.answer,
+            "sources": [{"document": s["document"], "excerpt": s["excerpt"]} for s in result.sources],
+        }
 
     return app
 
