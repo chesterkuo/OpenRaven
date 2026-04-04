@@ -84,3 +84,57 @@ def test_verify_token(tmp_path) -> None:
     raw_token = generate_token(agents_dir=tmp_path, agent_id=agent.id)
     assert verify_token(agents_dir=tmp_path, agent_id=agent.id, token=raw_token) is True
     assert verify_token(agents_dir=tmp_path, agent_id=agent.id, token="wrong-token") is False
+
+
+import time
+
+
+def test_rate_limiter_allows_under_limit() -> None:
+    from openraven.agents.ratelimit import RateLimiter
+    limiter = RateLimiter()
+    allowed, remaining = limiter.check("user-1", limit=5, window_seconds=3600)
+    assert allowed is True
+    assert remaining == 4
+
+
+def test_rate_limiter_blocks_over_limit() -> None:
+    from openraven.agents.ratelimit import RateLimiter
+    limiter = RateLimiter()
+    for _ in range(5):
+        limiter.check("user-2", limit=5, window_seconds=3600)
+    allowed, remaining = limiter.check("user-2", limit=5, window_seconds=3600)
+    assert allowed is False
+    assert remaining == 0
+
+
+def test_rate_limiter_separate_keys() -> None:
+    from openraven.agents.ratelimit import RateLimiter
+    limiter = RateLimiter()
+    for _ in range(5):
+        limiter.check("user-a", limit=5, window_seconds=3600)
+    allowed, _ = limiter.check("user-b", limit=5, window_seconds=3600)
+    assert allowed is True
+
+
+def test_rate_limiter_resets_after_window() -> None:
+    from openraven.agents.ratelimit import RateLimiter
+    limiter = RateLimiter()
+    for _ in range(3):
+        limiter.check("user-3", limit=3, window_seconds=1)
+    allowed, _ = limiter.check("user-3", limit=3, window_seconds=1)
+    assert allowed is False
+    time.sleep(1.1)
+    allowed, remaining = limiter.check("user-3", limit=3, window_seconds=1)
+    assert allowed is True
+    assert remaining == 2
+
+
+def test_rate_limiter_remaining_count() -> None:
+    from openraven.agents.ratelimit import RateLimiter
+    limiter = RateLimiter()
+    _, r1 = limiter.check("user-4", limit=3, window_seconds=3600)
+    _, r2 = limiter.check("user-4", limit=3, window_seconds=3600)
+    _, r3 = limiter.check("user-4", limit=3, window_seconds=3600)
+    assert r1 == 2
+    assert r2 == 1
+    assert r3 == 0
