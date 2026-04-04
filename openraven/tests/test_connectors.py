@@ -40,3 +40,21 @@ def test_google_auth_scopes() -> None:
     from openraven.connectors.google_auth import DRIVE_SCOPES, GMAIL_SCOPES
     assert "drive.readonly" in DRIVE_SCOPES[0]
     assert "gmail.readonly" in GMAIL_SCOPES[0]
+
+
+def test_gdrive_supported_mimetypes() -> None:
+    from openraven.connectors.gdrive import SUPPORTED_MIMETYPES
+    assert "application/pdf" in SUPPORTED_MIMETYPES
+    assert "text/plain" in SUPPORTED_MIMETYPES
+
+
+def test_gdrive_file_to_path_mapping() -> None:
+    from openraven.connectors.gdrive import file_id_to_record_path
+    path = file_id_to_record_path("1BxiMVs0XRA5nFMdK")
+    assert path == "gdrive://1BxiMVs0XRA5nFMdK"
+
+
+async def test_gdrive_download_file_requires_credentials() -> None:
+    from openraven.connectors.gdrive import sync_drive
+    result = await sync_drive(credentials=None, output_dir=Path("/tmp"), max_files=10)
+    assert result == []
