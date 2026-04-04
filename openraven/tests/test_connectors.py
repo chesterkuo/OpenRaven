@@ -58,3 +58,28 @@ async def test_gdrive_download_file_requires_credentials() -> None:
     from openraven.connectors.gdrive import sync_drive
     result = await sync_drive(credentials=None, output_dir=Path("/tmp"), max_files=10)
     assert result == []
+
+
+def test_gmail_message_to_markdown() -> None:
+    from openraven.connectors.gmail import message_to_markdown
+    md = message_to_markdown(
+        subject="Q1 Report Discussion",
+        sender="alice@example.com",
+        date="2026-01-15",
+        body="The Q1 numbers look strong. Revenue up 15%.",
+    )
+    assert "Q1 Report Discussion" in md
+    assert "alice@example.com" in md
+    assert "Revenue up 15%" in md
+
+
+def test_gmail_message_id_to_path() -> None:
+    from openraven.connectors.gmail import message_id_to_record_path
+    path = message_id_to_record_path("18b3f9a1c2d4e5f6")
+    assert path == "gmail://18b3f9a1c2d4e5f6"
+
+
+async def test_gmail_sync_requires_credentials() -> None:
+    from openraven.connectors.gmail import sync_gmail
+    result = await sync_gmail(credentials=None, output_dir=Path("/tmp"), max_messages=10)
+    assert result == []
