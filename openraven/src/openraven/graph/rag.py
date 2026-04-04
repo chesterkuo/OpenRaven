@@ -108,13 +108,40 @@ class RavenGraph:
         key = api_key or os.environ.get("GEMINI_API_KEY", "")
 
         if "gemini" in model or "text-embedding" in model:
-            # Use LightRAG's native Gemini embedding (not OpenAI-compatible)
             from lightrag.llm.gemini import gemini_embed
 
             embed_model = "gemini-embedding-001"
+            # Access the raw function underneath gemini_embed's
+            # @wrap_embedding_func_with_attrs decorator. The decorator wraps
+            # it in an EmbeddingFunc(dim=1536) with a count validator that
+            # rejects Gemini's extra-vector responses. By using .func we
+            # bypass that inner validator — our outer EmbeddingFunc(dim=768)
+            # will handle validation after we truncate.
+            raw_gemini_embed = gemini_embed.func
+            base_func = partial(raw_gemini_embed, model=embed_model, api_key=key)
+
+            async def _safe_gemini_embed(texts, **kwargs):
+                """Call Gemini embed with correct dimension and truncate extra vectors.
+
+                Two issues with raw gemini_embed:
+                1. Without embedding_dim, Gemini returns 3072-dim vectors instead of 768,
+                   causing LightRAG's validator to miscount vectors (3072/768 = 4x).
+                2. Gemini sometimes returns more embeddings than input texts.
+                We fix both by injecting embedding_dim and truncating excess vectors.
+                """
+                import numpy as np
+
+                # Ensure embedding_dim is passed so Gemini returns 768-dim vectors
+                kwargs.setdefault("embedding_dim", 768)
+                result = await base_func(texts, **kwargs)
+                expected = len(texts)
+                if result.shape[0] > expected:
+                    result = result[:expected]
+                return result
+
             return EmbeddingFunc(
                 embedding_dim=768,
-                func=partial(gemini_embed, model=embed_model, api_key=key),
+                func=_safe_gemini_embed,
                 model_name=embed_model,
             )
 

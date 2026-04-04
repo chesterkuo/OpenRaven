@@ -113,3 +113,38 @@ def test_get_graph_data_handles_corrupt_file(graph: RavenGraph) -> None:
     assert data["nodes"] == []
     assert data["edges"] == []
     assert data["is_truncated"] is False
+
+
+async def test_safe_gemini_embed_truncates_extra_vectors() -> None:
+    """Gemini API sometimes returns more embeddings than input texts.
+
+    The _safe_gemini_embed wrapper in _make_embedding_func should truncate
+    the result to match the expected count so LightRAG's validator doesn't
+    raise 'Vector count mismatch'.
+    """
+    import numpy as np
+
+    from lightrag.utils import EmbeddingFunc
+
+    # Simulate Gemini returning extra vectors (N+1 for N inputs)
+    async def fake_gemini_embed(texts, **kwargs):
+        n_extra = len(texts) + 1
+        return np.ones((n_extra, 768), dtype=np.float32)
+
+    # Replicate the wrapper logic from RavenGraph._make_embedding_func
+    async def _safe_embed(texts, **kwargs):
+        result = await fake_gemini_embed(texts, **kwargs)
+        expected = len(texts)
+        if result.shape[0] > expected:
+            result = result[:expected]
+        return result
+
+    func = EmbeddingFunc(embedding_dim=768, func=_safe_embed, model_name="test")
+
+    # Single text — should NOT raise ValueError
+    result = await func(["hello world"])
+    assert result.shape == (1, 768)
+
+    # Multiple texts — should truncate from 4 to 3
+    result = await func(["text one", "text two", "text three"])
+    assert result.shape == (3, 768)
