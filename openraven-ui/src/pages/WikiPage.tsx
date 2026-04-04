@@ -39,7 +39,7 @@ export default function WikiPage() {
         <div className="flex flex-col">
           {articles.map((a) => (
             <button key={a.slug} onClick={() => loadArticle(a.slug)}
-              className="text-left text-sm px-4 py-2 truncate transition-colors"
+              className="text-left text-sm px-4 py-2 truncate cursor-pointer transition-colors"
               style={selected?.slug === a.slug
                 ? { background: "var(--bg-surface)", boxShadow: "var(--shadow-subtle)", borderLeft: "4px solid var(--color-brand)", color: "var(--color-text)" }
                 : { color: "var(--color-text-secondary)", borderLeft: "4px solid transparent" }

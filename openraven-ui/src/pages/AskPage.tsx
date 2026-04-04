@@ -69,10 +69,11 @@ export default function AskPage() {
       </div>
       <form onSubmit={handleSubmit} className="flex gap-3 pt-4" style={{ borderTop: "1px solid var(--color-border)" }}>
         <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="Ask your knowledge base..."
+          aria-label="Ask your knowledge base"
           className="flex-1 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
           style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
         <button type="submit" disabled={loading || !input.trim()}
-          className="px-5 py-2.5 text-sm uppercase transition-colors disabled:opacity-50"
+          className="px-5 py-2.5 text-sm uppercase cursor-pointer transition-colors disabled:opacity-50 disabled:cursor-default"
           style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}>Ask</button>
       </form>
     </div>

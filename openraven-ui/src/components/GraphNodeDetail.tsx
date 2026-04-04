@@ -34,7 +34,7 @@ export default function GraphNodeDetail({ node, neighbors, edges, onClose, onNav
         <span className="text-xs uppercase tracking-wider px-2 py-0.5" style={{ background: "var(--bg-surface-warm)", color: typeColor }}>
           {entityType}
         </span>
-        <button onClick={onClose} className="text-sm hover:opacity-70" style={{ color: "var(--color-text-muted)" }}>✕</button>
+        <button onClick={onClose} aria-label="Close" className="text-sm cursor-pointer hover:opacity-70 p-1" style={{ color: "var(--color-text-muted)" }}>✕</button>
       </div>
       <h2 className="text-2xl mb-3" style={{ color: "var(--color-text)", lineHeight: 1.33 }}>{node.id}</h2>
       {description && (
@@ -58,7 +58,7 @@ export default function GraphNodeDetail({ node, neighbors, edges, onClose, onNav
                 <div key={n.id} className="p-2" style={{ background: "var(--bg-surface-hover)", boxShadow: "var(--shadow-subtle)" }}>
                   <button
                     onClick={() => onNavigate(n.id)}
-                    className="text-left text-sm truncate block hover:opacity-70"
+                    className="text-left text-sm truncate block cursor-pointer hover:opacity-70"
                     style={{ color: "var(--color-brand)" }}
                   >
                     {n.id}

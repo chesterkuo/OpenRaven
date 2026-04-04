@@ -80,13 +80,13 @@ export default function ConnectorsPage() {
     if (!connected) {
       return (
         <button onClick={handleConnect} disabled={!status.google_configured}
-          className="text-sm px-3 py-1.5 uppercase disabled:opacity-50"
+          className="text-sm px-3 py-2 uppercase cursor-pointer disabled:opacity-50 disabled:cursor-default"
           style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}>Connect</button>
       );
     }
     return (
       <button onClick={() => handleSync(connector as "gdrive" | "gmail" | "meet" | "otter")} disabled={syncing !== null}
-        className="text-sm px-3 py-1.5 uppercase disabled:opacity-50"
+        className="text-sm px-3 py-2 uppercase cursor-pointer disabled:opacity-50 disabled:cursor-default"
         style={{ background: "var(--bg-surface-warm)", color: "var(--color-text)" }}>
         {syncing === connector ? "Syncing..." : label}
       </button>
@@ -135,17 +135,18 @@ export default function ConnectorsPage() {
           {!status.otter.connected ? (
             <div className="flex gap-2">
               <input type="password" value={otterKey} onChange={(e) => setOtterKey(e.target.value)} placeholder="Otter.ai API key"
-                className="flex-1 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
+                aria-label="Otter.ai API key"
+                className="flex-1 px-2 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
                 style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
               <button onClick={handleSaveOtterKey} disabled={savingKey || !otterKey.trim()}
-                className="text-sm px-3 py-1.5 uppercase disabled:opacity-50"
+                className="text-sm px-3 py-2 uppercase cursor-pointer disabled:opacity-50 disabled:cursor-default"
                 style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}>
                 {savingKey ? "Saving..." : "Save"}
               </button>
             </div>
           ) : (
             <button onClick={() => handleSync("otter")} disabled={syncing !== null}
-              className="text-sm px-3 py-1.5 uppercase disabled:opacity-50"
+              className="text-sm px-3 py-2 uppercase cursor-pointer disabled:opacity-50 disabled:cursor-default"
               style={{ background: "var(--bg-surface-warm)", color: "var(--color-text)" }}>
               {syncing === "otter" ? "Syncing..." : "Sync Now"}
             </button>

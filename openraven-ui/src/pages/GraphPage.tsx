@@ -149,16 +149,17 @@ export default function GraphPage() {
         <input
           type="text"
           placeholder="Search nodes..."
+          aria-label="Search nodes"
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
-          className="px-3 py-1 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]" style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
+          className="px-3 py-1.5 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]" style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
         />
         <div className="flex gap-1">
           {ENTITY_TYPES.map((type) => (
             <button
               key={type}
               onClick={() => toggleType(type)}
-              className="text-xs px-2 py-1" style={activeTypes.has(type) ? { background: "var(--color-brand)", color: "var(--color-text-on-brand)" } : { background: "var(--bg-surface-warm)", color: "var(--color-text-secondary)" }}
+              className="text-xs px-2.5 py-1.5 cursor-pointer" style={activeTypes.has(type) ? { background: "var(--color-brand)", color: "var(--color-text-on-brand)" } : { background: "var(--bg-surface-warm)", color: "var(--color-text-secondary)" }}
             >
               {type}
             </button>
@@ -179,13 +180,13 @@ export default function GraphPage() {
         <a
           href="/api/graph/export"
           download
-          className="text-xs px-2 py-1 uppercase" style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}
+          className="text-xs px-2.5 py-1.5 uppercase cursor-pointer" style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}
         >
           Export GraphML
         </a>
         <button
           onClick={exportPNG}
-          className="text-xs px-2 py-1 uppercase" style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}
+          className="text-xs px-2.5 py-1.5 uppercase cursor-pointer" style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}
         >
           Export PNG
         </button>
