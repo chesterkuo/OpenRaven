@@ -747,26 +747,28 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                 })
         return courses
 
+    def _valid_course_id(cid: str) -> bool:
+        import re
+        return bool(re.fullmatch(r"[a-f0-9]{8}", cid))
+
     @app.get("/api/courses/{course_id}")
     async def courses_get(course_id: str):
         from fastapi.responses import JSONResponse
+        if not _valid_course_id(course_id):
+            return JSONResponse({"error": "Invalid course ID"}, status_code=400)
         course_dir = config.courses_dir / course_id
         meta_file = course_dir / "metadata.json"
         if not course_dir.exists() or not meta_file.exists():
             return JSONResponse({"error": "Course not found"}, status_code=404)
         import json as _json
         meta = _json.loads(meta_file.read_text(encoding="utf-8"))
-        import datetime
-        created_at = datetime.datetime.fromtimestamp(
-            course_dir.stat().st_mtime, tz=datetime.timezone.utc
-        ).isoformat()
         return {
             "id": meta["id"],
             "title": meta["title"],
             "audience": meta.get("audience", ""),
             "objectives": meta.get("objectives", []),
             "chapters": meta.get("chapters", []),
-            "created_at": created_at,
+            "created_at": meta.get("created_at", ""),
         }
 
     @app.get("/api/courses/{course_id}/download")
@@ -774,6 +776,8 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         import os
         import zipfile
         from fastapi.responses import JSONResponse
+        if not _valid_course_id(course_id):
+            return JSONResponse({"error": "Invalid course ID"}, status_code=400)
         course_dir = config.courses_dir / course_id
         if not course_dir.exists():
             return JSONResponse({"error": "Course not found"}, status_code=404)
@@ -799,6 +803,8 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     async def courses_delete(course_id: str):
         import shutil
         from fastapi.responses import JSONResponse
+        if not _valid_course_id(course_id):
+            return JSONResponse({"error": "Invalid course ID"}, status_code=400)
         course_dir = config.courses_dir / course_id
         if not course_dir.exists():
             return JSONResponse({"error": "Course not found"}, status_code=404)

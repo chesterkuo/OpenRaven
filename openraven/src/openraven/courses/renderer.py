@@ -161,7 +161,11 @@ async def generate_course(
         elif "```" in llm_content:
             llm_content = llm_content.split("```")[1].split("```")[0]
 
-        extras = json.loads(llm_content.strip())
+        try:
+            extras = json.loads(llm_content.strip())
+        except json.JSONDecodeError:
+            logger.warning(f"LLM returned invalid JSON for chapter {chapter.title}, using defaults")
+            extras = {}
         key_takeaways = extras.get("key_takeaways", [])
         review_questions_raw = extras.get("review_questions", [])
 
@@ -198,6 +202,7 @@ async def generate_course(
     (course_dir / "course.html").write_text(html_content, encoding="utf-8")
 
     # Save metadata
+    from datetime import datetime, timezone
     metadata = {
         "id": course_id,
         "title": outline.title,
@@ -207,6 +212,7 @@ async def generate_course(
             {"title": ch.title, "sections": ch.sections, "key_concepts": ch.key_concepts}
             for ch in outline.chapters
         ],
+        "created_at": datetime.now(timezone.utc).isoformat(),
     }
     (course_dir / "metadata.json").write_text(
         json.dumps(metadata, ensure_ascii=False, indent=2), encoding="utf-8"

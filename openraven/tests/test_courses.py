@@ -373,10 +373,20 @@ def test_courses_status_not_found(course_client: TestClient) -> None:
 
 
 def test_courses_get_not_found(course_client: TestClient) -> None:
-    res = course_client.get("/api/courses/nonexistent")
+    res = course_client.get("/api/courses/abcd1234")
     assert res.status_code == 404
+
+
+def test_courses_get_invalid_id(course_client: TestClient) -> None:
+    res = course_client.get("/api/courses/not-a-hex-id")
+    assert res.status_code == 400
 
 
 def test_courses_delete_not_found(course_client: TestClient) -> None:
-    res = course_client.delete("/api/courses/nonexistent")
+    res = course_client.delete("/api/courses/abcd1234")
     assert res.status_code == 404
+
+
+def test_courses_delete_invalid_id(course_client: TestClient) -> None:
+    res = course_client.delete("/api/courses/not-valid!")
+    assert res.status_code == 400

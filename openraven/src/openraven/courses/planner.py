@@ -86,7 +86,12 @@ async def plan_curriculum(
     elif "```" in content:
         content = content.split("```")[1].split("```")[0]
 
-    data = json.loads(content.strip())
+    try:
+        data = json.loads(content.strip())
+    except json.JSONDecodeError as e:
+        logger.warning(f"LLM returned invalid JSON in planner: {e}")
+        # Fallback: create a single chapter from the raw response
+        data = {"chapters": [{"title": title, "sections": ["Overview"], "key_concepts": entity_names[:5]}]}
 
     chapters = [
         ChapterOutline(
