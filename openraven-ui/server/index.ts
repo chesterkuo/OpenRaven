@@ -35,6 +35,17 @@ app.all("/api/health/*", async (c) => {
     return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502);
   }
 });
+// Proxy connector endpoints to core API
+app.all("/api/connectors/*", async (c) => {
+  try {
+    const url = `${CORE_API_URL}${c.req.path}${c.req.url.includes("?") ? "?" + c.req.url.split("?")[1] : ""}`;
+    const res = await fetch(url, { method: c.req.method });
+    const data = await res.json();
+    return c.json(data, res.status as any);
+  } catch (e) {
+    return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502);
+  }
+});
 // Proxy config endpoint to core API
 app.get("/api/config/:path", async (c) => {
   try {
