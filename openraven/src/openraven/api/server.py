@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import asyncio
 import tempfile
+import uuid
+from dataclasses import dataclass, field as dc_field
 from pathlib import Path
 
 from fastapi import BackgroundTasks, FastAPI, File, Query, UploadFile
@@ -66,6 +68,19 @@ class GraphResponse(BaseModel):
     is_truncated: bool
 
 
+@dataclass
+class IngestJob:
+    job_id: str
+    stage: str = "uploading"
+    files_total: int = 0
+    files_done: int = 0
+    entities_extracted: int = 0
+    articles_total: int = 0
+    articles_done: int = 0
+    errors: list[str] = dc_field(default_factory=list)
+    result: dict | None = None
+
+
 def create_app(config: RavenConfig | None = None) -> FastAPI:
     if config is None:
         config = RavenConfig(working_dir="~/my-knowledge")
@@ -83,6 +98,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     )
 
     pipeline = RavenPipeline(config)
+    ingest_jobs: dict[str, IngestJob] = {}
 
     @app.get("/health")
     async def health():
@@ -105,6 +121,24 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         answer = await pipeline.ask(req.question, mode=req.mode)
         return AskResponse(answer=answer, mode=req.mode)
 
+    @app.get("/api/ingest/status/{job_id}")
+    async def ingest_status(job_id: str):
+        from fastapi.responses import JSONResponse
+        job = ingest_jobs.get(job_id)
+        if not job:
+            return JSONResponse({"error": "Job not found"}, status_code=404)
+        return {
+            "job_id": job.job_id,
+            "stage": job.stage,
+            "files_total": job.files_total,
+            "files_done": job.files_done,
+            "entities_extracted": job.entities_extracted,
+            "articles_total": job.articles_total,
+            "articles_done": job.articles_done,
+            "errors": job.errors,
+            "result": job.result,
+        }
+
     @app.post("/api/ingest", response_model=IngestResponse)
     async def ingest(files: list[UploadFile] = File(...)):
         saved_paths: list[Path] = []
@@ -115,7 +149,24 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
             dest.write_bytes(content)
             saved_paths.append(dest)
 
+        job_id = str(uuid.uuid4())[:8]
+        job = IngestJob(job_id=job_id, files_total=len(saved_paths), stage="processing")
+        ingest_jobs[job_id] = job
+
         result = await pipeline.add_files(saved_paths)
+
+        job.stage = "done"
+        job.files_done = result.files_processed
+        job.entities_extracted = result.entities_extracted
+        job.articles_done = result.articles_generated
+        job.errors = result.errors
+        job.result = {
+            "files_processed": result.files_processed,
+            "entities_extracted": result.entities_extracted,
+            "articles_generated": result.articles_generated,
+            "errors": result.errors,
+        }
+
         return IngestResponse(
             files_processed=result.files_processed,
             entities_extracted=result.entities_extracted,

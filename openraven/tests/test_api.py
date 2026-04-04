@@ -90,6 +90,11 @@ def test_graph_export_endpoint(client: TestClient) -> None:
     assert "graphml" in response.headers.get("content-disposition", "").lower()
 
 
+def test_ingest_status_unknown_job(client: TestClient) -> None:
+    response = client.get("/api/ingest/status/nonexistent")
+    assert response.status_code == 404
+
+
 def test_wiki_article_endpoint_reads_file(client: TestClient, config) -> None:
     config.wiki_dir.mkdir(parents=True, exist_ok=True)
     (config.wiki_dir / "apache_kafka.md").write_text(
