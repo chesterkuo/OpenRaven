@@ -3,6 +3,7 @@ from __future__ import annotations
 import hashlib
 import json
 import logging
+import re
 import secrets
 import uuid
 from dataclasses import asdict, dataclass, field
@@ -10,6 +11,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+_UUID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 
 
 @dataclass
@@ -39,8 +42,12 @@ def _save_agent(agents_dir: Path, agent: AgentConfig) -> None:
 def _load_agent(path: Path) -> AgentConfig | None:
     if not path.exists():
         return None
-    data = json.loads(path.read_text(encoding="utf-8"))
-    return AgentConfig(**data)
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return AgentConfig(**data)
+    except (json.JSONDecodeError, TypeError) as e:
+        logger.warning(f"Failed to load agent from {path}: {e}")
+        return None
 
 
 def create_agent(
@@ -68,6 +75,8 @@ def create_agent(
 
 
 def get_agent(agents_dir: Path, agent_id: str) -> AgentConfig | None:
+    if not _UUID_RE.match(agent_id):
+        return None
     return _load_agent(_agents_dir(agents_dir) / f"{agent_id}.json")
 
 
@@ -96,6 +105,8 @@ def update_agent(agents_dir: Path, agent_id: str, **kwargs) -> AgentConfig | Non
 
 
 def delete_agent(agents_dir: Path, agent_id: str) -> bool:
+    if not _UUID_RE.match(agent_id):
+        return False
     path = _agents_dir(agents_dir) / f"{agent_id}.json"
     if path.exists():
         path.unlink()

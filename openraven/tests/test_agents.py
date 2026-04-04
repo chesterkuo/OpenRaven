@@ -270,6 +270,29 @@ def test_api_agent_private_requires_token(agent_client: TestClient) -> None:
     assert ask_resp.status_code == 403
 
 
+def test_api_agent_private_with_valid_token(agent_client: TestClient) -> None:
+    resp = agent_client.post("/api/agents", json={
+        "name": "PrivateOK", "description": "token access", "is_public": False
+    })
+    agent_id = resp.json()["id"]
+    tok_resp = agent_client.post(f"/api/agents/{agent_id}/tokens")
+    token = tok_resp.json()["token"]
+    ask_resp = agent_client.post(
+        f"/agents/{agent_id}/ask",
+        json={"question": "test"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert ask_resp.status_code == 200
+    assert "answer" in ask_resp.json()
+
+
+def test_agent_id_path_traversal_rejected(tmp_path) -> None:
+    from openraven.agents.registry import get_agent, delete_agent
+    assert get_agent(agents_dir=tmp_path, agent_id="../../etc/passwd") is None
+    assert get_agent(agents_dir=tmp_path, agent_id="..") is None
+    assert delete_agent(agents_dir=tmp_path, agent_id="../../etc/passwd") is False
+
+
 def test_api_agent_info(agent_client: TestClient) -> None:
     resp = agent_client.post("/api/agents", json={"name": "Info", "description": "meta"})
     agent_id = resp.json()["id"]

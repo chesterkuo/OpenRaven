@@ -69,6 +69,9 @@ def start_tunnel(port: int, working_dir: Path) -> str:
     url = ""
     deadline = time.time() + 15
     while time.time() < deadline:
+        if proc.poll() is not None:
+            logger.error(f"cloudflared exited early with code {proc.returncode}")
+            break
         line = proc.stderr.readline().decode("utf-8", errors="replace")
         match = re.search(r"(https://[a-z0-9-]+\.trycloudflare\.com)", line)
         if match:
