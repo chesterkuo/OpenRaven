@@ -1178,7 +1178,7 @@ Add to `openraven/src/openraven/api/server.py`, inside `create_app()` before `re
     course_jobs: dict[str, CourseJob] = {}
 
     @app.post("/api/courses/generate")
-    async def courses_generate(body: dict, background_tasks: BackgroundTasks):
+    async def courses_generate(body: dict):
         from fastapi.responses import JSONResponse
         title = body.get("title", "").strip()
         audience = body.get("audience", "").strip()
@@ -1203,7 +1203,7 @@ Add to `openraven/src/openraven/api/server.py`, inside `create_app()` before `re
 
                 # Get entity names from graph
                 graph_stats = pipeline.graph.get_stats()
-                entity_names = list(graph_stats.get("entities", {}).keys())[:100]
+                entity_names = graph_stats.get("topics", [])[:100]
 
                 job.stage = "planning"
                 outline = await plan_curriculum(
@@ -1239,7 +1239,8 @@ Add to `openraven/src/openraven/api/server.py`, inside `create_app()` before `re
                 job.stage = "error"
                 job.error = str(e)
 
-        background_tasks.add_task(run_generation)
+        import asyncio
+        asyncio.create_task(run_generation())
         return {"job_id": job_id}
 
     @app.get("/api/courses/generate/{job_id}")
@@ -1613,6 +1614,17 @@ In `openraven-ui/server/index.ts`, add after the agents proxy blocks (before the
 app.all("/api/courses/*", async (c) => {
   try {
     const url = `${CORE_API_URL}${c.req.path}${c.req.url.includes("?") ? "?" + c.req.url.split("?")[1] : ""}`;
+    // Binary passthrough for zip downloads
+    if (c.req.path.endsWith("/download")) {
+      const res = await fetch(url);
+      return new Response(res.body, {
+        status: res.status,
+        headers: {
+          "content-type": res.headers.get("content-type") || "application/octet-stream",
+          "content-disposition": res.headers.get("content-disposition") || "",
+        },
+      });
+    }
     const headers: Record<string, string> = {};
     const ct = c.req.header("content-type");
     if (ct) headers["content-type"] = ct;

@@ -610,7 +610,12 @@ async def schemas():
     return list_schemas()
 ```
 
-Update the `ingest` endpoint to read the `schema` form field. Replace:
+**IMPORTANT:** Add `Form` to the FastAPI imports at the top of `server.py`:
+```python
+from fastapi import BackgroundTasks, FastAPI, File, Form, Query, Request, UploadFile
+```
+
+Update the `ingest` endpoint to accept the `schema` form field. Replace:
 
 ```python
 @app.post("/api/ingest", response_model=IngestResponse)
@@ -634,10 +639,8 @@ With:
 
 ```python
 @app.post("/api/ingest", response_model=IngestResponse)
-async def ingest(request: Request, files: list[UploadFile] = File(...)):
-    form = await request.form()
-    schema_value = form.get("schema")
-    schema_name: str | None = str(schema_value) if schema_value and str(schema_value) != "auto" else None
+async def ingest(files: list[UploadFile] = File(...), schema: str | None = Form(default=None)):
+    schema_name: str | None = schema if schema and schema != "auto" else None
 
     saved_paths: list[Path] = []
     config.ingestion_dir.mkdir(parents=True, exist_ok=True)
