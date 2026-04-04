@@ -174,3 +174,30 @@ def test_ask_response_sources_are_structured(client: TestClient) -> None:
     assert "sources" in data
     assert "answer" in data
     assert "mode" in data
+
+
+def test_connectors_status_includes_meet_and_otter(client: TestClient) -> None:
+    response = client.get("/api/connectors/status")
+    assert response.status_code == 200
+    data = response.json()
+    assert "meet" in data
+    assert "otter" in data
+    assert data["meet"]["connected"] is False
+    assert data["otter"]["connected"] is False
+
+
+def test_meet_sync_requires_auth(client: TestClient) -> None:
+    response = client.post("/api/connectors/meet/sync")
+    assert response.status_code == 401
+
+
+def test_otter_save_key_endpoint(client: TestClient) -> None:
+    response = client.post("/api/connectors/otter/save-key", json={"api_key": "test-key"})
+    assert response.status_code == 200
+    data = response.json()
+    assert data["saved"] is True
+
+
+def test_otter_sync_requires_key(client: TestClient) -> None:
+    response = client.post("/api/connectors/otter/sync")
+    assert response.status_code == 401

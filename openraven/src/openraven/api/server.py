@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 import tempfile
 import uuid
 from dataclasses import dataclass, field as dc_field
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 
 from fastapi import BackgroundTasks, FastAPI, File, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
@@ -294,10 +297,12 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     async def connectors_status():
         from openraven.connectors.google_auth import load_token
         token = load_token(config.google_token_path)
-        connected = token is not None
+        google_connected = token is not None
         return {
-            "gdrive": {"connected": connected},
-            "gmail": {"connected": connected},
+            "gdrive": {"connected": google_connected},
+            "gmail": {"connected": google_connected},
+            "meet": {"connected": google_connected},
+            "otter": {"connected": bool(config.otter_api_key)},
             "google_configured": bool(config.google_client_id and config.google_client_secret),
         }
 
@@ -373,6 +378,63 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                 {"error": "Not authenticated. Connect Google account first."}, status_code=401
             )
         files = await sync_gmail(credentials=creds, output_dir=config.ingestion_dir / "gmail")
+        if files:
+            result = await pipeline.add_files(files)
+            return {
+                "files_synced": len(files),
+                "entities_extracted": result.entities_extracted,
+                "articles_generated": result.articles_generated,
+                "errors": result.errors,
+            }
+        return {"files_synced": 0, "entities_extracted": 0, "articles_generated": 0, "errors": []}
+
+    @app.post("/api/connectors/meet/sync")
+    async def meet_sync():
+        from fastapi.responses import JSONResponse
+        from openraven.connectors.gdrive import sync_meet_transcripts
+        from openraven.connectors.google_auth import get_credentials
+        creds = get_credentials(
+            config.google_token_path, config.google_client_id, config.google_client_secret
+        )
+        if not creds:
+            return JSONResponse(
+                {"error": "Not authenticated. Connect Google account first."}, status_code=401
+            )
+        files = await sync_meet_transcripts(
+            credentials=creds, output_dir=config.ingestion_dir / "meet"
+        )
+        if files:
+            result = await pipeline.add_files(files)
+            return {
+                "files_synced": len(files),
+                "entities_extracted": result.entities_extracted,
+                "articles_generated": result.articles_generated,
+                "errors": result.errors,
+            }
+        return {"files_synced": 0, "entities_extracted": 0, "articles_generated": 0, "errors": []}
+
+    @app.post("/api/connectors/otter/save-key")
+    async def otter_save_key(body: dict):
+        from openraven.connectors.otter import save_api_key
+        api_key = body.get("api_key", "")
+        if not api_key:
+            from fastapi.responses import JSONResponse
+            return JSONResponse({"error": "api_key is required"}, status_code=400)
+        save_api_key(api_key, config.otter_key_path)
+        return {"saved": True}
+
+    @app.post("/api/connectors/otter/sync")
+    async def otter_sync():
+        from fastapi.responses import JSONResponse
+        from openraven.connectors.otter import sync_otter
+        api_key = config.otter_api_key
+        if not api_key:
+            return JSONResponse(
+                {"error": "Otter.ai API key not configured. Save your key first."}, status_code=401
+            )
+        files = await sync_otter(
+            api_key=api_key, output_dir=config.ingestion_dir / "otter"
+        )
         if files:
             result = await pipeline.add_files(files)
             return {
