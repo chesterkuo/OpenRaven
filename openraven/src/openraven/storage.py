@@ -14,6 +14,7 @@ class FileRecord:
     format: str
     char_count: int
     status: str
+    updated_at: str | None = None
 
 
 class MetadataStore:
@@ -64,6 +65,7 @@ class MetadataStore:
             format=row["format"],
             char_count=row["char_count"],
             status=row["status"],
+            updated_at=row["updated_at"],
         )
 
     def list_files(self, status: str | None = None) -> list[FileRecord]:
@@ -73,7 +75,20 @@ class MetadataStore:
             rows = self._conn.execute("SELECT * FROM files").fetchall()
         return [
             FileRecord(path=r["path"], hash=r["hash"], format=r["format"],
-                       char_count=r["char_count"], status=r["status"])
+                       char_count=r["char_count"], status=r["status"],
+                       updated_at=r["updated_at"])
+            for r in rows
+        ]
+
+    def list_stale_files(self, days: int = 30) -> list[FileRecord]:
+        rows = self._conn.execute(
+            "SELECT * FROM files WHERE updated_at < datetime('now', ?)",
+            (f"-{days} days",),
+        ).fetchall()
+        return [
+            FileRecord(path=r["path"], hash=r["hash"], format=r["format"],
+                       char_count=r["char_count"], status=r["status"],
+                       updated_at=r["updated_at"])
             for r in rows
         ]
 

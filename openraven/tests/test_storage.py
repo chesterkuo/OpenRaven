@@ -48,3 +48,27 @@ def test_list_files(tmp_path: Path) -> None:
     )
     files = store.list_files()
     assert len(files) == 2
+
+
+def test_file_record_has_updated_at(tmp_path) -> None:
+    store = MetadataStore(tmp_path / "test.db")
+    store.upsert_file(FileRecord(path="/doc.md", hash="abc", format="markdown", char_count=100, status="ingested"))
+    record = store.get_file("/doc.md")
+    assert record is not None
+    assert record.updated_at is not None
+    assert isinstance(record.updated_at, str)
+    store.close()
+
+
+def test_list_stale_files(tmp_path) -> None:
+    store = MetadataStore(tmp_path / "test.db")
+    store.upsert_file(FileRecord(path="/old.md", hash="a", format="markdown", char_count=50, status="graphed"))
+    # Force the timestamp to 60 days ago
+    store._conn.execute("UPDATE files SET updated_at = datetime('now', '-60 days') WHERE path = '/old.md'")
+    store._conn.commit()
+    store.upsert_file(FileRecord(path="/new.md", hash="b", format="markdown", char_count=50, status="graphed"))
+
+    stale = store.list_stale_files(days=30)
+    assert len(stale) == 1
+    assert stale[0].path == "/old.md"
+    store.close()
