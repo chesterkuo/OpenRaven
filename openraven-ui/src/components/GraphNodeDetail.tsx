@@ -5,6 +5,7 @@ interface GraphNodeDetailProps {
     properties: Record<string, any>;
   } | null;
   neighbors: { id: string; labels: string[] }[];
+  edges?: { target: string; description: string; keywords: string }[];
   onClose: () => void;
   onNavigate: (nodeId: string) => void;
 }
@@ -18,8 +19,9 @@ const TYPE_COLORS: Record<string, string> = {
   location: "text-cyan-400",
 };
 
-export default function GraphNodeDetail({ node, neighbors, onClose, onNavigate }: GraphNodeDetailProps) {
+export default function GraphNodeDetail({ node, neighbors, edges, onClose, onNavigate }: GraphNodeDetailProps) {
   if (!node) return null;
+  const edgeList = edges ?? [];
 
   const entityType = node.properties.entity_type ?? node.labels[0] ?? "unknown";
   // LightRAG stores "description" (not "entity_description") in GraphML
@@ -49,16 +51,23 @@ export default function GraphNodeDetail({ node, neighbors, onClose, onNavigate }
           <h3 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
             Connected ({neighbors.length})
           </h3>
-          <div className="flex flex-col gap-1">
-            {neighbors.map((n) => (
-              <button
-                key={n.id}
-                onClick={() => onNavigate(n.id)}
-                className="text-left text-sm text-blue-400 hover:text-blue-300 truncate"
-              >
-                {n.id}
-              </button>
-            ))}
+          <div className="flex flex-col gap-2">
+            {neighbors.map((n) => {
+              const edge = edgeList.find(e => e.target === n.id);
+              return (
+                <div key={n.id}>
+                  <button
+                    onClick={() => onNavigate(n.id)}
+                    className="text-left text-sm text-blue-400 hover:text-blue-300 truncate block"
+                  >
+                    {n.id}
+                  </button>
+                  {edge?.description && (
+                    <p className="text-xs text-gray-500 mt-0.5 ml-2">{edge.description}</p>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

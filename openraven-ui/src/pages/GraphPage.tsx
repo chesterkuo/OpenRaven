@@ -17,6 +17,7 @@ export default function GraphPage() {
   const [selectedNode, setSelectedNode] = useState<GraphNode | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTypes, setActiveTypes] = useState<Set<string>>(new Set(ENTITY_TYPES));
+  const [minDegree, setMinDegree] = useState(0);
 
   useEffect(() => {
     fetch("/api/graph?max_nodes=500")
@@ -30,11 +31,37 @@ export default function GraphPage() {
 
   const filteredNodes = useMemo(() => {
     if (!data) return [];
+
+    // Step 1: Get type-filtered node IDs
+    const typeFilteredNodeIds = new Set(
+      data.nodes
+        .filter((n) => {
+          const type = n.properties?.entity_type ?? n.labels[0] ?? "unknown";
+          return activeTypes.has(type);
+        })
+        .map((n) => n.id)
+    );
+
+    // Step 2: Get edges where both endpoints pass the type filter
+    const typeFilteredEdges = data.edges.filter(
+      (e) => typeFilteredNodeIds.has(e.source) && typeFilteredNodeIds.has(e.target)
+    );
+
+    // Step 3: Build degree map from type-filtered edges
+    const degrees = new Map<string, number>();
+    for (const e of typeFilteredEdges) {
+      degrees.set(e.source, (degrees.get(e.source) ?? 0) + 1);
+      degrees.set(e.target, (degrees.get(e.target) ?? 0) + 1);
+    }
+
+    // Step 4: Filter nodes by type AND minDegree
     return data.nodes.filter((n) => {
       const type = n.properties?.entity_type ?? n.labels[0] ?? "unknown";
-      return activeTypes.has(type);
+      if (!activeTypes.has(type)) return false;
+      if (minDegree > 0 && (degrees.get(n.id) ?? 0) < minDegree) return false;
+      return true;
     });
-  }, [data, activeTypes]);
+  }, [data, activeTypes, minDegree]);
 
   const filteredNodeIds = useMemo(() => new Set(filteredNodes.map((n) => n.id)), [filteredNodes]);
 
@@ -65,6 +92,18 @@ export default function GraphPage() {
       .map((n) => ({ id: n.id, labels: n.labels }));
   }, [selectedNode, data]);
 
+  const selectedEdges = useMemo(() => {
+    if (!selectedNode || !data) return [];
+    const id = selectedNode.id;
+    return data.edges
+      .filter(e => e.source === id || e.target === id)
+      .map(e => ({
+        target: e.source === id ? e.target : e.source,
+        description: e.properties?.description ?? "",
+        keywords: e.properties?.keywords ?? "",
+      }));
+  }, [selectedNode, data]);
+
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedNode(node);
   }, []);
@@ -73,6 +112,15 @@ export default function GraphPage() {
     const node = data?.nodes.find((n) => n.id === nodeId);
     if (node) setSelectedNode(node);
   }, [data]);
+
+  function exportPNG() {
+    const canvas = document.querySelector('[data-testid="graph-viewer"] canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+    const link = document.createElement("a");
+    link.download = "openraven-knowledge-graph.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }
 
   const toggleType = (type: string) => {
     setActiveTypes((prev) => {
@@ -120,6 +168,18 @@ export default function GraphPage() {
             </button>
           ))}
         </div>
+        <div className="flex items-center gap-2">
+          <label className="text-xs text-gray-500">Min connections:</label>
+          <input
+            type="range"
+            min={0}
+            max={10}
+            value={minDegree}
+            onChange={(e) => setMinDegree(Number(e.target.value))}
+            className="w-20 h-1 accent-blue-500"
+          />
+          <span className="text-xs text-gray-400 w-4">{minDegree}</span>
+        </div>
         <a
           href="/api/graph/export"
           download
@@ -127,6 +187,12 @@ export default function GraphPage() {
         >
           Export GraphML
         </a>
+        <button
+          onClick={exportPNG}
+          className="text-xs px-2 py-1 rounded border border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700"
+        >
+          Export PNG
+        </button>
         <span className="text-xs text-gray-600 ml-auto">
           {filteredNodes.length} nodes / {filteredEdges.length} edges
           {data.is_truncated && " (truncated)"}
@@ -145,6 +211,7 @@ export default function GraphPage() {
           <GraphNodeDetail
             node={selectedNode}
             neighbors={neighbors}
+            edges={selectedEdges}
             onClose={() => setSelectedNode(null)}
             onNavigate={handleNavigate}
           />
