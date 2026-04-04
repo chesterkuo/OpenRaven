@@ -23,6 +23,28 @@ app.route("/api/discovery", discoveryRouter);
 app.route("/api/graph", graphRouter);
 app.route("/api/wiki", wikiRouter);
 
+// Proxy health endpoints to core API
+const CORE_API_URL = process.env.CORE_API_URL ?? "http://127.0.0.1:8741";
+app.all("/api/health/*", async (c) => {
+  try {
+    const url = `${CORE_API_URL}${c.req.path}`;
+    const res = await fetch(url, { method: c.req.method });
+    const data = await res.json();
+    return c.json(data, res.status as any);
+  } catch (e) {
+    return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502);
+  }
+});
+// Proxy config endpoint to core API
+app.get("/api/config/:path", async (c) => {
+  try {
+    const res = await fetch(`${CORE_API_URL}${c.req.path}`);
+    return c.json(await res.json(), res.status as any);
+  } catch (e) {
+    return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502);
+  }
+});
+
 // Serve built frontend assets from dist/
 app.use("/assets/*", serveStatic({ root: "./dist" }));
 
