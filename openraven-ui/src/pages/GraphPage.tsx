@@ -120,6 +120,13 @@ export default function GraphPage() {
             </button>
           ))}
         </div>
+        <a
+          href="/api/graph/export"
+          download
+          className="text-xs px-2 py-1 rounded border border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700"
+        >
+          Export GraphML
+        </a>
         <span className="text-xs text-gray-600 ml-auto">
           {filteredNodes.length} nodes / {filteredEdges.length} edges
           {data.is_truncated && " (truncated)"}

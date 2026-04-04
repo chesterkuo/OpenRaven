@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import tempfile
 from pathlib import Path
 
-from fastapi import FastAPI, File, Query, UploadFile
+from fastapi import BackgroundTasks, FastAPI, File, Query, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from openraven.config import RavenConfig
@@ -119,6 +121,21 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
             entities_extracted=result.entities_extracted,
             articles_generated=result.articles_generated,
             errors=result.errors,
+        )
+
+    @app.get("/api/graph/export")
+    async def graph_export(background_tasks: BackgroundTasks):
+        import os
+        tmp = tempfile.NamedTemporaryFile(suffix=".graphml", delete=False)
+        tmp.close()
+        await asyncio.get_running_loop().run_in_executor(
+            None, lambda: pipeline.graph.export_graphml(Path(tmp.name))
+        )
+        background_tasks.add_task(os.unlink, tmp.name)
+        return FileResponse(
+            path=tmp.name,
+            media_type="application/xml",
+            filename="openraven-knowledge-graph.graphml",
         )
 
     @app.get("/api/graph", response_model=GraphResponse)

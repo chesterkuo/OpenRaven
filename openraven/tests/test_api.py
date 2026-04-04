@@ -84,6 +84,12 @@ def test_wiki_article_endpoint_not_found(client: TestClient) -> None:
     assert response.status_code == 404
 
 
+def test_graph_export_endpoint(client: TestClient) -> None:
+    response = client.get("/api/graph/export")
+    assert response.status_code == 200
+    assert "graphml" in response.headers.get("content-disposition", "").lower()
+
+
 def test_wiki_article_endpoint_reads_file(client: TestClient, config) -> None:
     config.wiki_dir.mkdir(parents=True, exist_ok=True)
     (config.wiki_dir / "apache_kafka.md").write_text(
