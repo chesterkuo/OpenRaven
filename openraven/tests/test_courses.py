@@ -165,3 +165,104 @@ def test_render_chapter_markdown_writes_file(tmp_path: Path) -> None:
     out.write_text(md, encoding="utf-8")
     assert out.exists()
     assert "# Chapter 1: Intro" in out.read_text(encoding="utf-8")
+
+
+# --- Task 3: HTML template tests ---
+
+def test_render_course_html_basic() -> None:
+    from openraven.courses.html_template import render_course_html
+
+    html_out = render_course_html(
+        title="Test Course",
+        audience="Developers",
+        chapters=[
+            {
+                "title": "Chapter 1: Intro",
+                "sections": [
+                    {"heading": "What is X", "content": "X is a thing."},
+                ],
+                "review_questions": [
+                    {"question": "What is X?", "answer": "X is a thing."},
+                ],
+            },
+        ],
+    )
+    assert "<!DOCTYPE html>" in html_out
+    assert "Test Course" in html_out
+    assert "Chapter 1: Intro" in html_out
+    assert "What is X" in html_out
+    assert "Powered by" in html_out
+    assert "OpenRaven" in html_out
+
+
+def test_render_course_html_xss_safe() -> None:
+    from openraven.courses.html_template import render_course_html
+
+    html_out = render_course_html(
+        title='<script>alert("xss")</script>',
+        audience='<img onerror="alert(1)">',
+        chapters=[
+            {
+                "title": '<b onmouseover="hack()">Ch1</b>',
+                "sections": [
+                    {"heading": "S1", "content": "Safe content."},
+                ],
+                "review_questions": [],
+            },
+        ],
+    )
+    assert '<script>alert("xss")</script>' not in html_out
+    assert "&lt;script&gt;" in html_out
+    assert 'onerror="alert(1)"' not in html_out
+    assert 'onmouseover="hack()"' not in html_out
+
+
+def test_render_course_html_has_navigation() -> None:
+    from openraven.courses.html_template import render_course_html
+
+    html_out = render_course_html(
+        title="Nav Test",
+        audience="Testers",
+        chapters=[
+            {"title": "Ch1", "sections": [{"heading": "S1", "content": "C1"}], "review_questions": []},
+            {"title": "Ch2", "sections": [{"heading": "S2", "content": "C2"}], "review_questions": []},
+        ],
+    )
+    assert "nav" in html_out.lower() or "sidebar" in html_out.lower()
+    assert "Ch1" in html_out
+    assert "Ch2" in html_out
+
+
+def test_render_course_html_has_theme_toggle() -> None:
+    from openraven.courses.html_template import render_course_html
+
+    html_out = render_course_html(
+        title="Theme Test", audience="All",
+        chapters=[{"title": "Ch1", "sections": [{"heading": "S", "content": "C"}], "review_questions": []}],
+    )
+    assert "theme" in html_out.lower()
+    assert "localStorage" in html_out
+
+
+def test_render_course_html_has_progress_tracking() -> None:
+    from openraven.courses.html_template import render_course_html
+
+    html_out = render_course_html(
+        title="Progress Test", audience="All",
+        chapters=[{"title": "Ch1", "sections": [{"heading": "S", "content": "C"}], "review_questions": []}],
+    )
+    assert "localStorage" in html_out
+    assert "progress" in html_out.lower() or "read" in html_out.lower()
+
+
+def test_render_course_html_uses_textcontent() -> None:
+    """HTML template must use textContent not innerHTML for user-provided strings."""
+    from openraven.courses.html_template import render_course_html
+
+    html_out = render_course_html(
+        title="Safe", audience="All",
+        chapters=[{"title": "Ch1", "sections": [{"heading": "S", "content": "C"}], "review_questions": []}],
+    )
+    # The JS portion should not use innerHTML for dynamic content
+    # (static template construction is fine since we HTML-escape all user data)
+    assert "innerHTML" not in html_out
