@@ -113,6 +113,15 @@ export default function GraphPage() {
     if (node) setSelectedNode(node);
   }, [data]);
 
+  function exportPNG() {
+    const canvas = document.querySelector('[data-testid="graph-viewer"] canvas') as HTMLCanvasElement;
+    if (!canvas) return;
+    const link = document.createElement("a");
+    link.download = "openraven-knowledge-graph.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }
+
   const toggleType = (type: string) => {
     setActiveTypes((prev) => {
       const next = new Set(prev);
@@ -178,6 +187,12 @@ export default function GraphPage() {
         >
           Export GraphML
         </a>
+        <button
+          onClick={exportPNG}
+          className="text-xs px-2 py-1 rounded border border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700"
+        >
+          Export PNG
+        </button>
         <span className="text-xs text-gray-600 ml-auto">
           {filteredNodes.length} nodes / {filteredEdges.length} edges
           {data.is_truncated && " (truncated)"}
