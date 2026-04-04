@@ -17,41 +17,33 @@ export default function WikiPage() {
     if (res.ok) setSelected(await res.json());
   }
 
-  if (loading) return <div className="text-gray-500">Loading wiki...</div>;
+  if (loading) return <div style={{ color: "var(--color-text-muted)" }}>Loading wiki...</div>;
 
   if (articles.length === 0) {
     return (
-      <div className="text-gray-500">
-        <h1 className="text-2xl font-bold text-white mb-2">Knowledge Wiki</h1>
-        <p>No articles yet. Add files to start generating wiki articles.</p>
+      <div>
+        <h1 className="text-3xl mb-2" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>Knowledge Wiki</h1>
+        <p style={{ color: "var(--color-text-muted)" }}>No articles yet. Add files to start generating wiki articles.</p>
       </div>
     );
   }
 
   return (
     <div className="flex gap-6">
-      <div className="w-64 shrink-0">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-semibold">Articles ({articles.length})</h2>
-          <a
-            href="/api/wiki/export"
-            download
-            className="text-xs px-2 py-1 rounded border border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700"
-          >
-            Export
-          </a>
+      <div className="w-70 shrink-0" style={{ background: "var(--bg-surface-hover)" }}>
+        <div className="flex items-center justify-between p-4">
+          <h2 className="text-lg" style={{ color: "var(--color-text)" }}>Articles ({articles.length})</h2>
+          <a href="/api/wiki/export" download className="text-xs px-3 py-1 uppercase"
+            style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}>Export</a>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-col">
           {articles.map((a) => (
-            <button
-              key={a.slug}
-              onClick={() => loadArticle(a.slug)}
-              className={`text-left text-sm px-2 py-1 rounded truncate ${
-                selected?.slug === a.slug
-                  ? "bg-blue-600/20 text-blue-400"
-                  : "text-gray-400 hover:text-gray-200 hover:bg-gray-800"
-              }`}
-            >
+            <button key={a.slug} onClick={() => loadArticle(a.slug)}
+              className="text-left text-sm px-4 py-2 truncate transition-colors"
+              style={selected?.slug === a.slug
+                ? { background: "var(--bg-surface)", boxShadow: "var(--shadow-subtle)", borderLeft: "4px solid var(--color-brand)", color: "var(--color-text)" }
+                : { color: "var(--color-text-secondary)", borderLeft: "4px solid transparent" }
+              }>
               {a.title}
             </button>
           ))}
@@ -59,9 +51,12 @@ export default function WikiPage() {
       </div>
       <div className="flex-1 min-w-0">
         {selected ? (
-          <div className="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed">{selected.content}</div>
+          <div className="p-12" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-golden)", maxWidth: "720px" }}>
+            <h1 className="text-3xl mb-6" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>{selected.title}</h1>
+            <div className="whitespace-pre-wrap text-base leading-relaxed" style={{ color: "var(--color-text)" }}>{selected.content}</div>
+          </div>
         ) : (
-          <div className="text-gray-600 text-sm">Select an article to read</div>
+          <div className="text-sm" style={{ color: "var(--color-text-muted)" }}>Select an article to read</div>
         )}
       </div>
     </div>
