@@ -9,6 +9,9 @@ export default function StatusPage() {
   const [provider, setProvider] = useState<{provider: string; llm_model: string} | null>(null);
   useEffect(() => { fetch("/api/config/provider").then(r => r.json()).then(setProvider).catch(() => {}); }, []);
 
+  const [insights, setInsights] = useState<{insight_type: string; title: string; description: string; severity: string}[]>([]);
+  useEffect(() => { fetch("/api/health/insights").then(r => r.json()).then(setInsights).catch(() => {}); }, []);
+
   if (!status) return <div className="text-gray-500">Loading...</div>;
 
   return (
@@ -37,6 +40,30 @@ export default function StatusPage() {
           <h2 className="text-lg font-semibold mb-3">Top Topics</h2>
           <div className="flex flex-wrap gap-2">
             {status.top_topics.map(topic => <span key={topic} className="bg-gray-800 border border-gray-700 rounded-full px-3 py-1 text-sm text-gray-300">{topic}</span>)}
+          </div>
+        </div>
+      )}
+      {insights.length > 0 && (
+        <div className="mt-6">
+          <h2 className="text-lg font-semibold mb-3">Health Insights</h2>
+          <div className="flex flex-col gap-2">
+            {insights.map((insight, i) => (
+              <div key={i} className={`border rounded-lg p-3 text-sm ${
+                insight.severity === "warning" ? "border-amber-700 bg-amber-950/30" :
+                insight.severity === "critical" ? "border-red-700 bg-red-950/30" :
+                "border-gray-700 bg-gray-900"
+              }`}>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className={`text-xs font-medium uppercase ${
+                    insight.severity === "warning" ? "text-amber-400" :
+                    insight.severity === "critical" ? "text-red-400" :
+                    "text-blue-400"
+                  }`}>{insight.insight_type}</span>
+                  <span className="text-gray-200 font-medium">{insight.title}</span>
+                </div>
+                <p className="text-gray-400">{insight.description}</p>
+              </div>
+            ))}
           </div>
         </div>
       )}
