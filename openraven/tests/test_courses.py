@@ -266,3 +266,61 @@ def test_render_course_html_uses_textcontent() -> None:
     # The JS portion should not use innerHTML for dynamic content
     # (static template construction is fine since we HTML-escape all user data)
     assert "innerHTML" not in html_out
+
+
+# --- Task 4: CourseRenderer orchestrator tests ---
+
+@pytest.mark.asyncio
+async def test_generate_course_creates_directory(tmp_path: Path) -> None:
+    from openraven.courses.planner import ChapterOutline, CurriculumOutline
+    from openraven.courses.renderer import generate_course
+
+    outline = CurriculumOutline(
+        title="Test Course",
+        audience="Developers",
+        objectives=["Learn X"],
+        chapters=[
+            ChapterOutline(title="Chapter 1: Basics", sections=["Intro to X"], key_concepts=["X"]),
+        ],
+    )
+
+    mock_ask = AsyncMock(return_value=MagicMock(
+        answer="X is a framework for building apps. [Source: docs.md]",
+        sources=[{"document": "docs.md", "excerpt": "X is...", "char_start": 0, "char_end": 50}],
+    ))
+
+    mock_llm_response = json.dumps({
+        "key_takeaways": ["X is foundational"],
+        "review_questions": [
+            {"question": "What is X?", "answer": "A framework."}
+        ],
+    })
+    mock_client = AsyncMock()
+    mock_client.chat.completions.create.return_value = MagicMock(
+        choices=[MagicMock(message=MagicMock(content=mock_llm_response))]
+    )
+
+    with patch("openraven.courses.renderer.openai.AsyncOpenAI", return_value=mock_client):
+        course_dir = await generate_course(
+            outline=outline,
+            ask_fn=mock_ask,
+            output_dir=tmp_path / "courses",
+            api_key="test-key",
+            model="gemini-2.5-flash",
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        )
+
+    assert course_dir.exists()
+    assert (course_dir / "README.md").exists()
+    assert (course_dir / "01-basics.md").exists()
+    assert (course_dir / "course.html").exists()
+
+    readme = (course_dir / "README.md").read_text(encoding="utf-8")
+    assert "Test Course" in readme
+
+    chapter_md = (course_dir / "01-basics.md").read_text(encoding="utf-8")
+    assert "Chapter 1: Basics" in chapter_md
+
+    course_html = (course_dir / "course.html").read_text(encoding="utf-8")
+    assert "<!DOCTYPE html>" in course_html
+    assert "Test Course" in course_html
