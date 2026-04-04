@@ -95,3 +95,51 @@ async def test_meet_sync_requires_credentials() -> None:
     from openraven.connectors.gdrive import sync_meet_transcripts
     result = await sync_meet_transcripts(credentials=None, output_dir=Path("/tmp"), max_files=10)
     assert result == []
+
+
+def test_otter_transcript_to_markdown() -> None:
+    from openraven.connectors.otter import transcript_to_markdown
+    md = transcript_to_markdown(
+        title="Q1 Planning Meeting",
+        date="2026-03-15",
+        speakers=[
+            {"name": "Alice", "timestamp": "00:01:23", "text": "Let's review the Q1 roadmap."},
+            {"name": "Bob", "timestamp": "00:02:05", "text": "I think we should prioritize the API redesign."},
+        ],
+    )
+    assert "Q1 Planning Meeting" in md
+    assert "Alice" in md
+    assert "00:01:23" in md
+    assert "Bob" in md
+    assert "API redesign" in md
+
+
+async def test_otter_sync_requires_api_key() -> None:
+    from openraven.connectors.otter import sync_otter
+    result = await sync_otter(api_key="", output_dir=Path("/tmp"), max_transcripts=10)
+    assert result == []
+
+
+def test_otter_key_save_load(tmp_path) -> None:
+    from openraven.connectors.otter import save_api_key, load_api_key
+    key_path = tmp_path / "otter_key"
+    save_api_key("test-otter-key-123", key_path)
+    assert key_path.exists()
+    loaded = load_api_key(key_path)
+    assert loaded == "test-otter-key-123"
+
+
+def test_otter_key_load_missing(tmp_path) -> None:
+    from openraven.connectors.otter import load_api_key
+    result = load_api_key(tmp_path / "nonexistent")
+    assert result == ""
+
+
+def test_otter_key_permissions(tmp_path) -> None:
+    import os
+    import stat
+    from openraven.connectors.otter import save_api_key
+    key_path = tmp_path / "otter_key"
+    save_api_key("secret", key_path)
+    mode = stat.S_IMODE(os.stat(key_path).st_mode)
+    assert mode == 0o600
