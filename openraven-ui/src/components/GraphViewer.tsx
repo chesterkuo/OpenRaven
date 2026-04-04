@@ -387,7 +387,12 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
       const radius = getRadius(node.id);
       const color = getNodeColor(node);
       const isSelected = node.id === selectedNodeId;
-      const isMatch = searchTerm && node.id.toLowerCase().includes(searchTerm.toLowerCase());
+      const searchLower = searchTerm.toLowerCase();
+      const isMatch = searchTerm && (
+        node.id.toLowerCase().includes(searchLower) ||
+        (node.properties?.description ?? "").toLowerCase().includes(searchLower) ||
+        (node.properties?.entity_type ?? "").toLowerCase().includes(searchLower)
+      );
       const dimmed = searchTerm && !isMatch;
       const isHovered = hoveredNodeRef.current && node.id === hoveredNodeRef.current.id;
 
