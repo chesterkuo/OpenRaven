@@ -37,6 +37,8 @@ export default function ConnectorsPage() {
           }
         } catch { /* ignore polling errors */ }
       }, 2000);
+      // Stop polling after 2 minutes to avoid leak if user closes popup
+      setTimeout(() => clearInterval(poll), 120_000);
     }
   }
 

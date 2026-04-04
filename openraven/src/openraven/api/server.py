@@ -286,7 +286,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         return {
             "gdrive": {"connected": connected},
             "gmail": {"connected": connected},
-            "google_configured": bool(config.google_client_id),
+            "google_configured": bool(config.google_client_id and config.google_client_secret),
         }
 
     @app.get("/api/connectors/google/auth-url")
@@ -305,11 +305,19 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     async def google_callback(code: str):
         from fastapi.responses import HTMLResponse
         from openraven.connectors.google_auth import exchange_code, save_token
-        token_data = await exchange_code(
-            code=code,
-            client_id=config.google_client_id,
-            client_secret=config.google_client_secret,
-        )
+        try:
+            token_data = await exchange_code(
+                code=code,
+                client_id=config.google_client_id,
+                client_secret=config.google_client_secret,
+            )
+        except Exception as e:
+            logger.error(f"OAuth code exchange failed: {e}")
+            return HTMLResponse(
+                "<html><body><h2>Connection failed.</h2>"
+                "<p>Please try again.</p></body></html>",
+                status_code=400,
+            )
         save_token(token_data, config.google_token_path)
         return HTMLResponse(
             "<html><body><h2>Connected successfully.</h2>"

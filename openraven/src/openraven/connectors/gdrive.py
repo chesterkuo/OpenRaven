@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-import tempfile
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -92,6 +91,8 @@ async def sync_drive(
                 safe_name = name.replace("/", "_")
                 if not safe_name.endswith(ext):
                     safe_name += ext
+                stem = safe_name.rsplit(".", 1)[0] if "." in safe_name else safe_name
+                safe_name = f"{stem}_{file_id[:8]}{ext}"
                 dest = output_dir / safe_name
                 dest.write_bytes(
                     content if isinstance(content, bytes) else content.encode("utf-8")
