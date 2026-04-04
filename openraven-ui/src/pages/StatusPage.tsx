@@ -12,56 +12,58 @@ export default function StatusPage() {
   const [insights, setInsights] = useState<{insight_type: string; title: string; description: string; severity: string}[]>([]);
   useEffect(() => { fetch("/api/health/insights").then(r => r.json()).then(setInsights).catch(() => {}); }, []);
 
-  if (!status) return <div className="text-gray-500">Loading...</div>;
+  if (!status) return <div style={{ color: "var(--color-text-muted)" }}>Loading...</div>;
+
+  const BORDER_COLORS: Record<string, string> = {
+    warning: "var(--color-brand-amber)",
+    critical: "var(--color-error)",
+    info: "var(--color-brand)",
+  };
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Knowledge Base Status</h1>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+      <h1 className="text-3xl mb-6" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>Knowledge Base Status</h1>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
         {[
-          { label: "Files", value: status.total_files, color: "text-blue-400" },
-          { label: "Concepts", value: status.total_entities, color: "text-green-400" },
-          { label: "Connections", value: status.total_connections, color: "text-purple-400" },
-          { label: "Topics", value: status.topic_count, color: "text-amber-400" },
+          { label: "Files", value: status.total_files },
+          { label: "Concepts", value: status.total_entities },
+          { label: "Connections", value: status.total_connections },
+          { label: "Topics", value: status.topic_count },
         ].map(stat => (
-          <div key={stat.label} className="bg-gray-900 border border-gray-800 rounded-lg p-4 text-center">
-            <div className={`text-3xl font-bold ${stat.color}`}>{stat.value}</div>
-            <div className="text-xs text-gray-500 mt-1">{stat.label}</div>
+          <div key={stat.label} className="p-4 text-center" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-golden)" }}>
+            <div className="text-5xl" style={{ color: "var(--color-text)", letterSpacing: "-1.5px", lineHeight: 0.95 }}>{stat.value}</div>
+            <div className="text-sm mt-2" style={{ color: "var(--color-text-muted)" }}>{stat.label}</div>
           </div>
         ))}
       </div>
       {provider && (
-        <div className="mb-8 text-sm text-gray-500">
-          LLM: <span className="text-gray-300">{provider.provider}/{provider.llm_model}</span>
+        <div className="mb-8 p-4" style={{ background: "var(--bg-surface-warm)" }}>
+          <span className="text-sm" style={{ color: "var(--color-text-muted)" }}>LLM: </span>
+          <span className="text-sm" style={{ color: "var(--color-text)" }}>{provider.provider}/{provider.llm_model}</span>
+          <span className="inline-block w-2 h-2 ml-2" style={{ background: "var(--color-success)", borderRadius: "50%" }} />
         </div>
       )}
       {status.top_topics.length > 0 && (
-        <div>
-          <h2 className="text-lg font-semibold mb-3">Top Topics</h2>
+        <div className="mb-6">
+          <h2 className="text-2xl mb-3" style={{ color: "var(--color-text)", lineHeight: 1.33 }}>Top Topics</h2>
           <div className="flex flex-wrap gap-2">
-            {status.top_topics.map(topic => <span key={topic} className="bg-gray-800 border border-gray-700 rounded-full px-3 py-1 text-sm text-gray-300">{topic}</span>)}
+            {status.top_topics.map(topic => (
+              <span key={topic} className="px-3 py-1 text-sm" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-subtle)", color: "var(--color-text)" }}>{topic}</span>
+            ))}
           </div>
         </div>
       )}
       {insights.length > 0 && (
         <div className="mt-6">
-          <h2 className="text-lg font-semibold mb-3">Health Insights</h2>
-          <div className="flex flex-col gap-2">
+          <h2 className="text-2xl mb-3" style={{ color: "var(--color-text)", lineHeight: 1.33 }}>Health Insights</h2>
+          <div className="flex flex-col gap-3">
             {insights.map((insight, i) => (
-              <div key={i} className={`border rounded-lg p-3 text-sm ${
-                insight.severity === "warning" ? "border-amber-700 bg-amber-950/30" :
-                insight.severity === "critical" ? "border-red-700 bg-red-950/30" :
-                "border-gray-700 bg-gray-900"
-              }`}>
+              <div key={i} className="p-4 text-sm" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-card)", borderLeft: `4px solid ${BORDER_COLORS[insight.severity] ?? "var(--color-brand)"}` }}>
                 <div className="flex items-center gap-2 mb-1">
-                  <span className={`text-xs font-medium uppercase ${
-                    insight.severity === "warning" ? "text-amber-400" :
-                    insight.severity === "critical" ? "text-red-400" :
-                    "text-blue-400"
-                  }`}>{insight.insight_type}</span>
-                  <span className="text-gray-200 font-medium">{insight.title}</span>
+                  <span className="text-xs uppercase" style={{ color: "var(--color-text-muted)" }}>{insight.insight_type}</span>
+                  <span style={{ color: "var(--color-text)" }}>{insight.title}</span>
                 </div>
-                <p className="text-gray-400">{insight.description}</p>
+                <p style={{ color: "var(--color-text-secondary)" }}>{insight.description}</p>
               </div>
             ))}
           </div>
