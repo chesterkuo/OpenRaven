@@ -158,3 +158,19 @@ def test_connectors_auth_url_requires_credentials(client: TestClient) -> None:
 def test_connectors_sync_requires_auth(client: TestClient) -> None:
     response = client.post("/api/connectors/gdrive/sync")
     assert response.status_code == 401
+
+
+def test_ask_response_includes_sources_field(client: TestClient) -> None:
+    response = client.post("/api/ask", json={"question": "What is Kafka?"})
+    assert response.status_code == 200
+    data = response.json()
+    assert "sources" in data
+    assert isinstance(data["sources"], list)
+
+
+def test_ask_response_sources_are_structured(client: TestClient) -> None:
+    response = client.post("/api/ask", json={"question": "test"})
+    data = response.json()
+    assert "sources" in data
+    assert "answer" in data
+    assert "mode" in data

@@ -20,9 +20,17 @@ class AskRequest(BaseModel):
     mode: str = "mix"
 
 
+class SourceRef(BaseModel):
+    document: str
+    excerpt: str
+    char_start: int = 0
+    char_end: int = 0
+
+
 class AskResponse(BaseModel):
     answer: str
     mode: str
+    sources: list[SourceRef] = []
 
 
 class StatusResponse(BaseModel):
@@ -119,8 +127,12 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
 
     @app.post("/api/ask", response_model=AskResponse)
     async def ask(req: AskRequest):
-        answer = await pipeline.ask(req.question, mode=req.mode)
-        return AskResponse(answer=answer, mode=req.mode)
+        result = await pipeline.ask_with_sources(req.question, mode=req.mode)
+        return AskResponse(
+            answer=result.answer,
+            mode=req.mode,
+            sources=[SourceRef(**s) for s in result.sources],
+        )
 
     @app.get("/api/ingest/status/{job_id}")
     async def ingest_status(job_id: str):

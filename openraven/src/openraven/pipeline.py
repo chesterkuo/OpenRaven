@@ -11,7 +11,7 @@ from openraven.extraction.extractor import (
     extract_entities,
 )
 from openraven.extraction.schemas.base import BASE_SCHEMA
-from openraven.graph.rag import RavenGraph
+from openraven.graph.rag import QueryResult, RavenGraph
 from openraven.health.reporter import HealthReport, generate_health_report
 from openraven.ingestion.hasher import compute_file_hash
 from openraven.ingestion.parser import ParsedDocument, parse_document
@@ -164,6 +164,9 @@ class RavenPipeline:
 
     async def ask(self, question: str, mode: str = "mix") -> str:
         return await self.graph.query(question, mode=mode)
+
+    async def ask_with_sources(self, question: str, mode: str = "mix") -> QueryResult:
+        return await self.graph.query_with_sources(question, mode=mode)
 
     def get_health_report(self) -> HealthReport:
         file_records = [

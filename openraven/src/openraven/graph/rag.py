@@ -201,6 +201,8 @@ class RavenGraph:
         if not self._rag:
             return QueryResult(answer="", sources=[])
         answer = await self._rag.aquery(question, param=QueryParam(mode=mode))
+        if not answer:
+            return QueryResult(answer="", sources=[])
         sources = self._extract_sources_from_answer(answer)
         return QueryResult(answer=answer, sources=sources)
 
