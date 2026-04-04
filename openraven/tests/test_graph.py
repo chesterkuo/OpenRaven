@@ -115,6 +115,31 @@ def test_get_graph_data_handles_corrupt_file(graph: RavenGraph) -> None:
     assert data["is_truncated"] is False
 
 
+def test_make_llm_func_gemini() -> None:
+    func = RavenGraph._make_llm_func("gemini-2.5-flash", "test-key", provider="gemini")
+    assert callable(func)
+
+
+def test_make_llm_func_ollama() -> None:
+    func = RavenGraph._make_llm_func("llama3.2:3b", "", provider="ollama")
+    assert callable(func)
+
+
+def test_make_embedding_func_gemini() -> None:
+    ef = RavenGraph._make_embedding_func("text-embedding-004", "test-key", provider="gemini")
+    assert ef.embedding_dim == 768
+
+
+def test_make_embedding_func_ollama() -> None:
+    ef = RavenGraph._make_embedding_func("nomic-embed-text", "", provider="ollama")
+    assert ef.embedding_dim == 768
+
+
+def test_make_embedding_func_ollama_1024() -> None:
+    ef = RavenGraph._make_embedding_func("bge-m3:latest", "", provider="ollama")
+    assert ef.embedding_dim == 1024
+
+
 async def test_safe_gemini_embed_truncates_extra_vectors() -> None:
     """Gemini API sometimes returns more embeddings than input texts.
 

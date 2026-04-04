@@ -27,13 +27,15 @@ class RavenGraph:
         llm_model: str = "gemini-2.5-flash",
         llm_api_key: str | None = None,
         embedding_model: str = "text-embedding-004",
+        provider: str = "gemini",
+        ollama_base_url: str = "http://localhost:11434",
     ) -> RavenGraph:
         if not LIGHTRAG_AVAILABLE:
             raise ImportError("lightrag-hku is not installed")
         working_dir = Path(working_dir)
         working_dir.mkdir(parents=True, exist_ok=True)
-        llm_func = cls._make_llm_func(llm_model, llm_api_key)
-        embed_func = cls._make_embedding_func(embedding_model, llm_api_key)
+        llm_func = cls._make_llm_func(llm_model, llm_api_key, provider=provider, ollama_base_url=ollama_base_url)
+        embed_func = cls._make_embedding_func(embedding_model, llm_api_key, provider=provider, ollama_base_url=ollama_base_url)
         rag = LightRAG(
             working_dir=str(working_dir),
             llm_model_func=llm_func,
@@ -52,13 +54,15 @@ class RavenGraph:
         llm_model: str = "gemini-2.5-flash",
         llm_api_key: str | None = None,
         embedding_model: str = "text-embedding-004",
+        provider: str = "gemini",
+        ollama_base_url: str = "http://localhost:11434",
     ) -> RavenGraph:
         working_dir = Path(working_dir)
         working_dir.mkdir(parents=True, exist_ok=True)
         if not LIGHTRAG_AVAILABLE:
             return cls(working_dir, rag=None)
-        llm_func = cls._make_llm_func(llm_model, llm_api_key)
-        embed_func = cls._make_embedding_func(embedding_model, llm_api_key)
+        llm_func = cls._make_llm_func(llm_model, llm_api_key, provider=provider, ollama_base_url=ollama_base_url)
+        embed_func = cls._make_embedding_func(embedding_model, llm_api_key, provider=provider, ollama_base_url=ollama_base_url)
         try:
             rag = LightRAG(
                 working_dir=str(working_dir),
@@ -76,7 +80,7 @@ class RavenGraph:
             self._initialized = True
 
     @staticmethod
-    def _make_llm_func(model, api_key):
+    def _make_llm_func(model, api_key, provider="gemini", ollama_base_url="http://localhost:11434"):
         """Create LLM function for LightRAG.
 
         LightRAG calls use_llm_func(prompt, system_prompt=...) — the model
@@ -84,6 +88,10 @@ class RavenGraph:
         """
         import os
         from functools import partial
+
+        if provider == "ollama":
+            from lightrag.llm.ollama import ollama_model_complete
+            return ollama_model_complete
 
         from lightrag.llm.openai import openai_complete_if_cache
 
@@ -99,11 +107,27 @@ class RavenGraph:
         return partial(openai_complete_if_cache, model, api_key=key)
 
     @staticmethod
-    def _make_embedding_func(model, api_key):
+    def _make_embedding_func(model, api_key, provider="gemini", ollama_base_url="http://localhost:11434"):
         import os
         from functools import partial
 
         from lightrag.utils import EmbeddingFunc
+
+        if provider == "ollama":
+            from lightrag.llm.ollama import ollama_embed
+
+            # nomic-embed-text: 768 dims, bge-m3/mxbai-embed-large: 1024 dims
+            dim = 768 if "nomic" in model else 1024
+            raw_ollama_embed = ollama_embed.func  # bypass decorator's validator
+
+            async def _ollama_embed(texts, **kwargs):
+                return await raw_ollama_embed(texts, embed_model=model, host=ollama_base_url, **kwargs)
+
+            return EmbeddingFunc(
+                embedding_dim=dim,
+                func=_ollama_embed,
+                model_name=model,
+            )
 
         key = api_key or os.environ.get("GEMINI_API_KEY", "")
 
