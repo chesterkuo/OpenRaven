@@ -150,6 +150,58 @@ class RavenGraph:
             graph = nx.Graph()
             nx.write_graphml(graph, str(output_path))
 
+    def get_graph_data(self, max_nodes: int = 500) -> dict:
+        """Return graph nodes and edges as a JSON-serializable dict.
+
+        Returns the top nodes by degree, with all edges between them.
+        Format matches LightRAG's KnowledgeGraph schema.
+
+        Note: reads graph_chunk_entity_relation.graphml directly from working_dir.
+        This assumes LightRAG was initialized without a custom workspace prefix
+        (same assumption as get_stats() and export_graphml()).
+        """
+        import networkx as nx
+
+        graph_file = self.working_dir / "graph_chunk_entity_relation.graphml"
+        if not graph_file.exists():
+            return {"nodes": [], "edges": [], "is_truncated": False}
+
+        try:
+            graph = nx.read_graphml(str(graph_file))
+        except Exception:
+            # File may be partially written during concurrent ingestion
+            return {"nodes": [], "edges": [], "is_truncated": False}
+
+        total_nodes = graph.number_of_nodes()
+        is_truncated = total_nodes > max_nodes
+
+        # Take top nodes by degree
+        if is_truncated:
+            degrees = dict(graph.degree())
+            sorted_nodes = sorted(degrees.items(), key=lambda x: x[1], reverse=True)
+            limited = [n for n, _ in sorted_nodes[:max_nodes]]
+            graph = graph.subgraph(limited)
+
+        nodes = []
+        for node_id, attrs in graph.nodes(data=True):
+            nodes.append({
+                "id": node_id,
+                "labels": [attrs.get("entity_type", "unknown")],
+                "properties": dict(attrs),
+            })
+
+        edges = []
+        for source, target, attrs in graph.edges(data=True):
+            edges.append({
+                "id": f"{source}-{target}",
+                "type": "DIRECTED",
+                "source": source,
+                "target": target,
+                "properties": dict(attrs),
+            })
+
+        return {"nodes": nodes, "edges": edges, "is_truncated": is_truncated}
+
     def get_stats(self) -> dict:
         import networkx as nx
 
