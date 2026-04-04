@@ -39,3 +39,18 @@ def test_api_key_property(tmp_path, monkeypatch) -> None:
 def test_api_key_empty_for_ollama(tmp_path) -> None:
     config = RavenConfig(working_dir=tmp_path / "kb", llm_provider="ollama")
     assert config.llm_api_key == ""
+
+
+def test_google_oauth_config_fields(tmp_path) -> None:
+    config = RavenConfig(working_dir=tmp_path / "kb")
+    assert config.google_client_id == ""
+    assert config.google_client_secret == ""
+    assert config.google_token_path == config.working_dir / "google_token.json"
+
+
+def test_google_oauth_env_overrides(tmp_path, monkeypatch) -> None:
+    monkeypatch.setenv("GOOGLE_CLIENT_ID", "test-id-123")
+    monkeypatch.setenv("GOOGLE_CLIENT_SECRET", "test-secret-456")
+    config = RavenConfig(working_dir=tmp_path / "kb")
+    assert config.google_client_id == "test-id-123"
+    assert config.google_client_secret == "test-secret-456"

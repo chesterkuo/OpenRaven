@@ -22,6 +22,8 @@ class RavenConfig:
     ollama_base_url: str = field(default_factory=lambda: _env("OPENRAVEN_OLLAMA_URL", "http://localhost:11434"))
     gemini_api_key: str = field(default_factory=lambda: os.environ.get("GEMINI_API_KEY", ""))
     anthropic_api_key: str = field(default_factory=lambda: os.environ.get("ANTHROPIC_API_KEY", ""))
+    google_client_id: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_ID", ""))
+    google_client_secret: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_SECRET", ""))
     api_host: str = "127.0.0.1"
     api_port: int = 8741
 
@@ -51,3 +53,7 @@ class RavenConfig:
     @property
     def ingestion_dir(self) -> Path:
         return self.working_dir / "ingested"
+
+    @property
+    def google_token_path(self) -> Path:
+        return self.working_dir / "google_token.json"
