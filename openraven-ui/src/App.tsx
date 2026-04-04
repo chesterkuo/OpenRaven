@@ -6,6 +6,7 @@ import GraphPage from "./pages/GraphPage";
 import WikiPage from "./pages/WikiPage";
 import ConnectorsPage from "./pages/ConnectorsPage";
 import AgentsPage from "./pages/AgentsPage";
+import CoursesPage from "./pages/CoursesPage";
 
 function BlockLogo() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
         <NavLink to="/wiki" className={navLinkClass}>Wiki</NavLink>
         <NavLink to="/connectors" className={navLinkClass}>Connectors</NavLink>
         <NavLink to="/agents" className={navLinkClass}>Agents</NavLink>
+        <NavLink to="/courses" className={navLinkClass}>Courses</NavLink>
         <NavLink to="/status" className={navLinkClass}>Status</NavLink>
       </nav>
       <main className={isGraphPage ? "flex-1 flex flex-col min-h-0" : "max-w-4xl mx-auto px-6 py-8 w-full flex-1"}>
@@ -55,6 +57,7 @@ export default function App() {
           <Route path="/wiki" element={<WikiPage />} />
           <Route path="/connectors" element={<ConnectorsPage />} />
           <Route path="/agents" element={<AgentsPage />} />
+          <Route path="/courses" element={<CoursesPage />} />
           <Route path="/status" element={<StatusPage />} />
         </Routes>
       </main>
