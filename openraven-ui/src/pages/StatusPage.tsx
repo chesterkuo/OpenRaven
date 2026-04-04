@@ -6,6 +6,9 @@ export default function StatusPage() {
   const [status, setStatus] = useState<Status | null>(null);
   useEffect(() => { fetch("/api/status").then(r => r.json()).then(setStatus).catch(() => {}); }, []);
 
+  const [provider, setProvider] = useState<{provider: string; llm_model: string} | null>(null);
+  useEffect(() => { fetch("/api/config/provider").then(r => r.json()).then(setProvider).catch(() => {}); }, []);
+
   if (!status) return <div className="text-gray-500">Loading...</div>;
 
   return (
@@ -24,6 +27,11 @@ export default function StatusPage() {
           </div>
         ))}
       </div>
+      {provider && (
+        <div className="mb-8 text-sm text-gray-500">
+          LLM: <span className="text-gray-300">{provider.provider}/{provider.llm_model}</span>
+        </div>
+      )}
       {status.top_topics.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold mb-3">Top Topics</h2>

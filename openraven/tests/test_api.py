@@ -95,6 +95,15 @@ def test_ingest_status_unknown_job(client: TestClient) -> None:
     assert response.status_code == 404
 
 
+def test_provider_endpoint(client: TestClient) -> None:
+    response = client.get("/api/config/provider")
+    assert response.status_code == 200
+    data = response.json()
+    assert "provider" in data
+    assert "llm_model" in data
+    assert "embedding_model" in data
+
+
 def test_wiki_article_endpoint_reads_file(client: TestClient, config) -> None:
     config.wiki_dir.mkdir(parents=True, exist_ok=True)
     (config.wiki_dir / "apache_kafka.md").write_text(

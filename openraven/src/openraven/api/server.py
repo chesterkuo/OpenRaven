@@ -220,6 +220,16 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         title = first_line.lstrip("# ").strip() if first_line.startswith("#") else slug
         return {"slug": slug, "title": title, "content": content}
 
+    @app.get("/api/config/provider")
+    async def provider_info():
+        return {
+            "provider": config.llm_provider,
+            "llm_model": config.llm_model,
+            "wiki_model": config.wiki_llm_model,
+            "embedding_model": config.embedding_model,
+            "ollama_url": config.ollama_base_url if config.llm_provider == "ollama" else None,
+        }
+
     @app.get("/api/discovery", response_model=list[DiscoveryInsightResponse])
     async def discovery():
         from openraven.discovery.analyzer import analyze_themes
