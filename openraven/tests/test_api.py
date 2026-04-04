@@ -124,3 +124,17 @@ def test_wiki_article_endpoint_reads_file(client: TestClient, config) -> None:
     assert data["slug"] == "apache_kafka"
     assert data["title"] == "Apache Kafka"
     assert "streaming platform" in data["content"]
+
+
+def test_health_insights_endpoint(client: TestClient) -> None:
+    response = client.get("/api/health/insights")
+    assert response.status_code == 200
+    data = response.json()
+    assert isinstance(data, list)
+
+
+def test_health_run_endpoint(client: TestClient) -> None:
+    response = client.post("/api/health/run")
+    assert response.status_code == 200
+    data = response.json()
+    assert "insights_count" in data

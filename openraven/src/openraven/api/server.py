@@ -250,6 +250,32 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
             "ollama_url": config.ollama_base_url if config.llm_provider == "ollama" else None,
         }
 
+    @app.get("/api/health/insights")
+    async def health_insights():
+        from openraven.health.maintainer import HealthMaintainer
+        maintainer = HealthMaintainer(store=pipeline.store, graph=pipeline.graph, config=config)
+        insights = maintainer.run_all()
+        return [
+            {
+                "insight_type": i.insight_type,
+                "title": i.title,
+                "description": i.description,
+                "related_entities": i.related_entities,
+                "severity": i.severity,
+            }
+            for i in insights
+        ]
+
+    @app.post("/api/health/run")
+    async def health_run():
+        from openraven.health.maintainer import HealthMaintainer
+        maintainer = HealthMaintainer(store=pipeline.store, graph=pipeline.graph, config=config)
+        insights = maintainer.run_all()
+        return {"insights_count": len(insights), "insights": [
+            {"insight_type": i.insight_type, "title": i.title, "severity": i.severity}
+            for i in insights
+        ]}
+
     @app.get("/api/discovery", response_model=list[DiscoveryInsightResponse])
     async def discovery():
         from openraven.discovery.analyzer import analyze_themes
