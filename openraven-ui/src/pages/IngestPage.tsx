@@ -35,28 +35,36 @@ export default function IngestPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-bold mb-6">Add Documents</h1>
+      <h1 className="text-3xl mb-6" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>Add Documents</h1>
       <FileUploader onUpload={handleUpload} disabled={loading} />
       {loading && stage && (
         <div className="mt-6">
           <div className="flex items-center gap-3">
-            <div className="w-4 h-4 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
-            <span className="text-gray-400">{STAGE_LABELS[stage] ?? stage}</span>
+            <div className="w-4 h-4 border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--color-brand)", borderTopColor: "transparent" }} />
+            <span style={{ color: "var(--color-text-secondary)" }}>{STAGE_LABELS[stage] ?? stage}</span>
           </div>
-          <div className="mt-2 h-1 bg-gray-800 rounded overflow-hidden">
-            <div className="h-full bg-blue-500 rounded animate-pulse" style={{ width: stage === "processing" ? "60%" : "20%" }} />
+          <div className="mt-2 h-1 overflow-hidden" style={{ background: "var(--color-border)" }}>
+            <div className="h-full animate-pulse" style={{ background: "var(--color-brand)", width: stage === "processing" ? "60%" : "20%" }} />
           </div>
         </div>
       )}
       {result && !loading && (
-        <div className="mt-6 bg-gray-900 border border-gray-800 rounded-lg p-4">
-          <h2 className="font-semibold mb-2">Results</h2>
-          <div className="grid grid-cols-3 gap-4 text-center">
-            <div><div className="text-2xl font-bold text-blue-400">{result.files_processed}</div><div className="text-xs text-gray-500">Files processed</div></div>
-            <div><div className="text-2xl font-bold text-green-400">{result.entities_extracted}</div><div className="text-xs text-gray-500">Entities extracted</div></div>
-            <div><div className="text-2xl font-bold text-purple-400">{result.articles_generated}</div><div className="text-xs text-gray-500">Articles generated</div></div>
-          </div>
-          {result.errors.length > 0 && <div className="mt-3 text-red-400 text-sm">{result.errors.map((e, i) => <div key={i}>{e}</div>)}</div>}
+        <div className="mt-8 grid grid-cols-3 gap-6 text-center">
+          {[
+            { label: "Files processed", value: result.files_processed },
+            { label: "Entities extracted", value: result.entities_extracted },
+            { label: "Articles generated", value: result.articles_generated },
+          ].map(stat => (
+            <div key={stat.label} className="p-6" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-golden)" }}>
+              <div className="text-5xl" style={{ color: "var(--color-text)", letterSpacing: "-1.5px", lineHeight: 0.95 }}>{stat.value}</div>
+              <div className="text-sm mt-2" style={{ color: "var(--color-text-muted)" }}>{stat.label}</div>
+            </div>
+          ))}
+          {result.errors.length > 0 && (
+            <div className="col-span-3 text-sm" style={{ color: "var(--color-error)" }}>
+              {result.errors.map((e, i) => <div key={i}>{e}</div>)}
+            </div>
+          )}
         </div>
       )}
     </div>
