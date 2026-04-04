@@ -1,0 +1,21 @@
+# Claude Code session data
+.claude/
+.remember/
+
+# Sub-repos (managed independently)
+openraven/
+openraven-ui/
+
+# PM2
+.pm2/
+
+# Environment
+.env
+*.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node
+node_modules/
