@@ -68,23 +68,37 @@ export default function AgentsPage() {
     setTimeout(() => setCopiedId(null), 2000);
   }
 
+  const statusBadge = (deployed: boolean) => (
+    <span className="text-xs px-2 py-0.5 flex items-center gap-1.5"
+      style={{ background: deployed ? "var(--bg-surface-warm)" : "var(--bg-surface-hover)", color: deployed ? "var(--color-success)" : "var(--color-text-muted)" }}>
+      {deployed && <span className="inline-block w-1.5 h-1.5" style={{ background: "var(--color-success)", borderRadius: "50%" }} />}
+      {deployed ? "Deployed" : "Local only"}
+    </span>
+  );
+
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Expert Agents</h1>
-        <button onClick={() => setShowCreate(!showCreate)} className="text-sm px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-500">
+        <h1 className="text-3xl" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>Expert Agents</h1>
+        <button onClick={() => setShowCreate(!showCreate)}
+          className="text-sm px-3 py-1.5 uppercase"
+          style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}>
           {showCreate ? "Cancel" : "Create Agent"}
         </button>
       </div>
 
       {showCreate && (
-        <form onSubmit={handleCreate} className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-6">
+        <form onSubmit={handleCreate} className="p-4 mb-6" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
           <div className="flex flex-col gap-3">
             <input value={name} onChange={e => setName(e.target.value)} placeholder="Agent name (e.g. Legal Expert)"
-              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500" />
+              className="px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
+              style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
             <input value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (what does this agent know?)"
-              className="bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-gray-200 placeholder-gray-500 focus:outline-none focus:border-blue-500" />
-            <button type="submit" disabled={creating || !name.trim()} className="self-start text-sm px-4 py-2 rounded bg-blue-600 text-white hover:bg-blue-500 disabled:bg-gray-700 disabled:text-gray-500">
+              className="px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
+              style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
+            <button type="submit" disabled={creating || !name.trim()}
+              className="self-start text-sm px-4 py-2 uppercase disabled:opacity-50"
+              style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}>
               {creating ? "Creating..." : "Create"}
             </button>
           </div>
@@ -92,35 +106,39 @@ export default function AgentsPage() {
       )}
 
       {agents.length === 0 && !showCreate && (
-        <div className="text-gray-500 text-sm">No agents yet. Create one to deploy your knowledge base as a queryable expert.</div>
+        <div className="text-sm" style={{ color: "var(--color-text-muted)" }}>No agents yet. Create one to deploy your knowledge base as a queryable expert.</div>
       )}
 
-      <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-6">
         {agents.map(agent => (
-          <div key={agent.id} className="bg-gray-900 border border-gray-800 rounded-lg p-4">
+          <div key={agent.id} className="p-4" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
             <div className="flex items-center justify-between mb-2">
               <div>
-                <h2 className="font-semibold">{agent.name}</h2>
-                <p className="text-sm text-gray-400">{agent.description}</p>
+                <h2 className="text-lg" style={{ color: "var(--color-text)" }}>{agent.name}</h2>
+                <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>{agent.description}</p>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded ${agent.tunnel_url ? "bg-green-900 text-green-400" : "bg-gray-800 text-gray-500"}`}>
-                {agent.tunnel_url ? "Deployed" : "Local only"}
-              </span>
+              {statusBadge(!!agent.tunnel_url)}
             </div>
-            <div className="text-xs text-gray-500 mb-3 font-mono">
+            <div className="text-xs mb-3 font-mono" style={{ color: "var(--color-text-muted)" }}>
               {agent.tunnel_url
-                ? <span className="text-blue-400">{agent.tunnel_url}/agents/{agent.id}</span>
+                ? <span style={{ color: "var(--color-brand)" }}>{agent.tunnel_url}/agents/{agent.id}</span>
                 : <span>http://localhost:8741/agents/{agent.id}</span>
               }
             </div>
             <div className="flex gap-2 flex-wrap">
-              <button onClick={() => copyUrl(agent)} className="text-xs px-2 py-1 rounded border border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700">
+              <button onClick={() => copyUrl(agent)}
+                className="text-xs px-2 py-1 uppercase"
+                style={{ background: "var(--bg-surface-warm)", color: "var(--color-text)" }}>
                 {copiedId === agent.id + "-url" ? "Copied!" : "Copy URL"}
               </button>
-              <button onClick={() => handleGenerateToken(agent.id)} className="text-xs px-2 py-1 rounded border border-gray-600 bg-gray-800 text-gray-200 hover:bg-gray-700">
+              <button onClick={() => handleGenerateToken(agent.id)}
+                className="text-xs px-2 py-1 uppercase"
+                style={{ background: "var(--bg-surface-warm)", color: "var(--color-text)" }}>
                 {copiedId === agent.id ? "Token copied!" : "Generate Token"}
               </button>
-              <button onClick={() => handleDelete(agent.id)} className="text-xs px-2 py-1 rounded border border-red-800 bg-gray-800 text-red-400 hover:bg-red-900/30">
+              <button onClick={() => handleDelete(agent.id)}
+                className="text-xs px-2 py-1 uppercase"
+                style={{ background: "var(--bg-surface-hover)", color: "var(--color-error)" }}>
                 Delete
               </button>
             </div>
