@@ -54,6 +54,7 @@ Respond in this exact JSON format:
 async def compile_article(
     topic: str, context: str, sources: list[dict],
     api_key: str, model: str = "claude-sonnet-4-6",
+    base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/",
 ) -> WikiArticle:
     source_text = "\n".join(
         f"- {s['document']} (chars {s.get('char_start', '?')}-{s.get('char_end', '?')}): "
@@ -62,10 +63,7 @@ async def compile_article(
     )
     prompt = COMPILE_PROMPT.format(topic=topic, context=context, sources=source_text)
 
-    client = openai.AsyncOpenAI(
-        api_key=api_key,
-        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-    )
+    client = openai.AsyncOpenAI(api_key=api_key or "ollama", base_url=base_url)
     response = await client.chat.completions.create(
         model=model, max_tokens=2000,
         messages=[{"role": "user", "content": prompt}],
@@ -123,6 +121,7 @@ async def compile_wiki_for_graph(
     graph, entities: list[str], sources_map: dict, api_key: str,
     output_dir: Path, model: str = "claude-sonnet-4-6", max_concurrent: int = 5,
     on_progress: callable | None = None,
+    base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/",
 ) -> list[WikiArticle]:
     import asyncio
 
@@ -142,7 +141,7 @@ async def compile_wiki_for_graph(
                 sources = sources_map.get(entity_name, [])
                 article = await compile_article(
                     topic=entity_name, context=context, sources=sources,
-                    api_key=api_key, model=model,
+                    api_key=api_key, model=model, base_url=base_url,
                 )
                 safe_name = entity_name.replace("/", "_").replace(" ", "_").lower()
                 md_path = output_dir / f"{safe_name}.md"

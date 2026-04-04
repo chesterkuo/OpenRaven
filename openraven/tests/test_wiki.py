@@ -49,3 +49,17 @@ def test_render_article_markdown() -> None:
     assert "notes.md" in md
     assert "Related" in md
     assert "[[Event Streaming]]" in md
+
+
+def test_compile_article_accepts_base_url() -> None:
+    import inspect
+    from openraven.wiki.compiler import compile_article
+    sig = inspect.signature(compile_article)
+    assert "base_url" in sig.parameters
+
+
+def test_compile_wiki_for_graph_accepts_base_url() -> None:
+    import inspect
+    from openraven.wiki.compiler import compile_wiki_for_graph
+    sig = inspect.signature(compile_wiki_for_graph)
+    assert "base_url" in sig.parameters
