@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import tempfile
 from datetime import datetime, timezone
@@ -35,11 +36,18 @@ def create_sync_router(
 ) -> APIRouter:
     router = APIRouter()
 
+    _SNAPSHOT_ID_RE = __import__("re").compile(r"^\d{4}-\d{2}-\d{2}T\d{6}_[0-9a-f]{6}$")
+
     def _get_auth(request: Request):
         auth = getattr(request.state, "auth", None)
         if not auth:
             raise HTTPException(401, "Not authenticated")
         return auth
+
+    def _validate_snapshot_id(snapshot_id: str) -> None:
+        """Reject snapshot IDs that don't match the expected pattern (path traversal protection)."""
+        if not _SNAPSHOT_ID_RE.match(snapshot_id):
+            raise HTTPException(400, "Invalid snapshot ID")
 
     def _verify_passphrase(tenant_id: str, passphrase: str) -> None:
         with engine.connect() as conn:
@@ -55,6 +63,8 @@ def create_sync_router(
     @router.post("/setup")
     async def setup_sync(request: Request, body: PassphraseRequest):
         auth = _get_auth(request)
+        if len(body.passphrase) < 8:
+            raise HTTPException(400, "Passphrase must be at least 8 characters")
         pw_hash = hash_password(body.passphrase)
         with engine.connect() as conn:
             existing = conn.execute(
@@ -91,7 +101,7 @@ def create_sync_router(
 
             sync_dir = sync_root / auth.tenant_id
             sync_dir.mkdir(parents=True, exist_ok=True)
-            timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H%M%S")
+            timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H%M%S") + "_" + os.urandom(3).hex()
             enc_path = sync_dir / f"{timestamp}.enc"
             meta_path = sync_dir / f"{timestamp}.meta"
             enc_path.write_bytes(ciphertext)
@@ -169,6 +179,7 @@ def create_sync_router(
 
     @router.delete("/snapshots/{snapshot_id}")
     async def delete_snapshot(snapshot_id: str, request: Request):
+        _validate_snapshot_id(snapshot_id)
         auth = _get_auth(request)
         sync_dir = sync_root / auth.tenant_id
         enc_path = sync_dir / f"{snapshot_id}.enc"

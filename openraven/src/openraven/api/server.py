@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 from fastapi import BackgroundTasks, FastAPI, File, Form, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
 from openraven.config import RavenConfig

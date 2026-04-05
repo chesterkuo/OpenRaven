@@ -35,9 +35,14 @@ def create_snapshot(data_dir: Path, output_dir: Path) -> Path:
 
 
 def restore_snapshot(zip_path: Path, data_dir: Path) -> None:
-    """Extract a snapshot zip to data_dir."""
+    """Extract a snapshot zip to data_dir. Validates paths to prevent zip-slip."""
     data_dir.mkdir(parents=True, exist_ok=True)
+    resolved_root = data_dir.resolve()
     with zipfile.ZipFile(zip_path, "r") as zf:
+        for member in zf.infolist():
+            target = (data_dir / member.filename).resolve()
+            if not target.is_relative_to(resolved_root):
+                raise ValueError(f"Zip-slip detected: {member.filename}")
         zf.extractall(data_dir)
 
 
