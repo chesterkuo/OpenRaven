@@ -114,6 +114,40 @@ app.all("/api/audit", async (c) => {
   catch (e) { return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502); }
 });
 
+// Team management proxy
+app.all("/api/team/*", async (c) => {
+  try { return await proxyToCore(c); }
+  catch (e) { return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502); }
+});
+app.all("/api/team", async (c) => {
+  try { return await proxyToCore(c); }
+  catch (e) { return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502); }
+});
+// Account management proxy with binary passthrough for zip export
+app.all("/api/account/*", async (c) => {
+  try {
+    if (c.req.path.endsWith("/export")) {
+      const url = `${CORE_API_URL}${c.req.path}${c.req.url.includes("?") ? "?" + c.req.url.split("?")[1] : ""}`;
+      const res = await fetch(url, {
+        method: c.req.method,
+        headers: { Cookie: c.req.header("Cookie") ?? "" },
+      });
+      return new Response(res.body, {
+        status: res.status,
+        headers: {
+          "content-type": res.headers.get("content-type") || "application/zip",
+          "content-disposition": res.headers.get("content-disposition") || "attachment; filename=openraven_export.zip",
+        },
+      });
+    }
+    return await proxyToCore(c);
+  } catch (e) { return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502); }
+});
+app.all("/api/account", async (c) => {
+  try { return await proxyToCore(c); }
+  catch (e) { return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502); }
+});
+
 // Auth passthrough (with cookie forwarding for session management)
 app.all("/api/auth/*", async (c) => {
   const url = `${CORE_API_URL}${c.req.path}`;
