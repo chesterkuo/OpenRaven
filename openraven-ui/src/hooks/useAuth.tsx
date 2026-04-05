@@ -19,10 +19,13 @@ interface AuthContextType {
   user: User | null;
   tenant: Tenant | null;
   loading: boolean;
+  isDemo: boolean;
+  demoTheme: string | null;
   login: (email: string, password: string) => Promise<void>;
   signup: (name: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   loginWithGoogle: () => void;
+  startDemo: (theme: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -31,6 +34,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [tenant, setTenant] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDemo, setIsDemo] = useState(false);
+  const [demoTheme, setDemoTheme] = useState<string | null>(null);
 
   const fetchMe = useCallback(async () => {
     try {
@@ -86,14 +91,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     await fetch("/api/auth/logout", { method: "POST" });
     setUser(null);
     setTenant(null);
+    setIsDemo(false);
+    setDemoTheme(null);
   }, []);
 
   const loginWithGoogle = useCallback(() => {
     window.location.href = "/api/auth/google";
   }, []);
 
+  const startDemo = useCallback(async (theme: string) => {
+    const res = await fetch("/api/auth/demo", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ theme }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.detail || "Failed to start demo");
+    }
+    setIsDemo(true);
+    setDemoTheme(theme);
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, tenant, loading, login, signup, logout, loginWithGoogle }}>
+    <AuthContext.Provider value={{ user, tenant, loading, isDemo, demoTheme, login, signup, logout, loginWithGoogle, startDemo }}>
       {children}
     </AuthContext.Provider>
   );
