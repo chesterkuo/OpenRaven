@@ -20,6 +20,7 @@ class UserResponse(BaseModel):
     name: str
     avatar_url: str | None = None
     email_verified: bool = False
+    locale: str | None = None
 
 
 class TenantResponse(BaseModel):
@@ -45,3 +46,7 @@ class PasswordResetRequest(BaseModel):
 
 class PasswordResetConfirm(BaseModel):
     password: str
+
+
+class LocaleUpdate(BaseModel):
+    locale: str

@@ -18,6 +18,7 @@ users = Table(
     Column("google_id", String(255), unique=True),
     Column("password_hash", String(255)),
     Column("email_verified", Boolean, default=False),
+    Column("locale", String(10)),
     Column("created_at", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
     Column("updated_at", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
     CheckConstraint(

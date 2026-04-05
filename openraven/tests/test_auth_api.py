@@ -3,6 +3,14 @@ from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from openraven.auth.db import get_engine, create_tables
 from openraven.auth.routes import create_auth_router
+import openraven.auth.routes as auth_routes
+
+
+@pytest.fixture(autouse=True)
+def reset_rate_limiter():
+    auth_routes._login_attempts.clear()
+    yield
+    auth_routes._login_attempts.clear()
 
 
 @pytest.fixture

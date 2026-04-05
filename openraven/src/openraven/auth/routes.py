@@ -11,7 +11,7 @@ from sqlalchemy.engine import Engine
 from openraven.auth.db import users, tenants, tenant_members
 from openraven.auth.models import (
     UserCreate, UserLogin, UserResponse, TenantResponse, AuthMeResponse,
-    PasswordResetRequest, PasswordResetConfirm,
+    PasswordResetRequest, PasswordResetConfirm, LocaleUpdate,
 )
 from openraven.auth.passwords import hash_password, verify_password
 from openraven.auth.sessions import create_session, validate_session, delete_session
@@ -20,6 +20,8 @@ from openraven.auth.sessions import create_session, validate_session, delete_ses
 _login_attempts: dict[str, list[float]] = {}
 _RATE_LIMIT_WINDOW = 60  # seconds
 _RATE_LIMIT_MAX = 10  # attempts per window
+
+SUPPORTED_LOCALES = {"en", "zh-TW", "zh-CN", "ja", "ko", "fr", "es", "nl", "it", "vi", "th", "ru"}
 
 
 def _check_rate_limit(ip: str) -> None:
@@ -141,7 +143,7 @@ def create_auth_router(
 
         with engine.connect() as conn:
             user_row = conn.execute(
-                select(users.c.id, users.c.email, users.c.name, users.c.avatar_url, users.c.email_verified)
+                select(users.c.id, users.c.email, users.c.name, users.c.avatar_url, users.c.email_verified, users.c.locale)
                 .where(users.c.id == ctx.user_id)
             ).first()
             tenant_row = conn.execute(
@@ -156,12 +158,30 @@ def create_auth_router(
             user=UserResponse(
                 id=user_row.id, email=user_row.email, name=user_row.name,
                 avatar_url=user_row.avatar_url, email_verified=user_row.email_verified or False,
+                locale=user_row.locale,
             ),
             tenant=TenantResponse(
                 id=tenant_row.id, name=tenant_row.name,
                 storage_quota_mb=tenant_row.storage_quota_mb,
             ),
         ).model_dump()
+
+    @router.patch("/locale")
+    async def update_locale(data: LocaleUpdate, request: Request):
+        session_id = request.cookies.get("session_id")
+        if not session_id:
+            raise HTTPException(401, "Not authenticated")
+        ctx = validate_session(engine, session_id)
+        if not ctx:
+            raise HTTPException(401, "Session expired")
+        if data.locale not in SUPPORTED_LOCALES:
+            raise HTTPException(400, f"Unsupported locale: {data.locale}")
+        with engine.connect() as conn:
+            conn.execute(
+                update(users).where(users.c.id == ctx.user_id).values(locale=data.locale)
+            )
+            conn.commit()
+        return {"ok": True}
 
     # --- Google OAuth ---
 
