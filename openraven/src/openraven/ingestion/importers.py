@@ -26,11 +26,25 @@ _CSV_EXTENSIONS = {".csv"}
 _SKIP_PREFIXES = ("__MACOSX/", ".obsidian/", ".trash/")
 _SKIP_NAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
 
+# Zip bomb protection limits
+_MAX_TOTAL_SIZE = 500 * 1024 * 1024  # 500 MB uncompressed
+_MAX_FILES = 10_000
+
 
 def import_zip(zip_path: Path, output_dir: Path) -> list[Path]:
     """Extract and normalize a Notion or Obsidian zip export."""
     output_dir.mkdir(parents=True, exist_ok=True)
     with ZipFile(zip_path) as zf:
+        # Zip bomb protection
+        infos = zf.infolist()
+        total_size = sum(i.file_size for i in infos)
+        if total_size > _MAX_TOTAL_SIZE:
+            raise ValueError(
+                f"Zip too large: {total_size / 1024 / 1024:.0f} MB uncompressed "
+                f"(limit: {_MAX_TOTAL_SIZE / 1024 / 1024:.0f} MB)"
+            )
+        if len(infos) > _MAX_FILES:
+            raise ValueError(f"Zip contains too many files: {len(infos)} (limit: {_MAX_FILES})")
         fmt = _detect_format(zf)
         if fmt == "notion":
             return _import_notion(zf, output_dir)
@@ -183,10 +197,11 @@ def _csv_to_markdown(csv_content: str, filename: str = "") -> str:
 
     lines = [f"# {title}\n"]
     header = rows[0]
-    lines.append("| " + " | ".join(header) + " |")
+    esc = lambda s: s.replace("|", "\\|")
+    lines.append("| " + " | ".join(esc(h) for h in header) + " |")
     lines.append("| " + " | ".join("---" for _ in header) + " |")
     for row in rows[1:]:
         padded = row + [""] * (len(header) - len(row))
-        lines.append("| " + " | ".join(padded[:len(header)]) + " |")
+        lines.append("| " + " | ".join(esc(c) for c in padded[:len(header)]) + " |")
 
     return "\n".join(lines) + "\n"
