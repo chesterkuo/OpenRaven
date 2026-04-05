@@ -22,10 +22,22 @@ class QueryResult:
 class RavenGraph:
     """Wrapper around LightRAG for knowledge graph operations."""
 
-    def __init__(self, working_dir: Path, rag=None) -> None:
+    def __init__(
+        self,
+        working_dir: Path,
+        rag=None,
+        graph_backend: str = "networkx",
+        neo4j_uri: str = "bolt://localhost:7687",
+        neo4j_user: str = "neo4j",
+        neo4j_password: str = "",
+    ) -> None:
         self.working_dir = Path(working_dir)
         self._rag = rag
         self._initialized = False
+        self._graph_backend = graph_backend
+        self._neo4j_uri = neo4j_uri
+        self._neo4j_user = neo4j_user
+        self._neo4j_password = neo4j_password
 
     @classmethod
     async def create(
@@ -36,6 +48,10 @@ class RavenGraph:
         embedding_model: str = "text-embedding-004",
         provider: str = "gemini",
         ollama_base_url: str = "http://localhost:11434",
+        graph_backend: str = "networkx",
+        neo4j_uri: str = "bolt://localhost:7687",
+        neo4j_user: str = "neo4j",
+        neo4j_password: str = "",
     ) -> RavenGraph:
         if not LIGHTRAG_AVAILABLE:
             raise ImportError("lightrag-hku is not installed")
@@ -43,14 +59,29 @@ class RavenGraph:
         working_dir.mkdir(parents=True, exist_ok=True)
         llm_func = cls._make_llm_func(llm_model, llm_api_key, provider=provider, ollama_base_url=ollama_base_url)
         embed_func = cls._make_embedding_func(embedding_model, llm_api_key, provider=provider, ollama_base_url=ollama_base_url)
-        rag = LightRAG(
-            working_dir=str(working_dir),
-            llm_model_func=llm_func,
-            llm_model_name=llm_model,
-            embedding_func=embed_func,
-        )
+        if graph_backend == "neo4j":
+            import os
+            from lightrag.kg.neo4j_impl import Neo4JStorage  # noqa: F401 — ensure registered
+            os.environ.setdefault("NEO4J_URI", neo4j_uri)
+            os.environ.setdefault("NEO4J_USERNAME", neo4j_user)
+            os.environ.setdefault("NEO4J_PASSWORD", neo4j_password)
+            rag = LightRAG(
+                working_dir=str(working_dir),
+                llm_model_func=llm_func,
+                llm_model_name=llm_model,
+                embedding_func=embed_func,
+                graph_storage="Neo4JStorage",
+            )
+        else:
+            rag = LightRAG(
+                working_dir=str(working_dir),
+                llm_model_func=llm_func,
+                llm_model_name=llm_model,
+                embedding_func=embed_func,
+            )
         await rag.initialize_storages()
-        instance = cls(working_dir, rag)
+        instance = cls(working_dir, rag, graph_backend=graph_backend,
+                       neo4j_uri=neo4j_uri, neo4j_user=neo4j_user, neo4j_password=neo4j_password)
         instance._initialized = True
         return instance
 
@@ -63,23 +94,43 @@ class RavenGraph:
         embedding_model: str = "text-embedding-004",
         provider: str = "gemini",
         ollama_base_url: str = "http://localhost:11434",
+        graph_backend: str = "networkx",
+        neo4j_uri: str = "bolt://localhost:7687",
+        neo4j_user: str = "neo4j",
+        neo4j_password: str = "",
     ) -> RavenGraph:
         working_dir = Path(working_dir)
         working_dir.mkdir(parents=True, exist_ok=True)
         if not LIGHTRAG_AVAILABLE:
-            return cls(working_dir, rag=None)
+            return cls(working_dir, rag=None, graph_backend=graph_backend,
+                       neo4j_uri=neo4j_uri, neo4j_user=neo4j_user, neo4j_password=neo4j_password)
         llm_func = cls._make_llm_func(llm_model, llm_api_key, provider=provider, ollama_base_url=ollama_base_url)
         embed_func = cls._make_embedding_func(embedding_model, llm_api_key, provider=provider, ollama_base_url=ollama_base_url)
         try:
-            rag = LightRAG(
-                working_dir=str(working_dir),
-                llm_model_func=llm_func,
-                llm_model_name=llm_model,
-                embedding_func=embed_func,
-            )
+            if graph_backend == "neo4j":
+                import os
+                from lightrag.kg.neo4j_impl import Neo4JStorage  # noqa: F401 — ensure registered
+                os.environ.setdefault("NEO4J_URI", neo4j_uri)
+                os.environ.setdefault("NEO4J_USERNAME", neo4j_user)
+                os.environ.setdefault("NEO4J_PASSWORD", neo4j_password)
+                rag = LightRAG(
+                    working_dir=str(working_dir),
+                    llm_model_func=llm_func,
+                    llm_model_name=llm_model,
+                    embedding_func=embed_func,
+                    graph_storage="Neo4JStorage",
+                )
+            else:
+                rag = LightRAG(
+                    working_dir=str(working_dir),
+                    llm_model_func=llm_func,
+                    llm_model_name=llm_model,
+                    embedding_func=embed_func,
+                )
         except Exception:
             rag = None
-        return cls(working_dir, rag)
+        return cls(working_dir, rag, graph_backend=graph_backend,
+                   neo4j_uri=neo4j_uri, neo4j_user=neo4j_user, neo4j_password=neo4j_password)
 
     async def ensure_initialized(self) -> None:
         if not self._initialized and self._rag is not None:
@@ -207,6 +258,9 @@ class RavenGraph:
         return QueryResult(answer=answer, sources=sources)
 
     def _extract_sources_from_answer(self, answer: str) -> list[dict]:
+        if self._graph_backend == "neo4j":
+            return self._extract_sources_neo4j(answer)
+
         import networkx as nx
 
         graph_file = self.working_dir / "graph_chunk_entity_relation.graphml"
@@ -233,6 +287,40 @@ class RavenGraph:
                 })
         return sources
 
+    def _extract_sources_neo4j(self, answer: str) -> list[dict]:
+        from neo4j import GraphDatabase
+
+        answer_lower = answer.lower()
+        sources: list[dict] = []
+        seen_docs: set[str] = set()
+        try:
+            driver = GraphDatabase.driver(self._neo4j_uri, auth=(self._neo4j_user, self._neo4j_password))
+            with driver.session() as session:
+                result = session.run(
+                    "MATCH (n) WHERE toLower(n.id) IN $ids OR toLower(n.id) CONTAINS $answer "
+                    "RETURN n.id AS id, n.file_path AS file_path, n.description AS description",
+                    ids=[],
+                    answer=answer_lower[:200],
+                )
+                for record in result:
+                    file_path = record.get("file_path") or ""
+                    node_id = record.get("id") or ""
+                    if not file_path or file_path in seen_docs:
+                        continue
+                    if node_id.lower() not in answer_lower:
+                        continue
+                    seen_docs.add(file_path)
+                    sources.append({
+                        "document": file_path,
+                        "excerpt": (record.get("description") or "")[:100],
+                        "char_start": 0,
+                        "char_end": 0,
+                    })
+            driver.close()
+        except Exception:
+            pass
+        return sources
+
     def export_graphml(self, output_path: Path) -> None:
         import networkx as nx
 
@@ -251,10 +339,12 @@ class RavenGraph:
         Returns the top nodes by degree, with all edges between them.
         Format matches LightRAG's KnowledgeGraph schema.
 
-        Note: reads graph_chunk_entity_relation.graphml directly from working_dir.
-        This assumes LightRAG was initialized without a custom workspace prefix
-        (same assumption as get_stats() and export_graphml()).
+        Note: for networkx backend, reads graph_chunk_entity_relation.graphml
+        directly from working_dir. For neo4j backend, queries Neo4j directly.
         """
+        if self._graph_backend == "neo4j":
+            return self._get_graph_data_neo4j(max_nodes)
+
         import networkx as nx
 
         graph_file = self.working_dir / "graph_chunk_entity_relation.graphml"
@@ -297,7 +387,46 @@ class RavenGraph:
 
         return {"nodes": nodes, "edges": edges, "is_truncated": is_truncated}
 
+    def _get_graph_data_neo4j(self, max_nodes: int = 500) -> dict:
+        """Query Neo4j directly for graph data."""
+        from neo4j import GraphDatabase
+
+        try:
+            driver = GraphDatabase.driver(self._neo4j_uri, auth=(self._neo4j_user, self._neo4j_password))
+            with driver.session() as session:
+                nodes_result = session.run(
+                    "MATCH (n) RETURN n.id AS id, labels(n) AS labels, properties(n) AS props LIMIT $max",
+                    max=max_nodes,
+                )
+                nodes = [
+                    {"id": r["id"], "labels": r["labels"], "properties": r["props"]}
+                    for r in nodes_result
+                ]
+
+                edges_result = session.run(
+                    "MATCH (a)-[r]->(b) WHERE a.id IN $ids AND b.id IN $ids "
+                    "RETURN id(r) AS id, type(r) AS type, a.id AS source, b.id AS target, properties(r) AS props",
+                    ids=[n["id"] for n in nodes],
+                )
+                edges = [
+                    {
+                        "id": str(r["id"]),
+                        "type": r["type"],
+                        "source": r["source"],
+                        "target": r["target"],
+                        "properties": r["props"],
+                    }
+                    for r in edges_result
+                ]
+            driver.close()
+            return {"nodes": nodes, "edges": edges, "is_truncated": len(nodes) >= max_nodes}
+        except Exception:
+            return {"nodes": [], "edges": [], "is_truncated": False}
+
     def get_stats(self) -> dict:
+        if self._graph_backend == "neo4j":
+            return self._get_stats_neo4j()
+
         import networkx as nx
 
         graph_file = self.working_dir / "graph_chunk_entity_relation.graphml"
@@ -309,3 +438,19 @@ class RavenGraph:
             "edges": graph.number_of_edges(),
             "topics": list(graph.nodes())[:20],
         }
+
+    def _get_stats_neo4j(self) -> dict:
+        """Query Neo4j for graph statistics."""
+        from neo4j import GraphDatabase
+
+        try:
+            driver = GraphDatabase.driver(self._neo4j_uri, auth=(self._neo4j_user, self._neo4j_password))
+            with driver.session() as session:
+                node_count = session.run("MATCH (n) RETURN count(n) AS count").single()["count"]
+                edge_count = session.run("MATCH ()-[r]->() RETURN count(r) AS count").single()["count"]
+                topics_result = session.run("MATCH (n) RETURN n.id AS id LIMIT 20")
+                topics = [r["id"] for r in topics_result if r["id"]]
+            driver.close()
+            return {"nodes": node_count, "edges": edge_count, "topics": topics}
+        except Exception:
+            return {"nodes": 0, "edges": 0, "topics": []}

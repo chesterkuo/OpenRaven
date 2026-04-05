@@ -25,7 +25,10 @@ class RavenConfig:
     google_client_id: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_ID", ""))
     google_client_secret: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_SECRET", ""))
     database_url: str = field(default_factory=lambda: _env("DATABASE_URL", ""))
-    session_secret: str = field(default_factory=lambda: _env("SESSION_SECRET", "dev-secret-change-me"))
+    graph_backend: str = field(default_factory=lambda: _env("GRAPH_BACKEND", "networkx"))
+    neo4j_uri: str = field(default_factory=lambda: _env("NEO4J_URI", "bolt://localhost:7687"))
+    neo4j_user: str = field(default_factory=lambda: _env("NEO4J_USER", "neo4j"))
+    neo4j_password: str = field(default_factory=lambda: _env("NEO4J_PASSWORD", ""))
     api_host: str = "127.0.0.1"
     api_port: int = 8741
 

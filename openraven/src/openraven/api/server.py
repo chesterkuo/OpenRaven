@@ -124,6 +124,30 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
             google_client_secret=config.google_client_secret,
         ))
 
+        # Auth middleware: protect /api/* routes (except /api/auth/* and /health)
+        from starlette.middleware.base import BaseHTTPMiddleware
+        from openraven.auth.sessions import validate_session as _validate_session
+
+        class AuthMiddleware(BaseHTTPMiddleware):
+            async def dispatch(self, request: Request, call_next):
+                path = request.url.path
+                # Skip auth for public endpoints
+                if (path.startswith("/api/auth/") or path == "/health"
+                        or path.startswith("/agents/")):
+                    return await call_next(request)
+                # Require auth for all other /api/* routes
+                if path.startswith("/api/"):
+                    session_id = request.cookies.get("session_id")
+                    if not session_id:
+                        return JSONResponse({"detail": "Not authenticated"}, status_code=401)
+                    ctx = _validate_session(auth_engine, session_id)
+                    if not ctx:
+                        return JSONResponse({"detail": "Session expired"}, status_code=401)
+                    request.state.auth = ctx
+                return await call_next(request)
+
+        app.add_middleware(AuthMiddleware)
+
     pipeline = RavenPipeline(config)
     ingest_jobs: dict[str, IngestJob] = {}
 

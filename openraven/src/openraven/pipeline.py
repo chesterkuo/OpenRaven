@@ -94,6 +94,10 @@ class RavenPipeline:
             llm_api_key=config.llm_api_key,
             provider=config.llm_provider,
             ollama_base_url=config.ollama_base_url,
+            graph_backend=config.graph_backend,
+            neo4j_uri=config.neo4j_uri,
+            neo4j_user=config.neo4j_user,
+            neo4j_password=config.neo4j_password,
         )
 
     async def add_files(self, paths: list[Path], schema_name: str | None = None) -> PipelineResult:

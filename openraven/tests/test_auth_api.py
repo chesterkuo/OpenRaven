@@ -1,5 +1,4 @@
 import pytest
-import os
 from fastapi.testclient import TestClient
 from fastapi import FastAPI
 from openraven.auth.db import get_engine, create_tables
@@ -7,13 +6,12 @@ from openraven.auth.routes import create_auth_router
 
 
 @pytest.fixture
-def client():
-    engine = get_engine("sqlite:///test_auth_api.db")
+def client(tmp_path):
+    engine = get_engine(f"sqlite:///{tmp_path}/test_auth_api.db")
     create_tables(engine)
     app = FastAPI()
     app.include_router(create_auth_router(engine))
     yield TestClient(app)
-    os.remove("test_auth_api.db")
 
 
 def test_signup_creates_user(client):
