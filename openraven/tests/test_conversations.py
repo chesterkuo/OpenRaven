@@ -33,3 +33,75 @@ def test_messages_has_expected_columns(engine):
     inspector = inspect(engine)
     columns = {c["name"] for c in inspector.get_columns("messages")}
     assert columns >= {"id", "conversation_id", "role", "content", "sources", "created_at"}
+
+
+from openraven.conversations.models import (
+    create_conversation, list_conversations, get_conversation,
+    delete_conversation, add_message, get_recent_messages,
+)
+
+
+def test_create_conversation(engine):
+    convo_id = create_conversation(engine, tenant_id="t1", user_id="u1")
+    assert isinstance(convo_id, str)
+    assert len(convo_id) == 36  # UUID length
+
+
+def test_create_conversation_with_title(engine):
+    convo_id = create_conversation(engine, tenant_id="t1", user_id="u1", title="Test Chat")
+    convo = get_conversation(engine, convo_id, tenant_id="t1")
+    assert convo["title"] == "Test Chat"
+
+
+def test_create_demo_conversation(engine):
+    convo_id = create_conversation(
+        engine, tenant_id="demo", user_id=None,
+        session_id="demo-sess-1", demo_theme="legal-docs",
+    )
+    convo = get_conversation(engine, convo_id, tenant_id="demo")
+    assert convo["demo_theme"] == "legal-docs"
+    assert convo["session_id"] == "demo-sess-1"
+
+
+def test_list_conversations(engine):
+    create_conversation(engine, tenant_id="t1", user_id="u1", title="First")
+    create_conversation(engine, tenant_id="t1", user_id="u1", title="Second")
+    create_conversation(engine, tenant_id="t2", user_id="u2", title="Other tenant")
+    convos = list_conversations(engine, tenant_id="t1", user_id="u1")
+    assert len(convos) == 2
+    # Most recent first
+    assert convos[0]["title"] == "Second"
+
+
+def test_delete_conversation(engine):
+    convo_id = create_conversation(engine, tenant_id="t1", user_id="u1")
+    delete_conversation(engine, convo_id, tenant_id="t1")
+    assert get_conversation(engine, convo_id, tenant_id="t1") is None
+
+
+def test_add_and_get_messages(engine):
+    convo_id = create_conversation(engine, tenant_id="t1", user_id="u1")
+    add_message(engine, convo_id, role="user", content="Hello")
+    add_message(engine, convo_id, role="assistant", content="Hi there!", sources=[{"document": "doc.pdf", "excerpt": "..."}])
+    msgs = get_recent_messages(engine, convo_id, limit=20)
+    assert len(msgs) == 2
+    assert msgs[0]["role"] == "user"
+    assert msgs[1]["role"] == "assistant"
+    assert msgs[1]["sources"][0]["document"] == "doc.pdf"
+
+
+def test_get_recent_messages_respects_limit(engine):
+    convo_id = create_conversation(engine, tenant_id="t1", user_id="u1")
+    for i in range(25):
+        add_message(engine, convo_id, role="user", content=f"Message {i}")
+    msgs = get_recent_messages(engine, convo_id, limit=20)
+    assert len(msgs) == 20
+    # Should be the 20 most recent, in chronological order
+    assert msgs[0]["content"] == "Message 5"
+    assert msgs[-1]["content"] == "Message 24"
+
+
+def test_cannot_access_other_tenants_conversation(engine):
+    convo_id = create_conversation(engine, tenant_id="t1", user_id="u1")
+    result = get_conversation(engine, convo_id, tenant_id="t2")
+    assert result is None
