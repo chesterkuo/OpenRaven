@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import base64
+import logging
 from dataclasses import dataclass
 from pathlib import Path
 
+import openai
 from docling.document_converter import DocumentConverter
 
 
@@ -73,6 +76,61 @@ def parse_document(file_path: Path | str) -> ParsedDocument:
     converter = _get_converter()
     result = converter.convert(str(file_path))
     text = result.document.export_to_markdown()
+
+    return ParsedDocument(
+        text=text,
+        source_path=file_path,
+        format=suffix,
+        char_count=len(text),
+    )
+
+
+IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".heic", ".webp"}
+
+_IMAGE_PROMPT = (
+    "Describe this image comprehensively. Extract all visible text, labels, "
+    "data points, diagrams, relationships, and key information. "
+    "Format as structured text with sections if appropriate."
+)
+
+
+async def parse_image(
+    file_path: Path,
+    api_key: str = "",
+    model: str = "gemini-2.5-flash",
+    base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/",
+) -> ParsedDocument:
+    """Parse an image file using Gemini vision API."""
+    logger = logging.getLogger(__name__)
+    file_path = Path(file_path).resolve()
+    suffix = file_path.suffix.lower().lstrip(".")
+
+    try:
+        image_data = base64.b64encode(file_path.read_bytes()).decode("utf-8")
+        mime_type = {
+            "png": "image/png",
+            "jpg": "image/jpeg",
+            "jpeg": "image/jpeg",
+            "heic": "image/heic",
+            "webp": "image/webp",
+        }.get(suffix, "image/png")
+
+        client = openai.AsyncOpenAI(api_key=api_key or "none", base_url=base_url)
+        response = await client.chat.completions.create(
+            model=model,
+            max_tokens=2000,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {"type": "text", "text": _IMAGE_PROMPT},
+                    {"type": "image_url", "image_url": {"url": f"data:{mime_type};base64,{image_data}"}},
+                ],
+            }],
+        )
+        text = response.choices[0].message.content or ""
+    except Exception as e:
+        logger.error(f"Vision API failed for {file_path}: {e}")
+        text = ""
 
     return ParsedDocument(
         text=text,
