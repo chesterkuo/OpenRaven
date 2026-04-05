@@ -136,6 +136,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         # Auth middleware: protect /api/* routes (except /api/auth/* and /health)
         from starlette.middleware.base import BaseHTTPMiddleware
         from openraven.auth.sessions import validate_session as _validate_session
+        from openraven.auth.middleware import is_demo_allowed
 
         class AuthMiddleware(BaseHTTPMiddleware):
             async def dispatch(self, request: Request, call_next):
@@ -143,6 +144,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                 # Skip auth for public endpoints
                 if (path.startswith("/api/auth/") or path == "/health"
                         or path.startswith("/agents/")
+                        or path.startswith("/api/demo/")
                         or (path.startswith("/api/team/invite/") and request.method == "GET")):
                     return await call_next(request)
                 # Require auth for all other /api/* routes
@@ -154,6 +156,9 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                     if not ctx:
                         return JSONResponse({"detail": "Session expired"}, status_code=401)
                     request.state.auth = ctx
+                    # If demo session, enforce allowed routes
+                    if ctx.is_demo and not is_demo_allowed(request.url.path, request.method):
+                        return JSONResponse(status_code=403, content={"detail": "Not available in demo mode"})
                 return await call_next(request)
 
         app.add_middleware(AuthMiddleware)

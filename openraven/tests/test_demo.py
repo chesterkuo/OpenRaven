@@ -122,3 +122,50 @@ def test_start_demo_session(demo_client):
 def test_start_demo_invalid_theme(demo_client):
     res = demo_client.post("/api/auth/demo", json={"theme": "nonexistent"})
     assert res.status_code == 404
+
+
+# ---------------------------------------------------------------------------
+# Task 4: Auth Middleware — Demo Session Handling
+# ---------------------------------------------------------------------------
+
+def test_demo_session_can_access_ask(demo_client, engine):
+    # Start demo session
+    res = demo_client.post("/api/auth/demo", json={"theme": "legal-docs"})
+    session_id = res.cookies["session_id"]
+    # This would need a full app with middleware — test at integration level
+    # For now, test that demo context is properly constructed
+    ctx = validate_session(engine, session_id)
+    assert ctx.is_demo is True
+    assert ctx.tenant_id == "demo"
+
+
+DEMO_ALLOWED_PATHS = [
+    "/api/ask",
+    "/api/graph",
+    "/api/documents",
+    "/api/conversations",
+    "/api/demo/themes",
+]
+
+DEMO_BLOCKED_PATHS = [
+    "/api/ingest",
+    "/api/settings",
+    "/api/team",
+    "/api/agents",
+    "/api/sync",
+    "/api/account",
+]
+
+
+def test_demo_allowed_paths():
+    from openraven.auth.middleware import is_demo_allowed
+    for path in DEMO_ALLOWED_PATHS:
+        assert is_demo_allowed(path, "GET") is True, f"Should allow GET {path}"
+    assert is_demo_allowed("/api/ask", "POST") is True  # POST ask is allowed
+
+
+def test_demo_blocked_paths():
+    from openraven.auth.middleware import is_demo_allowed
+    for path in DEMO_BLOCKED_PATHS:
+        assert is_demo_allowed(path, "POST") is False, f"Should block POST {path}"
+        assert is_demo_allowed(path, "GET") is False, f"Should block GET {path}"

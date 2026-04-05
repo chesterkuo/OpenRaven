@@ -18,3 +18,20 @@ def create_require_auth(engine: Engine):
             raise HTTPException(401, "Session expired")
         return ctx
     return require_auth
+
+
+# Prefixes accessible to demo sessions
+_DEMO_ALLOWED_PREFIXES = (
+    "/api/ask",
+    "/api/graph",
+    "/api/documents",
+    "/api/conversations",
+    "/api/demo/",
+    "/api/auth/demo",
+    "/api/auth/logout",
+)
+
+
+def is_demo_allowed(path: str, method: str = "GET") -> bool:
+    """Check if a path is accessible to demo sessions."""
+    return any(path.startswith(prefix) for prefix in _DEMO_ALLOWED_PREFIXES)
