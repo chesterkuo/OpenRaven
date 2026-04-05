@@ -51,13 +51,21 @@ def accept_invitation(engine: Engine, token: str, user_id: str) -> str:
         ).first()
         if existing:
             raise ValueError("User is already a member of this tenant")
+        # Atomic conditional update to prevent TOCTOU race on max_uses
+        result = conn.execute(
+            update(invitations)
+            .where(invitations.c.id == row.id)
+            .where(
+                (invitations.c.max_uses.is_(None)) |
+                (invitations.c.use_count < invitations.c.max_uses)
+            )
+            .values(use_count=invitations.c.use_count + 1)
+        )
+        if result.rowcount == 0:
+            raise ValueError("Invitation has reached its maximum uses")
         conn.execute(insert(tenant_members).values(
             tenant_id=row.tenant_id, user_id=user_id, role="member",
         ))
-        conn.execute(
-            update(invitations).where(invitations.c.id == row.id)
-            .values(use_count=row.use_count + 1)
-        )
         conn.commit()
     return row.tenant_id
 

@@ -103,8 +103,7 @@ def create_team_router(engine: Engine) -> APIRouter:
 
     @router.get("/invitations")
     async def get_invitations(request: Request):
-        _require_owner(request)
-        _, tenant_id = _get_auth(request)
+        _, tenant_id = _require_owner(request)
         return list_invitations(engine, tenant_id)
 
     @router.delete("/invitations/{invitation_id}")
