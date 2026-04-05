@@ -1,10 +1,10 @@
 {
   "manifest_version": 3,
   "name": "OpenRaven",
-  "version": "0.1.0",
-  "description": "Save web pages to your personal knowledge base",
-  "permissions": ["activeTab", "scripting"],
-  "host_permissions": ["http://localhost:3002/*"],
+  "version": "0.2.0",
+  "description": "Save web pages to your personal AI knowledge base",
+  "permissions": ["activeTab", "scripting", "cookies", "contextMenus", "storage"],
+  "host_permissions": ["<all_urls>"],
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -16,6 +16,13 @@
   "background": {
     "service_worker": "background.js",
     "type": "module"
+  },
+  "options_page": "options.html",
+  "commands": {
+    "save-page": {
+      "suggested_key": { "default": "Ctrl+Shift+S", "mac": "Command+Shift+S" },
+      "description": "Save current page to OpenRaven"
+    }
   },
   "icons": {
     "16": "icons/icon-16.png",
