@@ -12,7 +12,7 @@ import wikiRouter from "./routes/wiki";
 const app = new Hono();
 
 app.use("*", logger());
-app.use("*", cors({ origin: ["http://localhost:5173"] }));
+app.use("*", cors({ origin: ["http://localhost:5173", "https://openraven.cc", "https://www.openraven.cc"] }));
 
 app.get("/health", (c) => c.json({ status: "ok", version: "0.1.0" }));
 

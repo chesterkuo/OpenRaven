@@ -113,7 +113,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["http://localhost:5173", "http://localhost:3000"],
+        allow_origins=["http://localhost:5173", "http://localhost:3000", "https://openraven.cc", "https://www.openraven.cc"],
         allow_origin_regex=r"^chrome-extension://.*$",
         allow_methods=["*"],
         allow_headers=["*"],
@@ -127,10 +127,12 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         from openraven.auth.middleware import create_require_auth
         auth_engine = get_engine(config.database_url)
         create_tables(auth_engine)
+        import os
         app.include_router(create_auth_router(
             auth_engine,
             google_client_id=config.google_client_id,
             google_client_secret=config.google_client_secret,
+            secure_cookies=os.environ.get("SECURE_COOKIES", "").lower() in ("1", "true"),
         ))
         from openraven.audit.routes import create_audit_router
         app.include_router(create_audit_router(auth_engine), prefix="/api/audit", tags=["audit"])

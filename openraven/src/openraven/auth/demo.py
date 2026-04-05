@@ -5,7 +5,7 @@ import json
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Response
+from fastapi import APIRouter, HTTPException, Request, Response
 from pydantic import BaseModel
 from sqlalchemy import Engine, select, delete as sa_delete
 
@@ -53,15 +53,16 @@ def create_demo_router(engine: Engine, tenants_root: Path = Path("/data/tenants"
         return _list_themes(tenants_root)
 
     @router.post("/api/auth/demo")
-    async def start_demo(req: DemoStartRequest, response: Response):
+    async def start_demo(request: Request, req: DemoStartRequest, response: Response):
         themes = _list_themes(tenants_root)
         valid_slugs = {t.slug for t in themes}
         if req.theme not in valid_slugs:
             raise HTTPException(404, f"Theme '{req.theme}' not found")
         session_id = create_demo_session(engine, theme=req.theme)
+        secure = request.url.scheme == "https" or request.headers.get("x-forwarded-proto") == "https"
         response.set_cookie(
             "session_id", session_id,
-            httponly=True, samesite="lax", secure=False,
+            httponly=True, samesite="lax", secure=secure,
             max_age=2 * 3600,
         )
         return {"theme": req.theme, "message": "Demo session started"}
