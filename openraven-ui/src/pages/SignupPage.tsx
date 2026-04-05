@@ -1,9 +1,12 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
 import { useNavigate, Link } from "react-router-dom";
+import { LanguageSelector } from "../components/LanguageSelector";
 
 export default function SignupPage() {
   const { signup, loginWithGoogle } = useAuth();
+  const { t } = useTranslation('auth');
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -15,21 +18,24 @@ export default function SignupPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    if (password !== confirmPassword) { setError("Passwords do not match"); return; }
-    if (password.length < 8) { setError("Password must be at least 8 characters"); return; }
+    if (password !== confirmPassword) { setError(t('passwordsMismatch')); return; }
+    if (password.length < 8) { setError(t('passwordTooShort')); return; }
     setLoading(true);
     try {
       await signup(name, email, password);
       navigate("/");
     } catch (err: any) {
-      setError(err.message || "Signup failed");
+      setError(err.message || t('signupFailed'));
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-page)" }}>
+    <div className="min-h-screen flex items-center justify-center relative" style={{ background: "var(--bg-page)" }}>
+      <div className="absolute top-4 right-4">
+        <LanguageSelector />
+      </div>
       <div className="w-full max-w-sm p-8" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-golden)" }}>
         <div className="flex items-center gap-2 mb-8 justify-center">
           <div className="flex gap-0.5">
@@ -42,40 +48,40 @@ export default function SignupPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Full name" aria-label="Full name" required
+          <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder={t('fullName')} aria-label={t('fullName')} required
             className="px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
             style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
-          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Email" aria-label="Email" required
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder={t('email')} aria-label={t('email')} required
             className="px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
             style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
-          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password (min 8 chars)" aria-label="Password" required
+          <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={t('passwordHint')} aria-label={t('password')} required
             className="px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
             style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
-          <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm password" aria-label="Confirm password" required
+          <input type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder={t('confirmPassword')} aria-label={t('confirmPassword')} required
             className="px-4 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
             style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }} />
           {error && <p className="text-sm" style={{ color: "var(--color-error)" }}>{error}</p>}
           <button type="submit" disabled={loading}
             className="py-2.5 text-base uppercase cursor-pointer disabled:opacity-50"
             style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}>
-            {loading ? "Creating account..." : "Create Account"}
+            {loading ? t('creatingAccount') : t('signUp')}
           </button>
         </form>
 
         <div className="my-6 flex items-center gap-3">
           <div className="flex-1 h-px" style={{ background: "var(--color-border)" }} />
-          <span className="text-sm" style={{ color: "var(--color-text-muted)" }}>or</span>
+          <span className="text-sm" style={{ color: "var(--color-text-muted)" }}>{t('or', { ns: 'common' })}</span>
           <div className="flex-1 h-px" style={{ background: "var(--color-border)" }} />
         </div>
 
         <button onClick={loginWithGoogle} className="w-full py-2.5 text-base cursor-pointer"
           style={{ background: "var(--bg-surface-warm)", color: "var(--color-text)" }}>
-          Sign up with Google
+          {t('signUpGoogle')}
         </button>
 
         <div className="mt-6 text-center text-sm" style={{ color: "var(--color-text-muted)" }}>
-          Already have an account?{" "}
-          <Link to="/login" className="hover:opacity-70" style={{ color: "var(--color-brand)" }}>Sign in</Link>
+          {t('alreadyHaveAccount')}{" "}
+          <Link to="/login" className="hover:opacity-70" style={{ color: "var(--color-brand)" }}>{t('signInLink')}</Link>
         </div>
       </div>
     </div>
