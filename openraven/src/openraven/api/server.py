@@ -126,6 +126,10 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         ))
         from openraven.audit.routes import create_audit_router
         app.include_router(create_audit_router(auth_engine), prefix="/api/audit", tags=["audit"])
+        from openraven.auth.team_routes import create_team_router
+        from openraven.auth.account_routes import create_account_router
+        app.include_router(create_team_router(auth_engine), prefix="/api/team", tags=["team"])
+        app.include_router(create_account_router(auth_engine), prefix="/api/account", tags=["account"])
 
         # Auth middleware: protect /api/* routes (except /api/auth/* and /health)
         from starlette.middleware.base import BaseHTTPMiddleware
@@ -136,7 +140,8 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                 path = request.url.path
                 # Skip auth for public endpoints
                 if (path.startswith("/api/auth/") or path == "/health"
-                        or path.startswith("/agents/")):
+                        or path.startswith("/agents/")
+                        or (path.startswith("/api/team/invite/") and request.method == "GET")):
                     return await call_next(request)
                 # Require auth for all other /api/* routes
                 if path.startswith("/api/"):
