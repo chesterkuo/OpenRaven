@@ -1,0 +1,18 @@
+{
+  "title": "稽核紀錄",
+  "exportCsv": "匯出 CSV",
+  "actionLabel": "動作",
+  "allActions": "所有動作",
+  "columns": {
+    "timestamp": "時間戳記",
+    "user": "使用者",
+    "action": "動作",
+    "details": "詳細資訊",
+    "ip": "IP"
+  },
+  "noLogs": "找不到稽核紀錄。",
+  "showing": "顯示第 {{start}}–{{end}} 筆，共 {{total}} 筆",
+  "prev": "上一頁",
+  "next": "下一頁",
+  "system": "系統"
+}

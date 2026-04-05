@@ -1,0 +1,18 @@
+{
+  "title": "Audit Log",
+  "exportCsv": "EXPORT CSV",
+  "actionLabel": "Action",
+  "allActions": "All actions",
+  "columns": {
+    "timestamp": "Timestamp",
+    "user": "User",
+    "action": "Action",
+    "details": "Details",
+    "ip": "IP"
+  },
+  "noLogs": "No audit logs found.",
+  "showing": "Showing {{start}}–{{end}} of {{total}}",
+  "prev": "Prev",
+  "next": "Next",
+  "system": "system"
+}

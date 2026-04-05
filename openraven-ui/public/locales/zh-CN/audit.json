@@ -1,0 +1,18 @@
+{
+  "title": "审计日志",
+  "exportCsv": "导出 CSV",
+  "actionLabel": "操作",
+  "allActions": "所有操作",
+  "columns": {
+    "timestamp": "时间戳",
+    "user": "用户",
+    "action": "操作",
+    "details": "详情",
+    "ip": "IP"
+  },
+  "noLogs": "未找到审计日志。",
+  "showing": "显示第 {{start}}–{{end}} 条，共 {{total}} 条",
+  "prev": "上一页",
+  "next": "下一页",
+  "system": "系统"
+}

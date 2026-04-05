@@ -7,7 +7,8 @@
     "connectors": "커넥터",
     "agents": "에이전트",
     "courses": "코스",
-    "status": "상태"
+    "status": "상태",
+    "audit": "감사 로그"
   },
   "signOut": "로그아웃",
   "loading": "로딩 중...",

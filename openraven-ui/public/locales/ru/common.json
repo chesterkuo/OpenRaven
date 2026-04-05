@@ -7,7 +7,8 @@
     "connectors": "Коннекторы",
     "agents": "Агенты",
     "courses": "Курсы",
-    "status": "Статус"
+    "status": "Статус",
+    "audit": "Журнал аудита"
   },
   "signOut": "Выйти",
   "loading": "Загрузка...",

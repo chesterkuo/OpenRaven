@@ -1,0 +1,18 @@
+{
+  "title": "감사 로그",
+  "exportCsv": "CSV 내보내기",
+  "actionLabel": "작업",
+  "allActions": "모든 작업",
+  "columns": {
+    "timestamp": "타임스탬프",
+    "user": "사용자",
+    "action": "작업",
+    "details": "상세 정보",
+    "ip": "IP"
+  },
+  "noLogs": "감사 로그를 찾을 수 없습니다.",
+  "showing": "전체 {{total}}개 중 {{start}}–{{end}} 표시",
+  "prev": "이전",
+  "next": "다음",
+  "system": "시스템"
+}

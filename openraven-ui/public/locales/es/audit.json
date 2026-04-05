@@ -1,0 +1,18 @@
+{
+  "title": "Registro de auditoría",
+  "exportCsv": "EXPORTAR CSV",
+  "actionLabel": "Acción",
+  "allActions": "Todas las acciones",
+  "columns": {
+    "timestamp": "Marca de tiempo",
+    "user": "Usuario",
+    "action": "Acción",
+    "details": "Detalles",
+    "ip": "IP"
+  },
+  "noLogs": "No se encontraron registros de auditoría.",
+  "showing": "Mostrando {{start}}–{{end}} de {{total}}",
+  "prev": "Ant.",
+  "next": "Sig.",
+  "system": "sistema"
+}

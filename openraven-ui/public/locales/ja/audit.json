@@ -1,0 +1,18 @@
+{
+  "title": "監査ログ",
+  "exportCsv": "CSV エクスポート",
+  "actionLabel": "アクション",
+  "allActions": "すべてのアクション",
+  "columns": {
+    "timestamp": "タイムスタンプ",
+    "user": "ユーザー",
+    "action": "アクション",
+    "details": "詳細",
+    "ip": "IP"
+  },
+  "noLogs": "監査ログが見つかりません。",
+  "showing": "{{total}} 件中 {{start}}–{{end}} 件を表示",
+  "prev": "前へ",
+  "next": "次へ",
+  "system": "システム"
+}

@@ -1,0 +1,18 @@
+{
+  "title": "Registro audit",
+  "exportCsv": "ESPORTA CSV",
+  "actionLabel": "Azione",
+  "allActions": "Tutte le azioni",
+  "columns": {
+    "timestamp": "Timestamp",
+    "user": "Utente",
+    "action": "Azione",
+    "details": "Dettagli",
+    "ip": "IP"
+  },
+  "noLogs": "Nessun registro audit trovato.",
+  "showing": "Visualizzazione {{start}}–{{end}} di {{total}}",
+  "prev": "Prec.",
+  "next": "Succ.",
+  "system": "sistema"
+}

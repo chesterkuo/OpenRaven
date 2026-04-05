@@ -7,7 +7,8 @@
     "connectors": "Trình kết nối",
     "agents": "Tác nhân",
     "courses": "Khóa học",
-    "status": "Trạng thái"
+    "status": "Trạng thái",
+    "audit": "Nhật ký kiểm toán"
   },
   "signOut": "Đăng xuất",
   "loading": "Đang tải...",

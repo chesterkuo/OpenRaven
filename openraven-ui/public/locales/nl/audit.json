@@ -1,0 +1,18 @@
+{
+  "title": "Auditlog",
+  "exportCsv": "CSV EXPORTEREN",
+  "actionLabel": "Actie",
+  "allActions": "Alle acties",
+  "columns": {
+    "timestamp": "Tijdstempel",
+    "user": "Gebruiker",
+    "action": "Actie",
+    "details": "Details",
+    "ip": "IP"
+  },
+  "noLogs": "Geen auditlogs gevonden.",
+  "showing": "{{start}}–{{end}} van {{total}} weergegeven",
+  "prev": "Vorige",
+  "next": "Volgende",
+  "system": "systeem"
+}

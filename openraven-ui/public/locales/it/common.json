@@ -7,7 +7,8 @@
     "connectors": "Connettori",
     "agents": "Agenti",
     "courses": "Corsi",
-    "status": "Stato"
+    "status": "Stato",
+    "audit": "Registro audit"
   },
   "signOut": "Esci",
   "loading": "Caricamento...",

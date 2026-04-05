@@ -7,7 +7,8 @@
     "connectors": "連接器",
     "agents": "智慧代理",
     "courses": "課程",
-    "status": "狀態"
+    "status": "狀態",
+    "audit": "稽核紀錄"
   },
   "signOut": "登出",
   "loading": "載入中...",

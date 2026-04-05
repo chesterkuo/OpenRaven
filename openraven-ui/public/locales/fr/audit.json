@@ -1,0 +1,18 @@
+{
+  "title": "Journal d'audit",
+  "exportCsv": "EXPORTER CSV",
+  "actionLabel": "Action",
+  "allActions": "Toutes les actions",
+  "columns": {
+    "timestamp": "Horodatage",
+    "user": "Utilisateur",
+    "action": "Action",
+    "details": "Détails",
+    "ip": "IP"
+  },
+  "noLogs": "Aucun journal d'audit trouvé.",
+  "showing": "Affichage de {{start}}–{{end}} sur {{total}}",
+  "prev": "Préc.",
+  "next": "Suiv.",
+  "system": "système"
+}

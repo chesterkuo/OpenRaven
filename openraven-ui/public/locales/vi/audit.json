@@ -1,0 +1,18 @@
+{
+  "title": "Nhật ký kiểm toán",
+  "exportCsv": "XUẤT CSV",
+  "actionLabel": "Hành động",
+  "allActions": "Tất cả hành động",
+  "columns": {
+    "timestamp": "Thời gian",
+    "user": "Người dùng",
+    "action": "Hành động",
+    "details": "Chi tiết",
+    "ip": "IP"
+  },
+  "noLogs": "Không tìm thấy nhật ký kiểm toán.",
+  "showing": "Hiển thị {{start}}–{{end}} trong {{total}}",
+  "prev": "Trước",
+  "next": "Tiếp",
+  "system": "hệ thống"
+}
