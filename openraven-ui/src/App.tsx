@@ -129,9 +129,9 @@ function DemoAppShell() {
       </nav>
       <main className={isGraphPage ? "flex-1 flex flex-col min-h-0" : "max-w-4xl mx-auto px-6 py-8 w-full flex-1"}>
         <Routes>
-          <Route path="/demo/ask" element={<AskPage />} />
-          <Route path="/demo/graph" element={<GraphPage />} />
-          <Route path="/demo/documents" element={<WikiPage />} />
+          <Route path="ask" element={<AskPage />} />
+          <Route path="graph" element={<GraphPage />} />
+          <Route path="documents" element={<WikiPage />} />
         </Routes>
       </main>
     </div>
