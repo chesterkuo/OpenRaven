@@ -84,6 +84,14 @@ invitations = Table(
     Column("created_at", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
 )
 
+sync_config = Table(
+    "sync_config", metadata,
+    Column("tenant_id", String(36), ForeignKey("tenants.id", ondelete="CASCADE"), primary_key=True),
+    Column("passphrase_hash", String(255), nullable=False),
+    Column("last_sync_at", DateTime(timezone=True), nullable=True),
+    Column("created_at", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
+)
+
 
 def get_engine(database_url: str) -> Engine:
     """Create a SQLAlchemy engine from a database URL."""
