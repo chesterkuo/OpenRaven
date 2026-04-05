@@ -137,3 +137,58 @@ def test_format_history_prefix_truncates_to_limit():
     assert "Q20" in result
     assert "Q29" in result
     assert "Q0" not in result
+
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from openraven.conversations.routes import create_conversations_router
+from openraven.auth.routes import create_auth_router
+
+
+@pytest.fixture
+def auth_client(engine):
+    """Client with auth + conversations routes."""
+    app = FastAPI()
+    app.include_router(create_auth_router(engine))
+    app.include_router(create_conversations_router(engine))
+    client = TestClient(app)
+    # Sign up a user to get a session
+    res = client.post("/api/auth/signup", json={
+        "name": "Alice", "email": "alice@test.com", "password": "securepass123",
+    })
+    assert res.status_code == 200
+    return client
+
+
+def test_create_conversation_api(auth_client):
+    res = auth_client.post("/api/conversations", json={})
+    assert res.status_code == 200
+    assert "id" in res.json()
+
+
+def test_list_conversations_api(auth_client):
+    auth_client.post("/api/conversations", json={"title": "Chat 1"})
+    auth_client.post("/api/conversations", json={"title": "Chat 2"})
+    res = auth_client.get("/api/conversations")
+    assert res.status_code == 200
+    convos = res.json()
+    assert len(convos) == 2
+
+
+def test_get_conversation_api(auth_client):
+    create_res = auth_client.post("/api/conversations", json={"title": "My Chat"})
+    convo_id = create_res.json()["id"]
+    res = auth_client.get(f"/api/conversations/{convo_id}")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["title"] == "My Chat"
+    assert data["messages"] == []
+
+
+def test_delete_conversation_api(auth_client):
+    create_res = auth_client.post("/api/conversations", json={})
+    convo_id = create_res.json()["id"]
+    res = auth_client.delete(f"/api/conversations/{convo_id}")
+    assert res.status_code == 200
+    get_res = auth_client.get(f"/api/conversations/{convo_id}")
+    assert get_res.status_code == 404
