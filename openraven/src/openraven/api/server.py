@@ -110,6 +110,20 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         allow_headers=["*"],
     )
 
+    # Auth setup (only when DATABASE_URL is configured)
+    auth_engine = None
+    if config.auth_enabled:
+        from openraven.auth.db import get_engine, create_tables
+        from openraven.auth.routes import create_auth_router
+        from openraven.auth.middleware import create_require_auth
+        auth_engine = get_engine(config.database_url)
+        create_tables(auth_engine)
+        app.include_router(create_auth_router(
+            auth_engine,
+            google_client_id=config.google_client_id,
+            google_client_secret=config.google_client_secret,
+        ))
+
     pipeline = RavenPipeline(config)
     ingest_jobs: dict[str, IngestJob] = {}
 
@@ -168,7 +182,8 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         saved_paths: list[Path] = []
         config.ingestion_dir.mkdir(parents=True, exist_ok=True)
         for upload in files:
-            dest = config.ingestion_dir / upload.filename
+            safe_name = Path(upload.filename).name if upload.filename else f"upload_{uuid.uuid4().hex[:8]}"
+            dest = config.ingestion_dir / safe_name
             content = await upload.read()
             dest.write_bytes(content)
             saved_paths.append(dest)
@@ -254,7 +269,10 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
 
     @app.get("/api/wiki/{slug}")
     async def wiki_article(slug: str):
+        import re as _re
         from fastapi.responses import JSONResponse
+        if not _re.fullmatch(r"[a-zA-Z0-9_-]+", slug):
+            return JSONResponse({"error": "Invalid slug"}, status_code=400)
         wiki_file = config.wiki_dir / f"{slug}.md"
         if not wiki_file.exists():
             return JSONResponse({"error": "Article not found"}, status_code=404)
@@ -621,7 +639,9 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                 headers={"Retry-After": "3600", "X-RateLimit-Remaining": "0"},
             )
 
-        question = body.get("question", "")
+        question = body.get("question", "").strip()
+        if not question:
+            return JSONResponse({"error": "question is required"}, status_code=400)
         mode = body.get("mode", "mix")
         result = await pipeline.ask_with_sources(question, mode=mode)
         return {

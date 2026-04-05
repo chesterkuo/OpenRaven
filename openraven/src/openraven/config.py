@@ -24,6 +24,8 @@ class RavenConfig:
     anthropic_api_key: str = field(default_factory=lambda: os.environ.get("ANTHROPIC_API_KEY", ""))
     google_client_id: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_ID", ""))
     google_client_secret: str = field(default_factory=lambda: os.environ.get("GOOGLE_CLIENT_SECRET", ""))
+    database_url: str = field(default_factory=lambda: _env("DATABASE_URL", ""))
+    session_secret: str = field(default_factory=lambda: _env("SESSION_SECRET", "dev-secret-change-me"))
     api_host: str = "127.0.0.1"
     api_port: int = 8741
 
@@ -37,6 +39,11 @@ class RavenConfig:
         if self.llm_provider == "ollama":
             return ""
         return self.gemini_api_key
+
+    @property
+    def auth_enabled(self) -> bool:
+        """Auth is enabled when DATABASE_URL is set."""
+        return bool(self.database_url)
 
     @property
     def db_path(self) -> Path:
