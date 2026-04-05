@@ -454,3 +454,63 @@ class RavenGraph:
             return {"nodes": node_count, "edges": edge_count, "topics": topics}
         except Exception:
             return {"nodes": 0, "edges": 0, "topics": []}
+
+    def get_detailed_stats(self) -> dict:
+        """Return detailed graph statistics including entity types and clusters."""
+        base = self.get_stats()
+
+        if self._graph_backend == "neo4j":
+            return self._get_detailed_stats_neo4j(base)
+
+        import networkx as nx
+
+        graph_file = self.working_dir / "graph_chunk_entity_relation.graphml"
+        if not graph_file.exists():
+            return {**base, "entity_types": {}, "top_connected": [], "components": 0}
+
+        try:
+            graph = nx.read_graphml(str(graph_file))
+        except Exception:
+            return {**base, "entity_types": {}, "top_connected": [], "components": 0}
+
+        entity_types: dict[str, int] = {}
+        for _, attrs in graph.nodes(data=True):
+            etype = attrs.get("entity_type", "unknown")
+            entity_types[etype] = entity_types.get(etype, 0) + 1
+
+        degrees = dict(graph.degree())
+        top_connected = sorted(degrees.items(), key=lambda x: x[1], reverse=True)[:10]
+
+        if graph.is_directed():
+            components = nx.number_weakly_connected_components(graph)
+        else:
+            components = nx.number_connected_components(graph)
+
+        return {
+            **base,
+            "entity_types": entity_types,
+            "top_connected": top_connected,
+            "components": components,
+        }
+
+    def _get_detailed_stats_neo4j(self, base: dict) -> dict:
+        """Detailed stats from Neo4j."""
+        from neo4j import GraphDatabase
+
+        try:
+            driver = GraphDatabase.driver(self._neo4j_uri, auth=(self._neo4j_user, self._neo4j_password))
+            with driver.session() as session:
+                type_result = session.run(
+                    "MATCH (n) RETURN n.entity_type AS etype, count(*) AS cnt"
+                )
+                entity_types = {r["etype"] or "unknown": r["cnt"] for r in type_result}
+
+                degree_result = session.run(
+                    "MATCH (n)-[r]-() RETURN n.id AS id, count(r) AS deg ORDER BY deg DESC LIMIT 10"
+                )
+                top_connected = [(r["id"], r["deg"]) for r in degree_result]
+
+            driver.close()
+            return {**base, "entity_types": entity_types, "top_connected": top_connected, "components": 0}
+        except Exception:
+            return {**base, "entity_types": {}, "top_connected": [], "components": 0}

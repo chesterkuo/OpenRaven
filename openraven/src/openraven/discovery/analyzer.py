@@ -30,12 +30,35 @@ class DiscoveryInsight:
 
 
 def analyze_themes(graph_stats: dict) -> list[DiscoveryInsight]:
-    insights = []
+    """Generate discovery insights from graph statistics."""
+    insights: list[DiscoveryInsight] = []
     topics = graph_stats.get("topics", [])
     node_count = graph_stats.get("nodes", 0)
     edge_count = graph_stats.get("edges", 0)
+    entity_types = graph_stats.get("entity_types", {})
+    top_connected = graph_stats.get("top_connected", [])
+    components = graph_stats.get("components", 0)
 
-    if node_count > 0:
+    if node_count == 0:
+        return insights
+
+    # 1. Knowledge coverage overview
+    if entity_types:
+        type_summary = ", ".join(
+            f"{count} {etype}s" for etype, count in
+            sorted(entity_types.items(), key=lambda x: x[1], reverse=True)[:4]
+        )
+        insights.append(DiscoveryInsight(
+            insight_type="theme",
+            title="Knowledge Coverage",
+            description=(
+                f"Your knowledge base contains {node_count} concepts with "
+                f"{edge_count} connections: {type_summary}."
+            ),
+            related_entities=topics[:10],
+            document_count=node_count,
+        ))
+    else:
         insights.append(DiscoveryInsight(
             insight_type="theme",
             title="Knowledge Base Overview",
@@ -47,6 +70,7 @@ def analyze_themes(graph_stats: dict) -> list[DiscoveryInsight]:
             document_count=node_count,
         ))
 
+    # 2. Top knowledge areas
     if len(topics) >= 3:
         insights.append(DiscoveryInsight(
             insight_type="cluster",
@@ -54,6 +78,35 @@ def analyze_themes(graph_stats: dict) -> list[DiscoveryInsight]:
             description=f"Found {len(topics)} distinct topics in your knowledge base.",
             related_entities=topics[:10],
             document_count=len(topics),
+        ))
+
+    # 3. Most connected concepts (hub nodes)
+    if top_connected:
+        hub_names = [name for name, deg in top_connected[:3]]
+        hub_desc = ", ".join(hub_names)
+        max_deg = top_connected[0][1] if top_connected else 0
+        insights.append(DiscoveryInsight(
+            insight_type="trend",
+            title="Key Concepts Discovered",
+            description=(
+                f"Your most connected concepts are {hub_desc}. "
+                f"The top concept links to {max_deg} other ideas."
+            ),
+            related_entities=[name for name, _ in top_connected[:5]],
+            document_count=len(top_connected),
+        ))
+
+    # 4. Knowledge gaps (many disconnected components)
+    if components > 3:
+        insights.append(DiscoveryInsight(
+            insight_type="gap",
+            title="Knowledge Gaps Detected",
+            description=(
+                f"Found {components} separate topic clusters with no connections between them. "
+                f"Adding more documents could help bridge these gaps."
+            ),
+            related_entities=topics[:5],
+            document_count=components,
         ))
 
     return insights

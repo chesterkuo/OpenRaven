@@ -510,7 +510,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     @app.get("/api/discovery", response_model=list[DiscoveryInsightResponse])
     async def discovery():
         from openraven.discovery.analyzer import analyze_themes
-        graph_stats = pipeline.graph.get_stats()
+        graph_stats = pipeline.graph.get_detailed_stats()
         insights = analyze_themes(graph_stats)
         return [
             DiscoveryInsightResponse(
