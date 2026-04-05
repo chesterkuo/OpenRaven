@@ -19,10 +19,17 @@ from openraven.config import RavenConfig
 from openraven.pipeline import RavenPipeline
 
 
+class HistoryMessage(BaseModel):
+    role: str
+    content: str
+
+
 class AskRequest(BaseModel):
     question: str
     mode: str = "mix"
     locale: str = "en"
+    conversation_id: str | None = None
+    history: list[HistoryMessage] | None = None
 
 
 class SourceRef(BaseModel):
@@ -36,6 +43,7 @@ class AskResponse(BaseModel):
     answer: str
     mode: str
     sources: list[SourceRef] = []
+    conversation_id: str | None = None
 
 
 class StatusResponse(BaseModel):
@@ -216,12 +224,37 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
 
     @app.post("/api/ask", response_model=AskResponse)
     async def ask(request: Request, req: AskRequest):
-        result = await pipeline.ask_with_sources(req.question, mode=req.mode, locale=req.locale)
+        pipe = resolve_pipeline(request)
+
+        # Build question with history context
+        question = req.question
+        if req.history:
+            from openraven.conversations.history import format_history_prefix
+            history_dicts = [{"role": m.role, "content": m.content} for m in req.history]
+            question = format_history_prefix(history_dicts, req.question)
+
+        result = await pipe.ask_with_sources(question, mode=req.mode, locale=req.locale)
         _audit(request, "kb_query", {"question": req.question[:200], "mode": req.mode})
+
+        # Persist messages if conversation_id provided
+        if req.conversation_id and auth_engine:
+            from openraven.conversations.models import add_message, get_conversation, _set_title
+            ctx = getattr(request.state, "auth", None)
+            if ctx:
+                convo = get_conversation(auth_engine, req.conversation_id, tenant_id=ctx.tenant_id)
+                if convo:
+                    add_message(auth_engine, req.conversation_id, role="user", content=req.question)
+                    sources_data = [{"document": s.document, "excerpt": s.excerpt, "char_start": s.char_start, "char_end": s.char_end} for s in (result.sources or [])]
+                    add_message(auth_engine, req.conversation_id, role="assistant", content=result.answer, sources=sources_data or None)
+                    # Auto-title on first message
+                    if not convo.get("title"):
+                        _set_title(auth_engine, req.conversation_id, req.question[:100])
+
         return AskResponse(
             answer=result.answer,
             mode=req.mode,
             sources=[SourceRef(**s) for s in result.sources],
+            conversation_id=req.conversation_id,
         )
 
     @app.get("/api/ingest/status/{job_id}")

@@ -128,6 +128,17 @@ def add_message(
     return msg_id
 
 
+def _set_title(engine: Engine, convo_id: str, title: str) -> None:
+    """Set the title of a conversation (used for auto-titling)."""
+    with engine.connect() as conn:
+        conn.execute(
+            conversations.update()
+            .where(conversations.c.id == convo_id)
+            .values(title=title)
+        )
+        conn.commit()
+
+
 def get_recent_messages(
     engine: Engine,
     conversation_id: str,

@@ -192,3 +192,15 @@ def test_delete_conversation_api(auth_client):
     assert res.status_code == 200
     get_res = auth_client.get(f"/api/conversations/{convo_id}")
     assert get_res.status_code == 404
+
+
+def test_ask_request_model_accepts_conversation_fields():
+    """Verify AskRequest accepts conversation_id and history fields."""
+    from openraven.api.server import AskRequest
+    req = AskRequest(
+        question="What is AI?",
+        conversation_id="some-uuid",
+        history=[{"role": "user", "content": "Hello"}, {"role": "assistant", "content": "Hi"}],
+    )
+    assert req.conversation_id == "some-uuid"
+    assert len(req.history) == 2
