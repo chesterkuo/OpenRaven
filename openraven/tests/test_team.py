@@ -115,3 +115,70 @@ def test_revoke_invitation(db_engine, owner_and_tenant):
     inv = create_invitation(db_engine, tenant_id, owner_id)
     assert revoke_invitation(db_engine, inv["id"], tenant_id) is True
     assert len(list_invitations(db_engine, tenant_id)) == 0
+
+
+from fastapi.testclient import TestClient
+
+
+@pytest.fixture
+def app_with_team(db_engine, owner_and_tenant):
+    from openraven.auth.team_routes import create_team_router
+    from openraven.auth.models import AuthContext
+    from fastapi import FastAPI, Request
+    from starlette.middleware.base import BaseHTTPMiddleware
+
+    owner_id, tenant_id = owner_and_tenant
+
+    app = FastAPI()
+
+    class MockAuthMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            request.state.auth = AuthContext(user_id=owner_id, tenant_id=tenant_id, email="owner@test.com")
+            return await call_next(request)
+
+    app.add_middleware(MockAuthMiddleware)
+    app.include_router(create_team_router(db_engine), prefix="/api/team")
+    return app
+
+
+def test_api_create_invite(app_with_team):
+    client = TestClient(app_with_team)
+    res = client.post("/api/team/invite")
+    assert res.status_code == 200
+    data = res.json()
+    assert "token" in data
+    assert "expires_at" in data
+
+
+def test_api_list_members(app_with_team):
+    client = TestClient(app_with_team)
+    res = client.get("/api/team/members")
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data) >= 1
+    assert data[0]["role"] == "owner"
+
+
+def test_api_list_invitations(app_with_team):
+    client = TestClient(app_with_team)
+    client.post("/api/team/invite")
+    client.post("/api/team/invite")
+    res = client.get("/api/team/invitations")
+    assert res.status_code == 200
+    assert len(res.json()) == 2
+
+
+def test_api_revoke_invitation(app_with_team):
+    client = TestClient(app_with_team)
+    inv = client.post("/api/team/invite").json()
+    res = client.delete(f"/api/team/invitations/{inv['id']}")
+    assert res.status_code == 200
+    assert client.get("/api/team/invitations").json() == []
+
+
+def test_api_validate_invite_token(app_with_team):
+    client = TestClient(app_with_team)
+    inv = client.post("/api/team/invite").json()
+    res = client.get(f"/api/team/invite/{inv['token']}")
+    assert res.status_code == 200
+    assert res.json()["valid"] is True
