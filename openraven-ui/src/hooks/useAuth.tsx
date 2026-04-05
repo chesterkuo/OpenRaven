@@ -1,10 +1,12 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import i18n from "../i18n";
 
 interface User {
   id: string;
   email: string;
   name: string;
   avatar_url?: string;
+  locale?: string;
 }
 
 interface Tenant {
@@ -37,6 +39,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const data = await res.json();
         setUser(data.user);
         setTenant(data.tenant);
+        if (data.user.locale) {
+          i18n.changeLanguage(data.user.locale);
+        }
       } else {
         setUser(null);
         setTenant(null);
