@@ -1,0 +1,7 @@
+{
+  "title": "Wiki tri thức",
+  "loadingWiki": "Đang tải wiki...",
+  "articlesCount": "Bài viết ({{count}})",
+  "selectArticle": "Chọn một bài viết để đọc",
+  "emptyMessage": "Chưa có bài viết. Thêm tệp để bắt đầu tạo bài viết wiki."
+}

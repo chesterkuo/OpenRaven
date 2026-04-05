@@ -1,0 +1,32 @@
+{
+  "nav": {
+    "ask": "Chiedi",
+    "addFiles": "Aggiungi file",
+    "graph": "Grafo",
+    "wiki": "Wiki",
+    "connectors": "Connettori",
+    "agents": "Agenti",
+    "courses": "Corsi",
+    "status": "Stato"
+  },
+  "signOut": "Esci",
+  "loading": "Caricamento...",
+  "cancel": "Annulla",
+  "save": "Salva",
+  "delete": "Elimina",
+  "error": "Qualcosa è andato storto",
+  "or": "o",
+  "saving": "Salvataggio...",
+  "syncing": "Sincronizzazione...",
+  "connected": "Connesso",
+  "notConnected": "Non connesso",
+  "connect": "Connetti",
+  "syncNow": "Sincronizza ora",
+  "download": "Scarica",
+  "export": "Esporta",
+  "create": "Crea",
+  "creating": "Creazione...",
+  "close": "Chiudi",
+  "copied": "Copiato!",
+  "truncated": "(troncato)"
+}

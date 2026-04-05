@@ -1,0 +1,7 @@
+{
+  "title": "知識百科",
+  "loadingWiki": "載入百科中...",
+  "articlesCount": "文章 ({{count}})",
+  "selectArticle": "選擇一篇文章閱讀",
+  "emptyMessage": "尚無文章。新增檔案以開始產生百科文章。"
+}

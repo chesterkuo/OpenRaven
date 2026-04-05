@@ -1,0 +1,26 @@
+{
+  "heroTitle": "Wat wilt u weten?",
+  "discoveriesHeading": "Ontdekkingen uit uw kennisbank",
+  "sourcesCount": "Bronnen ({{count}})",
+  "placeholder": "Stel een vraag aan uw kennisbank...",
+  "submit": "Vragen",
+  "thinking": "Aan het denken...",
+  "errorReach": "Fout: de kennisengine kon niet bereikt worden.",
+  "modeLabel": "Modus",
+  "modes": {
+    "mix": "Mix",
+    "local": "Lokaal",
+    "global": "Globaal",
+    "hybrid": "Hybride",
+    "naive": "Trefwoorden",
+    "bypass": "Directe LLM"
+  },
+  "modeDesc": {
+    "mix": "Specifiek + breed redeneren (aanbevolen)",
+    "local": "Specifieke entiteiten zoeken",
+    "global": "Redeneren over meerdere documenten",
+    "hybrid": "Lokaal + globaal gecombineerd",
+    "naive": "Traditionele vectorzoekopdracht",
+    "bypass": "Kennisbank overslaan"
+  }
+}

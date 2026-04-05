@@ -1,0 +1,21 @@
+{
+  "title": "新增文件",
+  "schemaLabel": "擷取架構",
+  "schemaAuto": "自動偵測（預設）",
+  "importHint": "從 Notion 或 Obsidian 匯入 — 上傳您匯出的 .zip 檔案。圖片（PNG、JPEG）會使用 AI 視覺分析。",
+  "stages": {
+    "uploading": "上傳檔案中...",
+    "processing": "處理文件中...",
+    "done": "完成",
+    "error": "發生錯誤"
+  },
+  "stats": {
+    "filesProcessed": "已處理檔案",
+    "entitiesExtracted": "已擷取實體",
+    "articlesGenerated": "已產生文章"
+  },
+  "uploadError": "無法連線到知識引擎。",
+  "dropFiles": "將檔案拖放到此處",
+  "fileTypes": "PDF、DOCX、PPTX、XLSX、Markdown、TXT、圖片（PNG/JPEG）或 ZIP（Notion/Obsidian 匯出）",
+  "browseFiles": "瀏覽檔案"
+}

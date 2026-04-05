@@ -1,0 +1,32 @@
+{
+  "nav": {
+    "ask": "Hỏi",
+    "addFiles": "Thêm tệp",
+    "graph": "Đồ thị",
+    "wiki": "Wiki",
+    "connectors": "Trình kết nối",
+    "agents": "Tác nhân",
+    "courses": "Khóa học",
+    "status": "Trạng thái"
+  },
+  "signOut": "Đăng xuất",
+  "loading": "Đang tải...",
+  "cancel": "Hủy",
+  "save": "Lưu",
+  "delete": "Xóa",
+  "error": "Đã xảy ra lỗi",
+  "or": "hoặc",
+  "saving": "Đang lưu...",
+  "syncing": "Đang đồng bộ...",
+  "connected": "Đã kết nối",
+  "notConnected": "Chưa kết nối",
+  "connect": "Kết nối",
+  "syncNow": "Đồng bộ ngay",
+  "download": "Tải xuống",
+  "export": "Xuất",
+  "create": "Tạo",
+  "creating": "Đang tạo...",
+  "close": "Đóng",
+  "copied": "Đã sao chép!",
+  "truncated": "(đã cắt ngắn)"
+}

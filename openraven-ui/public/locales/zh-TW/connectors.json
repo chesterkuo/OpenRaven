@@ -1,0 +1,28 @@
+{
+  "title": "連接器",
+  "oauthWarning": "Google OAuth 未設定。請在 .env 中設定 GOOGLE_CLIENT_ID 和 GOOGLE_CLIENT_SECRET 以啟用連接器。",
+  "gdrive": {
+    "name": "Google Drive",
+    "desc": "從您的 Google Drive 匯入文件（PDF、文件、試算表、簡報）。"
+  },
+  "gmail": {
+    "name": "Gmail",
+    "desc": "從您的 Gmail 帳戶匯入電子郵件作為知識庫條目。"
+  },
+  "meet": {
+    "name": "Google Meet",
+    "desc": "從 Google Meet 匯入會議記錄。",
+    "syncLabel": "同步會議記錄"
+  },
+  "otter": {
+    "name": "Otter.ai",
+    "desc": "從 Otter.ai 匯入會議記錄。",
+    "apiKeyPlaceholder": "Otter.ai API 金鑰"
+  },
+  "syncFailed": "同步失敗",
+  "stats": {
+    "filesSynced": "已同步檔案",
+    "entities": "實體",
+    "articles": "文章"
+  }
+}

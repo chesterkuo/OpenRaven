@@ -1,0 +1,23 @@
+{
+  "title": "หลักสูตร",
+  "generateCourse": "สร้างหลักสูตร",
+  "courseTitle": "ชื่อหลักสูตร *",
+  "courseTitlePlaceholder": "เช่น บทนำสู่สถาปัตยกรรมแบบขับเคลื่อนด้วยเหตุการณ์",
+  "targetAudience": "กลุ่มเป้าหมาย",
+  "audiencePlaceholder": "เช่น วิศวกรแบ็กเอนด์",
+  "learningObjectives": "วัตถุประสงค์การเรียนรู้ (บรรทัดละหนึ่งข้อ)",
+  "objectivesPlaceholder": "เข้าใจรูปแบบ EDA\nพัฒนา Kafka consumer\nออกแบบ event schema",
+  "generate": "สร้างหลักสูต���",
+  "generating": "กำลังสร้าง...",
+  "generatedCourses": "หลักสูตรที่สร้างแล้ว",
+  "chaptersCount": "{{count}} บท",
+  "emptyMessage": "ยังไม่มีหลักสูตรที่สร้าง กรอกแบบฟอร์มด้านบนแล้วสร้างหลักสูตรแรกของคุณ",
+  "progress": {
+    "planning": "กำลังวางแผนหลักสูตร...",
+    "generating": "กำลังสร้างบท ({{done}}/{{total}})...",
+    "done": "เสร็จสมบูรณ์!",
+    "error": "ข้อผิดพลาด"
+  },
+  "generationFailed": "การสร้างล้มเหลว",
+  "startFailed": "ไม่สามารถเริ่มการสร้างได้"
+}

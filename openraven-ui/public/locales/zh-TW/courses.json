@@ -1,0 +1,23 @@
+{
+  "title": "課程",
+  "generateCourse": "產生課程",
+  "courseTitle": "課程標題 *",
+  "courseTitlePlaceholder": "例如：事件驅動架構入門",
+  "targetAudience": "目標對象",
+  "audiencePlaceholder": "例如：後端工程師",
+  "learningObjectives": "學習目標（每行一個）",
+  "objectivesPlaceholder": "了解 EDA 模式\n實作 Kafka 消費者\n設計事件架構",
+  "generate": "產生課程",
+  "generating": "產生中...",
+  "generatedCourses": "已產生的課程",
+  "chaptersCount": "{{count}} 章",
+  "emptyMessage": "尚未產生課程。填寫上方表單並產生您的第一堂課程。",
+  "progress": {
+    "planning": "規劃課程大綱中...",
+    "generating": "產生章節中（{{done}}/{{total}}）...",
+    "done": "完成！",
+    "error": "錯誤"
+  },
+  "generationFailed": "產生失敗",
+  "startFailed": "無法開始產生"
+}

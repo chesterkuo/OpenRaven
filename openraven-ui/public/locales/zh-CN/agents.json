@@ -1,0 +1,12 @@
+{
+  "title": "专家代理",
+  "createAgent": "创建代理",
+  "namePlaceholder": "代理名称（例如：法律专家）",
+  "descriptionPlaceholder": "描述（这个代理擅长什么？）",
+  "emptyMessage": "暂无代理。创建一个将您的知识库部署为可查询的专家。",
+  "deployed": "已部署",
+  "localOnly": "仅限本地",
+  "copyUrl": "复制 URL",
+  "generateToken": "生成令牌",
+  "tokenCopied": "令牌已复制！"
+}

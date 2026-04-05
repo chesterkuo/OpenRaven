@@ -1,0 +1,28 @@
+{
+  "title": "ตัวเชื่อมต่อ",
+  "oauthWarning": "ยังไม่ได้ตั้งค่า Google OAuth กรุณาตั้งค่า GOOGLE_CLIENT_ID และ GOOGLE_CLIENT_SECRET ใน .env เพื่อเปิดใช้งานตัวเชื่อม��่อ",
+  "gdrive": {
+    "name": "Google Drive",
+    "desc": "นำเข้าเอกสารจาก Google Drive ของคุณ (PDF, Docs, Sheets, Slides)"
+  },
+  "gmail": {
+    "name": "Gmail",
+    "desc": "นำเข้าอีเมลจากบัญชี Gmail ของคุณเป็นรายการในฐานความรู้"
+  },
+  "meet": {
+    "name": "Google Meet",
+    "desc": "นำเข้าบันทึกการประชุมจาก Google Meet",
+    "syncLabel": "ซิงค์บันทึก"
+  },
+  "otter": {
+    "name": "Otter.ai",
+    "desc": "นำเข้าบันทึกการประชุ���จาก Otter.ai",
+    "apiKeyPlaceholder": "คีย์ API ของ Otter.ai"
+  },
+  "syncFailed": "ซิงค์ล้มเหลว",
+  "stats": {
+    "filesSynced": "ไฟล์ที่ซิงค์แล��ว",
+    "entities": "เอนทิตี",
+    "articles": "��ทความ"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "title": "전문가 에이전트",
+  "createAgent": "에이전트 만들기",
+  "namePlaceholder": "에이전트 이름 (예: 법률 전문가)",
+  "descriptionPlaceholder": "설명 (이 에이전트는 무엇을 알고 있나요?)",
+  "emptyMessage": "아직 에이전트가 없습니다. 지식 베이스를 쿼리 가능한 전문가로 배포하려면 하나를 만드세요.",
+  "deployed": "배포됨",
+  "localOnly": "로컬 전용",
+  "copyUrl": "URL 복사",
+  "generateToken": "토큰 생성",
+  "tokenCopied": "토큰이 복사되었습니다!"
+}

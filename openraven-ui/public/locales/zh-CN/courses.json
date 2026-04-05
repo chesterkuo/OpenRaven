@@ -1,0 +1,23 @@
+{
+  "title": "课程",
+  "generateCourse": "生成课程",
+  "courseTitle": "课程标题 *",
+  "courseTitlePlaceholder": "例如：事件驱动架构入门",
+  "targetAudience": "目标受众",
+  "audiencePlaceholder": "例如：后端工程师",
+  "learningObjectives": "学习目标（每行一个）",
+  "objectivesPlaceholder": "了解 EDA 模式\n实现 Kafka 消费者\n设计事件架构",
+  "generate": "生成课程",
+  "generating": "生成中...",
+  "generatedCourses": "已生成的课程",
+  "chaptersCount": "{{count}} 章",
+  "emptyMessage": "尚未生成课程。填写上方表单并生成您的第一门课程。",
+  "progress": {
+    "planning": "规划课程大纲中...",
+    "generating": "生成章节中（{{done}}/{{total}}）...",
+    "done": "完成！",
+    "error": "错误"
+  },
+  "generationFailed": "生成失败",
+  "startFailed": "无法开始生成"
+}

@@ -1,0 +1,28 @@
+{
+  "title": "コネクタ",
+  "oauthWarning": "Google OAuth が設定されていません。コネクタを有効にするには .env で GOOGLE_CLIENT_ID と GOOGLE_CLIENT_SECRET を設定してください。",
+  "gdrive": {
+    "name": "Google Drive",
+    "desc": "Google Drive からドキュメントをインポート（PDF、ドキュメント、スプレッドシート、スライド）。"
+  },
+  "gmail": {
+    "name": "Gmail",
+    "desc": "Gmail アカウントからメールをナレッジベースのエントリとしてインポート。"
+  },
+  "meet": {
+    "name": "Google Meet",
+    "desc": "Google Meet から会議の文字起こしをインポート。",
+    "syncLabel": "文字起こしを同期"
+  },
+  "otter": {
+    "name": "Otter.ai",
+    "desc": "Otter.ai から会議の文字起こしをインポート。",
+    "apiKeyPlaceholder": "Otter.ai API キー"
+  },
+  "syncFailed": "同期に失敗しました",
+  "stats": {
+    "filesSynced": "同期済みファイル",
+    "entities": "エンティティ",
+    "articles": "記事"
+  }
+}

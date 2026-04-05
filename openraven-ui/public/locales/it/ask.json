@@ -1,0 +1,26 @@
+{
+  "heroTitle": "Cosa vorresti sapere?",
+  "discoveriesHeading": "Scoperte dalla tua base di conoscenza",
+  "sourcesCount": "Fonti ({{count}})",
+  "placeholder": "Interroga la tua base di conoscenza...",
+  "submit": "Chiedi",
+  "thinking": "Sto pensando...",
+  "errorReach": "Errore: impossibile contattare il motore di conoscenza.",
+  "modeLabel": "Modalità",
+  "modes": {
+    "mix": "Misto",
+    "local": "Locale",
+    "global": "Globale",
+    "hybrid": "Ibrido",
+    "naive": "Parole chiave",
+    "bypass": "LLM diretto"
+  },
+  "modeDesc": {
+    "mix": "Ragionamento specifico + ampio (consigliato)",
+    "local": "Cerca entità specifiche",
+    "global": "Ragionamento tra documenti",
+    "hybrid": "Locale + globale combinati",
+    "naive": "Ricerca vettoriale tradizionale",
+    "bypass": "Salta la base di conoscenza"
+  }
+}

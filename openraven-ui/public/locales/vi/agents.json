@@ -1,0 +1,12 @@
+{
+  "title": "Tác nhân chuyên gia",
+  "createAgent": "Tạo tác nhân",
+  "namePlaceholder": "Tên tác nhân (vd: Chuyên gia pháp lý)",
+  "descriptionPlaceholder": "Mô tả (tác nhân này biết gì?)",
+  "emptyMessage": "Chưa có tác nhân. Tạo một tác nhân để triển khai kho tri thức của bạn như một chuyên gia có thể truy vấn.",
+  "deployed": "Đã triển khai",
+  "localOnly": "Chỉ cục bộ",
+  "copyUrl": "Sao chép URL",
+  "generateToken": "Tạo token",
+  "tokenCopied": "Đã sao chép token!"
+}

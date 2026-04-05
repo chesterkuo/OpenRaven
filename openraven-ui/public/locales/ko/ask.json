@@ -1,0 +1,26 @@
+{
+  "heroTitle": "무엇을 알고 싶으신가요?",
+  "discoveriesHeading": "지식 베이스에서의 발견",
+  "sourcesCount": "출처 ({{count}})",
+  "placeholder": "지식 베이스에 질문하세요...",
+  "submit": "질문하기",
+  "thinking": "생각 중...",
+  "errorReach": "오류: 지식 엔진에 연결할 수 없습니다.",
+  "modeLabel": "모드",
+  "modes": {
+    "mix": "믹스",
+    "local": "로컬",
+    "global": "글로벌",
+    "hybrid": "하이브리드",
+    "naive": "키워드",
+    "bypass": "직접 LLM"
+  },
+  "modeDesc": {
+    "mix": "특정 + 광범위한 추론 (권장)",
+    "local": "특정 엔티티 검색",
+    "global": "문서 간 추론",
+    "hybrid": "로컬 + 글로벌 결합",
+    "naive": "전통적인 벡터 검색",
+    "bypass": "지식 베이스 건너뛰기"
+  }
+}

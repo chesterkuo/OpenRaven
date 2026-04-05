@@ -1,0 +1,11 @@
+{
+  "title": "知识图谱",
+  "loadingGraph": "加载图谱中...",
+  "searchPlaceholder": "搜索节点...",
+  "minConnections": "最少连接数：",
+  "exportGraphML": "导出 GraphML",
+  "exportPNG": "导出 PNG",
+  "emptyMessage": "暂无图谱数据。添加文件以开始构建您的知识图谱。",
+  "source": "来源",
+  "connectedCount": "已连接 ({{count}})"
+}

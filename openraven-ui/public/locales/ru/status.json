@@ -1,0 +1,10 @@
+{
+  "title": "Статус базы знаний",
+  "files": "Файлы",
+  "concepts": "Концепции",
+  "connections": "Связи",
+  "topics": "Темы",
+  "llm": "LLM:",
+  "topTopics": "Основные темы",
+  "healthInsights": "Показатели здоровья"
+}

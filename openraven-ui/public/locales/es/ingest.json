@@ -1,0 +1,21 @@
+{
+  "title": "Agregar documentos",
+  "schemaLabel": "Esquema de extracción",
+  "schemaAuto": "Detección automática (predeterminado)",
+  "importHint": "Importe desde Notion u Obsidian — suba su archivo .zip exportado. Las imágenes (PNG, JPEG) se analizan con visión IA.",
+  "stages": {
+    "uploading": "Subiendo archivos...",
+    "processing": "Procesando documentos...",
+    "done": "Completado",
+    "error": "Ocurrió un error"
+  },
+  "stats": {
+    "filesProcessed": "Archivos procesados",
+    "entitiesExtracted": "Entidades extraídas",
+    "articlesGenerated": "Artículos generados"
+  },
+  "uploadError": "No se pudo conectar al motor de conocimientos.",
+  "dropFiles": "Suelte los archivos aquí",
+  "fileTypes": "PDF, DOCX, PPTX, XLSX, Markdown, TXT, Imágenes (PNG/JPEG) o ZIP (exportación de Notion/Obsidian)",
+  "browseFiles": "EXAMINAR ARCHIVOS"
+}

@@ -1,0 +1,7 @@
+{
+  "title": "Wiki della conoscenza",
+  "loadingWiki": "Caricamento wiki...",
+  "articlesCount": "Articoli ({{count}})",
+  "selectArticle": "Seleziona un articolo da leggere",
+  "emptyMessage": "Nessun articolo ancora. Aggiungi file per iniziare a generare articoli wiki."
+}

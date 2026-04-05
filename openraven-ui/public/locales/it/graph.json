@@ -1,0 +1,11 @@
+{
+  "title": "Grafo della conoscenza",
+  "loadingGraph": "Caricamento grafo...",
+  "searchPlaceholder": "Cerca nodi...",
+  "minConnections": "Connessioni minime:",
+  "exportGraphML": "Esporta GraphML",
+  "exportPNG": "Esporta PNG",
+  "emptyMessage": "Nessun dato del grafo ancora. Aggiungi file per iniziare a costruire il tuo grafo della conoscenza.",
+  "source": "Fonte",
+  "connectedCount": "Connessi ({{count}})"
+}

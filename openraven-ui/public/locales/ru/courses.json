@@ -1,0 +1,23 @@
+{
+  "title": "Курсы",
+  "generateCourse": "Сгенерировать курс",
+  "courseTitle": "Название курса *",
+  "courseTitlePlaceholder": "напр. Введение в событийно-ориентированную архитектуру",
+  "targetAudience": "Целевая аудитория",
+  "audiencePlaceholder": "напр. Бэкенд-инженеры",
+  "learningObjectives": "Цели обучения (по одной на строку)",
+  "objectivesPlaceholder": "Понять паттерны EDA\nРеализовать потребители Kafka\nСпроектировать схемы событий",
+  "generate": "Сгенерировать курс",
+  "generating": "Генерация...",
+  "generatedCourses": "Сгенерированные курсы",
+  "chaptersCount": "{{count}} глав",
+  "emptyMessage": "Курсов пока нет. Заполните форму выше и сгенерируйте свой первый курс.",
+  "progress": {
+    "planning": "Планирование программы...",
+    "generating": "Генерация глав ({{done}}/{{total}})...",
+    "done": "Готово!",
+    "error": "Ошибка"
+  },
+  "generationFailed": "Ошибка генерации",
+  "startFailed": "Не удалось начать генерацию"
+}

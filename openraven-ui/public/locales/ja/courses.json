@@ -1,0 +1,23 @@
+{
+  "title": "コース",
+  "generateCourse": "コースを生成",
+  "courseTitle": "コースタイトル *",
+  "courseTitlePlaceholder": "例：イベント駆動アーキテクチャ入門",
+  "targetAudience": "対象者",
+  "audiencePlaceholder": "例：バックエンドエンジニア",
+  "learningObjectives": "学習目標（1行に1つ）",
+  "objectivesPlaceholder": "EDA パターンを理解する\nKafka コンシューマーを実装する\nイベントスキーマを設計する",
+  "generate": "コースを生成",
+  "generating": "生成中...",
+  "generatedCourses": "生成済みコース",
+  "chaptersCount": "{{count}} 章",
+  "emptyMessage": "まだコースが生成されていません。上のフォームに入力して最初のコースを生成しましょう。",
+  "progress": {
+    "planning": "カリキュラムを計画中...",
+    "generating": "チャプターを生成中（{{done}}/{{total}}）...",
+    "done": "完了！",
+    "error": "エラー"
+  },
+  "generationFailed": "生成に失敗しました",
+  "startFailed": "生成を開始できませんでした"
+}

@@ -1,0 +1,26 @@
+{
+  "heroTitle": "您想了解什麼？",
+  "discoveriesHeading": "從您的知識庫中發現",
+  "sourcesCount": "來源 ({{count}})",
+  "placeholder": "詢問您的知識庫...",
+  "submit": "提問",
+  "thinking": "思考中...",
+  "errorReach": "錯誤：無法連線到知識引擎。",
+  "modeLabel": "模式",
+  "modes": {
+    "mix": "混合",
+    "local": "局部",
+    "global": "全域",
+    "hybrid": "混合式",
+    "naive": "關鍵字",
+    "bypass": "直接 LLM"
+  },
+  "modeDesc": {
+    "mix": "特定 + 廣泛推理（建議使用）",
+    "local": "搜尋特定實體",
+    "global": "跨文件推理",
+    "hybrid": "局部 + 全域結合",
+    "naive": "傳統向量搜尋",
+    "bypass": "跳過知識庫"
+  }
+}

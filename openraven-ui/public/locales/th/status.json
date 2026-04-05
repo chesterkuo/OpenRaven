@@ -1,0 +1,10 @@
+{
+  "title": "สถานะฐานความรู้",
+  "files": "ไฟล์",
+  "concepts": "แนวคิด",
+  "connections": "การเชื่อมต่อ",
+  "topics": "หัวข้อ",
+  "llm": "LLM:",
+  "topTopics": "หัวข้อยอดนิยม",
+  "healthInsights": "การวิเคราะห์สุขภาพ"
+}

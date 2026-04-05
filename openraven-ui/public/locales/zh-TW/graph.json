@@ -1,0 +1,11 @@
+{
+  "title": "知識圖譜",
+  "loadingGraph": "載入圖譜中...",
+  "searchPlaceholder": "搜尋節點...",
+  "minConnections": "最少連線數：",
+  "exportGraphML": "匯出 GraphML",
+  "exportPNG": "匯出 PNG",
+  "emptyMessage": "尚無圖譜資料。新增檔案以開始建立您的知識圖譜。",
+  "source": "來源",
+  "connectedCount": "已連線 ({{count}})"
+}

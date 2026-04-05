@@ -1,0 +1,21 @@
+{
+  "title": "添加文档",
+  "schemaLabel": "提取架构",
+  "schemaAuto": "自动检测（默认）",
+  "importHint": "从 Notion 或 Obsidian 导入 — 上传您导出的 .zip 文件。图片（PNG、JPEG）会使用 AI 视觉分析。",
+  "stages": {
+    "uploading": "上传文件中...",
+    "processing": "处理文档中...",
+    "done": "完成",
+    "error": "发生错误"
+  },
+  "stats": {
+    "filesProcessed": "已处理文件",
+    "entitiesExtracted": "已提取实体",
+    "articlesGenerated": "已生成文章"
+  },
+  "uploadError": "无法连接到知识引擎。",
+  "dropFiles": "将文件拖放到此处",
+  "fileTypes": "PDF、DOCX、PPTX、XLSX、Markdown、TXT、图片（PNG/JPEG）或 ZIP（Notion/Obsidian 导出）",
+  "browseFiles": "浏览文件"
+}

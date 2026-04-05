@@ -1,0 +1,28 @@
+{
+  "title": "Коннекторы",
+  "oauthWarning": "Google OAuth не настроен. Установите GOOGLE_CLIENT_ID и GOOGLE_CLIENT_SECRET в .env для включения коннекторов.",
+  "gdrive": {
+    "name": "Google Drive",
+    "desc": "Импортируйте документы из вашего Google Drive (PDF, Документы, Таблицы, Презентации)."
+  },
+  "gmail": {
+    "name": "Gmail",
+    "desc": "Импортируйте письма из вашего аккаунта Gmail как записи базы знаний."
+  },
+  "meet": {
+    "name": "Google Meet",
+    "desc": "Импортируйте стенограммы встреч из Google Meet.",
+    "syncLabel": "Синхронизировать стенограммы"
+  },
+  "otter": {
+    "name": "Otter.ai",
+    "desc": "Импортируйте стенограммы встреч из Otter.ai.",
+    "apiKeyPlaceholder": "API-ключ Otter.ai"
+  },
+  "syncFailed": "Ошибка синхронизации",
+  "stats": {
+    "filesSynced": "Синхронизировано файлов",
+    "entities": "Сущности",
+    "articles": "Статьи"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "title": "코스",
+  "generateCourse": "코스 생성",
+  "courseTitle": "코스 제목 *",
+  "courseTitlePlaceholder": "예: 이벤트 기반 아키텍처 입문",
+  "targetAudience": "대상 청중",
+  "audiencePlaceholder": "예: 백엔드 엔지니어",
+  "learningObjectives": "학습 목표 (한 줄에 하나씩)",
+  "objectivesPlaceholder": "EDA 패턴 이해\nKafka 컨슈머 구현\n이벤트 스키마 설계",
+  "generate": "코스 생성",
+  "generating": "생성 중...",
+  "generatedCourses": "생성된 코스",
+  "chaptersCount": "{{count}}개 챕터",
+  "emptyMessage": "아직 생성된 코스가 없습니다. 위 양식을 작성하고 첫 번째 코스를 생성하세요.",
+  "progress": {
+    "planning": "커리큘럼 계획 중...",
+    "generating": "챕터 생성 중 ({{done}}/{{total}})...",
+    "done": "완료!",
+    "error": "오류"
+  },
+  "generationFailed": "생성 실패",
+  "startFailed": "생성을 시작할 수 없습니다"
+}

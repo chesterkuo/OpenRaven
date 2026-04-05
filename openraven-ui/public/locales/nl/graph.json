@@ -1,0 +1,11 @@
+{
+  "title": "Kennisgrafiek",
+  "loadingGraph": "Grafiek laden...",
+  "searchPlaceholder": "Knooppunten zoeken...",
+  "minConnections": "Minimale verbindingen:",
+  "exportGraphML": "GraphML exporteren",
+  "exportPNG": "PNG exporteren",
+  "emptyMessage": "Nog geen grafiekgegevens. Voeg bestanden toe om uw kennisgrafiek op te bouwen.",
+  "source": "Bron",
+  "connectedCount": "Verbonden ({{count}})"
+}

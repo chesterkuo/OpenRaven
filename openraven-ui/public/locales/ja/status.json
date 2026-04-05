@@ -1,0 +1,10 @@
+{
+  "title": "ナレッジベースの状態",
+  "files": "ファイル",
+  "concepts": "コンセプト",
+  "connections": "接続",
+  "topics": "トピック",
+  "llm": "LLM：",
+  "topTopics": "上位トピック",
+  "healthInsights": "ヘルスインサイト"
+}

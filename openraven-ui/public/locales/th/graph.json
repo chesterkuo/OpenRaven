@@ -1,0 +1,11 @@
+{
+  "title": "กราฟความรู้",
+  "loadingGraph": "กำลังโหลดกราฟ...",
+  "searchPlaceholder": "ค้นหาโหนด...",
+  "minConnections": "การเชื่อมต่อขั้นต่ำ:",
+  "exportGraphML": "ส่งออก GraphML",
+  "exportPNG": "ส่งออก PNG",
+  "emptyMessage": "ยังไม่มีข้อมูลกราฟ เพิ่มไฟล์เพื่อเริ่มสร้างกราฟความรู้��องคุณ",
+  "source": "แหล่งที่มา",
+  "connectedCount": "เชื่อมต่อแล้ว ({{count}})"
+}

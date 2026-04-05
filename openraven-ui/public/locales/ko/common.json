@@ -1,0 +1,32 @@
+{
+  "nav": {
+    "ask": "질문",
+    "addFiles": "파일 추가",
+    "graph": "그래프",
+    "wiki": "위키",
+    "connectors": "커넥터",
+    "agents": "에이전트",
+    "courses": "코스",
+    "status": "상태"
+  },
+  "signOut": "로그아웃",
+  "loading": "로딩 중...",
+  "cancel": "취소",
+  "save": "저장",
+  "delete": "삭제",
+  "error": "문제가 발생했습니다",
+  "or": "또는",
+  "saving": "저장 중...",
+  "syncing": "동기화 중...",
+  "connected": "연결됨",
+  "notConnected": "연결 안 됨",
+  "connect": "연결",
+  "syncNow": "지금 동기화",
+  "download": "다운로드",
+  "export": "내보내기",
+  "create": "만들기",
+  "creating": "만드는 중...",
+  "close": "닫기",
+  "copied": "복사됨!",
+  "truncated": "(잘림)"
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Expertagenten",
+  "createAgent": "Agent aanmaken",
+  "namePlaceholder": "Agentnaam (bijv. Juridisch expert)",
+  "descriptionPlaceholder": "Beschrijving (wat weet deze agent?)",
+  "emptyMessage": "Nog geen agenten. Maak er een aan om uw kennisbank als bevraagbare expert in te zetten.",
+  "deployed": "Uitgerold",
+  "localOnly": "Alleen lokaal",
+  "copyUrl": "URL kopiëren",
+  "generateToken": "Token genereren",
+  "tokenCopied": "Token gekopieerd!"
+}

@@ -1,0 +1,26 @@
+{
+  "heroTitle": "您想了解什么？",
+  "discoveriesHeading": "从您的知识库中发现",
+  "sourcesCount": "来源 ({{count}})",
+  "placeholder": "询问您的知识库...",
+  "submit": "提问",
+  "thinking": "思考中...",
+  "errorReach": "错误：无法连接到知识引擎。",
+  "modeLabel": "模式",
+  "modes": {
+    "mix": "混合",
+    "local": "局部",
+    "global": "全局",
+    "hybrid": "混合式",
+    "naive": "关键字",
+    "bypass": "直接 LLM"
+  },
+  "modeDesc": {
+    "mix": "特定 + 广泛推理（推荐）",
+    "local": "搜索特定实体",
+    "global": "跨文档推理",
+    "hybrid": "局部 + 全局结合",
+    "naive": "传统向量搜索",
+    "bypass": "跳过知识库"
+  }
+}

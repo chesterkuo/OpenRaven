@@ -1,0 +1,7 @@
+{
+  "title": "지식 위키",
+  "loadingWiki": "위키 로딩 중...",
+  "articlesCount": "문서 ({{count}})",
+  "selectArticle": "읽을 문서를 선택하세요",
+  "emptyMessage": "아직 문서가 없습니다. 파일을 추가하여 위키 문서 생성을 시작하세요."
+}

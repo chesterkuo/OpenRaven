@@ -1,0 +1,23 @@
+{
+  "title": "Cursussen",
+  "generateCourse": "Cursus genereren",
+  "courseTitle": "Cursustitel *",
+  "courseTitlePlaceholder": "bijv. Introductie tot event-gedreven architectuur",
+  "targetAudience": "Doelgroep",
+  "audiencePlaceholder": "bijv. Backend-engineers",
+  "learningObjectives": "Leerdoelen (één per regel)",
+  "objectivesPlaceholder": "EDA-patronen begrijpen\nKafka-consumers implementeren\nEventschema's ontwerpen",
+  "generate": "Cursus genereren",
+  "generating": "Genereren...",
+  "generatedCourses": "Gegenereerde cursussen",
+  "chaptersCount": "{{count}} hoofdstukken",
+  "emptyMessage": "Nog geen cursussen gegenereerd. Vul het bovenstaande formulier in en genereer uw eerste cursus.",
+  "progress": {
+    "planning": "Curriculum plannen...",
+    "generating": "Hoofdstukken genereren ({{done}}/{{total}})...",
+    "done": "Voltooid!",
+    "error": "Fout"
+  },
+  "generationFailed": "Generatie mislukt",
+  "startFailed": "Kan generatie niet starten"
+}

@@ -1,0 +1,23 @@
+{
+  "title": "Cours",
+  "generateCourse": "Générer un cours",
+  "courseTitle": "Titre du cours *",
+  "courseTitlePlaceholder": "ex. Introduction à l'architecture événementielle",
+  "targetAudience": "Public cible",
+  "audiencePlaceholder": "ex. Ingénieurs backend",
+  "learningObjectives": "Objectifs d'apprentissage (un par ligne)",
+  "objectivesPlaceholder": "Comprendre les modèles EDA\nImplémenter des consommateurs Kafka\nConcevoir des schémas d'événements",
+  "generate": "Générer le cours",
+  "generating": "Génération...",
+  "generatedCourses": "Cours générés",
+  "chaptersCount": "{{count}} chapitres",
+  "emptyMessage": "Aucun cours généré pour le moment. Remplissez le formulaire ci-dessus et générez votre premier cours.",
+  "progress": {
+    "planning": "Planification du programme...",
+    "generating": "Génération des chapitres ({{done}}/{{total}})...",
+    "done": "Terminé !",
+    "error": "Erreur"
+  },
+  "generationFailed": "Échec de la génération",
+  "startFailed": "Impossible de démarrer la génération"
+}

@@ -1,0 +1,21 @@
+{
+  "title": "เพิ่มเอกสาร",
+  "schemaLabel": "แผนผังการแยกข้อมูล",
+  "schemaAuto": "ตรวจจับอัตโนมัติ (ค่าเริ่มต้น)",
+  "importHint": "นำเข้าจาก Notion หรือ Obsidian — อัปโหลดไฟล์ .zip ที่ส่งออกของคุณ รูปภาพ (PNG, JPEG) จะถูกวิเคราะห์ด้วย AI vision",
+  "stages": {
+    "uploading": "กำลังอัปโหลดไฟล์...",
+    "processing": "กำลังประมวลผลเอกสาร...",
+    "done": "เสร็จสมบูรณ์",
+    "error": "เกิดข้อผิดพลาด"
+  },
+  "stats": {
+    "filesProcessed": "ไฟล์ที่ประมวลผลแล้��",
+    "entitiesExtracted": "เอนทิตีที่แยกแล้ว",
+    "articlesGenerated": "บทความที่สร้างแล้ว"
+  },
+  "uploadError": "ไม่สามารถเชื่อมต่อกับเครื่องมือความรู้ได้",
+  "dropFiles": "วางไฟล์ที่นี่",
+  "fileTypes": "PDF, DOCX, PPTX, XLSX, Markdown, TXT, รูปภาพ (PNG/JPEG) หรือ ZIP (ส่งออกจาก Notion/Obsidian)",
+  "browseFiles": "เรียกดูไฟล์"
+}

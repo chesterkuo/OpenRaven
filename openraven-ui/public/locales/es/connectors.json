@@ -1,0 +1,28 @@
+{
+  "title": "Conectores",
+  "oauthWarning": "Google OAuth no configurado. Establezca GOOGLE_CLIENT_ID y GOOGLE_CLIENT_SECRET en .env para habilitar los conectores.",
+  "gdrive": {
+    "name": "Google Drive",
+    "desc": "Importe documentos desde su Google Drive (PDF, Docs, Sheets, Slides)."
+  },
+  "gmail": {
+    "name": "Gmail",
+    "desc": "Importe correos de su cuenta de Gmail como entradas de la base de conocimientos."
+  },
+  "meet": {
+    "name": "Google Meet",
+    "desc": "Importe transcripciones de reuniones desde Google Meet.",
+    "syncLabel": "Sincronizar transcripciones"
+  },
+  "otter": {
+    "name": "Otter.ai",
+    "desc": "Importe transcripciones de reuniones desde Otter.ai.",
+    "apiKeyPlaceholder": "Clave API de Otter.ai"
+  },
+  "syncFailed": "Error en la sincronización",
+  "stats": {
+    "filesSynced": "Archivos sincronizados",
+    "entities": "Entidades",
+    "articles": "Artículos"
+  }
+}

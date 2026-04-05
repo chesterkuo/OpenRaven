@@ -1,0 +1,12 @@
+{
+  "title": "エキスパートエージェント",
+  "createAgent": "エージェントを作成",
+  "namePlaceholder": "エージェント名（例：法律エキスパート）",
+  "descriptionPlaceholder": "説明（このエージェントの専門は？）",
+  "emptyMessage": "まだエージェントがありません。ナレッジベースをクエリ可能なエキスパートとしてデプロイするには作成してください。",
+  "deployed": "デプロイ済み",
+  "localOnly": "ローカルのみ",
+  "copyUrl": "URL をコピー",
+  "generateToken": "トークンを生成",
+  "tokenCopied": "トークンをコピーしました！"
+}

@@ -1,0 +1,12 @@
+{
+  "title": "Agentes expertos",
+  "createAgent": "Crear agente",
+  "namePlaceholder": "Nombre del agente (ej. Experto legal)",
+  "descriptionPlaceholder": "Descripción (¿qué sabe este agente?)",
+  "emptyMessage": "Aún no hay agentes. Cree uno para desplegar su base de conocimientos como un experto consultable.",
+  "deployed": "Desplegado",
+  "localOnly": "Solo local",
+  "copyUrl": "Copiar URL",
+  "generateToken": "Generar token",
+  "tokenCopied": "¡Token copiado!"
+}

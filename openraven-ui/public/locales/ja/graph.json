@@ -1,0 +1,11 @@
+{
+  "title": "ナレッジグラフ",
+  "loadingGraph": "グラフを読み込み中...",
+  "searchPlaceholder": "ノードを検索...",
+  "minConnections": "最小接続数：",
+  "exportGraphML": "GraphML をエクスポート",
+  "exportPNG": "PNG をエクスポート",
+  "emptyMessage": "グラフデータがありません。ファイルを追加してナレッジグラフの構築を開始しましょう。",
+  "source": "ソース",
+  "connectedCount": "接続済み ({{count}})"
+}

@@ -1,0 +1,26 @@
+{
+  "heroTitle": "何を知りたいですか？",
+  "discoveriesHeading": "ナレッジベースからの発見",
+  "sourcesCount": "ソース ({{count}})",
+  "placeholder": "ナレッジベースに質問...",
+  "submit": "質問する",
+  "thinking": "考え中...",
+  "errorReach": "エラー：ナレッジエンジンに接続できませんでした。",
+  "modeLabel": "モード",
+  "modes": {
+    "mix": "ミックス",
+    "local": "ローカル",
+    "global": "グローバル",
+    "hybrid": "ハイブリッド",
+    "naive": "キーワード",
+    "bypass": "ダイレクト LLM"
+  },
+  "modeDesc": {
+    "mix": "特定 + 幅広い推論（推奨）",
+    "local": "特定のエンティティを検索",
+    "global": "文書横断的な推論",
+    "hybrid": "ローカル + グローバルの組み合わせ",
+    "naive": "従来のベクトル検索",
+    "bypass": "ナレッジベースをスキップ"
+  }
+}

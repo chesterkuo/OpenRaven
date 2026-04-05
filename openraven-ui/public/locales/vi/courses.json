@@ -1,0 +1,23 @@
+{
+  "title": "Khóa học",
+  "generateCourse": "Tạo khóa học",
+  "courseTitle": "Tiêu đề khóa học *",
+  "courseTitlePlaceholder": "vd: Giới thiệu về kiến trúc hướng sự kiện",
+  "targetAudience": "Đối tượng mục tiêu",
+  "audiencePlaceholder": "vd: Kỹ sư backend",
+  "learningObjectives": "Mục tiêu học tập (mỗi dòng một mục)",
+  "objectivesPlaceholder": "Hiểu các mẫu EDA\nTriển khai Kafka consumer\nThiết kế lược đồ sự kiện",
+  "generate": "Tạo khóa học",
+  "generating": "Đang tạo...",
+  "generatedCourses": "Khóa học đã tạo",
+  "chaptersCount": "{{count}} chương",
+  "emptyMessage": "Chưa có khóa học nào được tạo. Điền vào biểu mẫu ở trên và tạo khóa học đầu tiên của bạn.",
+  "progress": {
+    "planning": "Đang lập kế hoạch chương trình...",
+    "generating": "Đang tạo chương ({{done}}/{{total}})...",
+    "done": "Hoàn thành!",
+    "error": "Lỗi"
+  },
+  "generationFailed": "Tạo thất bại",
+  "startFailed": "Không thể bắt đầu tạo"
+}

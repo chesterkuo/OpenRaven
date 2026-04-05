@@ -1,0 +1,32 @@
+{
+  "nav": {
+    "ask": "提問",
+    "addFiles": "新增檔案",
+    "graph": "知識圖譜",
+    "wiki": "知識百科",
+    "connectors": "連接器",
+    "agents": "智慧代理",
+    "courses": "課程",
+    "status": "狀態"
+  },
+  "signOut": "登出",
+  "loading": "載入中...",
+  "cancel": "取消",
+  "save": "儲存",
+  "delete": "刪除",
+  "error": "發生錯誤",
+  "or": "或",
+  "saving": "儲存中...",
+  "syncing": "同步中...",
+  "connected": "已連線",
+  "notConnected": "未連線",
+  "connect": "連線",
+  "syncNow": "立即同步",
+  "download": "下載",
+  "export": "匯出",
+  "create": "建立",
+  "creating": "建立中...",
+  "close": "關閉",
+  "copied": "已複製！",
+  "truncated": "（已截斷）"
+}

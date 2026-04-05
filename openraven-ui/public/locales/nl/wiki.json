@@ -1,0 +1,7 @@
+{
+  "title": "Kennisswiki",
+  "loadingWiki": "Wiki laden...",
+  "articlesCount": "Artikelen ({{count}})",
+  "selectArticle": "Selecteer een artikel om te lezen",
+  "emptyMessage": "Nog geen artikelen. Voeg bestanden toe om wiki-artikelen te genereren."
+}

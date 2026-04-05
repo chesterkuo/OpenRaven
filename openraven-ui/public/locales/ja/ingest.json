@@ -1,0 +1,21 @@
+{
+  "title": "ドキュメント追加",
+  "schemaLabel": "抽出スキーマ",
+  "schemaAuto": "自動検出（デフォルト）",
+  "importHint": "Notion または Obsidian からインポート — エクスポートした .zip ファイルをアップロードしてください。画像（PNG、JPEG）は AI ビジョンで分析されます。",
+  "stages": {
+    "uploading": "ファイルをアップロード中...",
+    "processing": "ドキュメントを処理中...",
+    "done": "完了",
+    "error": "エラーが発生しました"
+  },
+  "stats": {
+    "filesProcessed": "処理済みファイル",
+    "entitiesExtracted": "抽出済みエンティティ",
+    "articlesGenerated": "生成済み記事"
+  },
+  "uploadError": "ナレッジエンジンに接続できませんでした。",
+  "dropFiles": "ここにファイルをドロップ",
+  "fileTypes": "PDF、DOCX、PPTX、XLSX、Markdown、TXT、画像（PNG/JPEG）、または ZIP（Notion/Obsidian エクスポート）",
+  "browseFiles": "ファイルを選択"
+}

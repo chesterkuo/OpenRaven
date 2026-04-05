@@ -1,0 +1,28 @@
+{
+  "title": "连接器",
+  "oauthWarning": "Google OAuth 未配置。请在 .env 中设置 GOOGLE_CLIENT_ID 和 GOOGLE_CLIENT_SECRET 以启用连接器。",
+  "gdrive": {
+    "name": "Google Drive",
+    "desc": "从您的 Google Drive 导入文档（PDF、文档、电子表格、演示文稿）。"
+  },
+  "gmail": {
+    "name": "Gmail",
+    "desc": "从您的 Gmail 账户导入电子邮件作为知识库条目。"
+  },
+  "meet": {
+    "name": "Google Meet",
+    "desc": "从 Google Meet 导入会议记录。",
+    "syncLabel": "同步会议记录"
+  },
+  "otter": {
+    "name": "Otter.ai",
+    "desc": "从 Otter.ai 导入会议记录。",
+    "apiKeyPlaceholder": "Otter.ai API 密钥"
+  },
+  "syncFailed": "同步失败",
+  "stats": {
+    "filesSynced": "已同步文件",
+    "entities": "实体",
+    "articles": "文章"
+  }
+}

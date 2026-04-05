@@ -1,0 +1,21 @@
+{
+  "title": "문서 추가",
+  "schemaLabel": "추출 스키마",
+  "schemaAuto": "자동 감지 (기본값)",
+  "importHint": "Notion 또는 Obsidian에서 가져오기 — 내보낸 .zip 파일을 업로드하세요. 이미지(PNG, JPEG)는 AI 비전으로 분석됩니다.",
+  "stages": {
+    "uploading": "파일 업로드 중...",
+    "processing": "문서 처리 중...",
+    "done": "완료",
+    "error": "오류 발생"
+  },
+  "stats": {
+    "filesProcessed": "처리된 파일",
+    "entitiesExtracted": "추출된 엔티티",
+    "articlesGenerated": "생성된 문서"
+  },
+  "uploadError": "지식 엔진에 연결할 수 없습니다.",
+  "dropFiles": "여기에 파일을 드롭하세요",
+  "fileTypes": "PDF, DOCX, PPTX, XLSX, Markdown, TXT, 이미지(PNG/JPEG) 또는 ZIP(Notion/Obsidian 내보내기)",
+  "browseFiles": "파일 찾아보기"
+}

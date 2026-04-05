@@ -1,0 +1,32 @@
+{
+  "nav": {
+    "ask": "Vragen",
+    "addFiles": "Bestanden toevoegen",
+    "graph": "Grafiek",
+    "wiki": "Wiki",
+    "connectors": "Connectoren",
+    "agents": "Agenten",
+    "courses": "Cursussen",
+    "status": "Status"
+  },
+  "signOut": "Uitloggen",
+  "loading": "Laden...",
+  "cancel": "Annuleren",
+  "save": "Opslaan",
+  "delete": "Verwijderen",
+  "error": "Er is iets misgegaan",
+  "or": "of",
+  "saving": "Opslaan...",
+  "syncing": "Synchroniseren...",
+  "connected": "Verbonden",
+  "notConnected": "Niet verbonden",
+  "connect": "Verbinden",
+  "syncNow": "Nu synchroniseren",
+  "download": "Downloaden",
+  "export": "Exporteren",
+  "create": "Aanmaken",
+  "creating": "Aanmaken...",
+  "close": "Sluiten",
+  "copied": "Gekopieerd!",
+  "truncated": "(ingekort)"
+}

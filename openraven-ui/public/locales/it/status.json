@@ -1,0 +1,10 @@
+{
+  "title": "Stato della base di conoscenza",
+  "files": "File",
+  "concepts": "Concetti",
+  "connections": "Connessioni",
+  "topics": "Argomenti",
+  "llm": "LLM:",
+  "topTopics": "Argomenti principali",
+  "healthInsights": "Indicatori di salute"
+}

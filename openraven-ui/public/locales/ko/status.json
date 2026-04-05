@@ -1,0 +1,10 @@
+{
+  "title": "지식 베이스 상태",
+  "files": "파일",
+  "concepts": "개념",
+  "connections": "연결",
+  "topics": "주제",
+  "llm": "LLM:",
+  "topTopics": "상위 주제",
+  "healthInsights": "상태 인사이트"
+}

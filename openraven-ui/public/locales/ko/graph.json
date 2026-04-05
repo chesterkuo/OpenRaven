@@ -1,0 +1,11 @@
+{
+  "title": "지식 그래프",
+  "loadingGraph": "그래프 로딩 중...",
+  "searchPlaceholder": "노드 검색...",
+  "minConnections": "최소 연결 수:",
+  "exportGraphML": "GraphML 내보내기",
+  "exportPNG": "PNG 내보내기",
+  "emptyMessage": "아직 그래프 데이터가 없습니다. 파일을 추가하여 지식 그래프 구축을 시작하세요.",
+  "source": "출처",
+  "connectedCount": "연결됨 ({{count}})"
+}

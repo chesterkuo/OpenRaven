@@ -1,0 +1,21 @@
+{
+  "title": "Documenten toevoegen",
+  "schemaLabel": "Extractieschema",
+  "schemaAuto": "Automatisch detecteren (standaard)",
+  "importHint": "Importeren vanuit Notion of Obsidian — upload uw geëxporteerde .zip-bestand. Afbeeldingen (PNG, JPEG) worden geanalyseerd met AI-visie.",
+  "stages": {
+    "uploading": "Bestanden uploaden...",
+    "processing": "Documenten verwerken...",
+    "done": "Voltooid",
+    "error": "Fout opgetreden"
+  },
+  "stats": {
+    "filesProcessed": "Verwerkte bestanden",
+    "entitiesExtracted": "Geëxtraheerde entiteiten",
+    "articlesGenerated": "Gegenereerde artikelen"
+  },
+  "uploadError": "Kan geen verbinding maken met de kennisengine.",
+  "dropFiles": "Sleep bestanden hierheen",
+  "fileTypes": "PDF, DOCX, PPTX, XLSX, Markdown, TXT, Afbeeldingen (PNG/JPEG) of ZIP (Notion/Obsidian-export)",
+  "browseFiles": "BESTANDEN BLADEREN"
+}

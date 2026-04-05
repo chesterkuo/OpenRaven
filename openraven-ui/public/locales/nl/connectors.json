@@ -1,0 +1,28 @@
+{
+  "title": "Connectoren",
+  "oauthWarning": "Google OAuth niet geconfigureerd. Stel GOOGLE_CLIENT_ID en GOOGLE_CLIENT_SECRET in .env in om connectoren in te schakelen.",
+  "gdrive": {
+    "name": "Google Drive",
+    "desc": "Importeer documenten uit uw Google Drive (PDF, Docs, Sheets, Slides)."
+  },
+  "gmail": {
+    "name": "Gmail",
+    "desc": "Importeer e-mails uit uw Gmail-account als kennisbank-items."
+  },
+  "meet": {
+    "name": "Google Meet",
+    "desc": "Importeer vergadertranscripties uit Google Meet.",
+    "syncLabel": "Transcripties synchroniseren"
+  },
+  "otter": {
+    "name": "Otter.ai",
+    "desc": "Importeer vergadertranscripties uit Otter.ai.",
+    "apiKeyPlaceholder": "Otter.ai API-sleutel"
+  },
+  "syncFailed": "Synchronisatie mislukt",
+  "stats": {
+    "filesSynced": "Gesynchroniseerde bestanden",
+    "entities": "Entiteiten",
+    "articles": "Artikelen"
+  }
+}

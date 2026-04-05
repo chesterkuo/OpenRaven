@@ -1,0 +1,32 @@
+{
+  "nav": {
+    "ask": "質問",
+    "addFiles": "ファイル追加",
+    "graph": "グラフ",
+    "wiki": "ウィキ",
+    "connectors": "コネクタ",
+    "agents": "エージェント",
+    "courses": "コース",
+    "status": "ステータス"
+  },
+  "signOut": "ログアウト",
+  "loading": "読み込み中...",
+  "cancel": "キャンセル",
+  "save": "保存",
+  "delete": "削除",
+  "error": "エラーが発生しました",
+  "or": "または",
+  "saving": "保存中...",
+  "syncing": "同期中...",
+  "connected": "接続済み",
+  "notConnected": "未接続",
+  "connect": "接続",
+  "syncNow": "今すぐ同期",
+  "download": "ダウンロード",
+  "export": "エクスポート",
+  "create": "作成",
+  "creating": "作成中...",
+  "close": "閉じる",
+  "copied": "コピーしました！",
+  "truncated": "（省略）"
+}

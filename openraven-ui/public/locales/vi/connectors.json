@@ -1,0 +1,28 @@
+{
+  "title": "Trình kết nối",
+  "oauthWarning": "Google OAuth chưa được cấu hình. Đặt GOOGLE_CLIENT_ID và GOOGLE_CLIENT_SECRET trong .env để kích hoạt trình kết nối.",
+  "gdrive": {
+    "name": "Google Drive",
+    "desc": "Nhập tài liệu từ Google Drive của bạn (PDF, Docs, Sheets, Slides)."
+  },
+  "gmail": {
+    "name": "Gmail",
+    "desc": "Nhập email từ tài khoản Gmail của bạn làm mục trong kho tri thức."
+  },
+  "meet": {
+    "name": "Google Meet",
+    "desc": "Nhập bản ghi cuộc họp từ Google Meet.",
+    "syncLabel": "Đồng bộ bản ghi"
+  },
+  "otter": {
+    "name": "Otter.ai",
+    "desc": "Nhập bản ghi cuộc họp từ Otter.ai.",
+    "apiKeyPlaceholder": "Khóa API Otter.ai"
+  },
+  "syncFailed": "Đồng bộ thất bại",
+  "stats": {
+    "filesSynced": "Tệp đã đồng bộ",
+    "entities": "Thực thể",
+    "articles": "Bài viết"
+  }
+}

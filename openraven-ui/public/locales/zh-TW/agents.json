@@ -1,0 +1,12 @@
+{
+  "title": "專家代理",
+  "createAgent": "建立代理",
+  "namePlaceholder": "代理名稱（例如：法律專家）",
+  "descriptionPlaceholder": "描述（這個代理擅長什麼？）",
+  "emptyMessage": "尚無代理。建立一個將您的知識庫部署為可查詢的專家。",
+  "deployed": "已部署",
+  "localOnly": "僅限本機",
+  "copyUrl": "複製 URL",
+  "generateToken": "產生權杖",
+  "tokenCopied": "權杖已複製！"
+}

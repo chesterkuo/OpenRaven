@@ -1,0 +1,11 @@
+{
+  "title": "Graphe de connaissances",
+  "loadingGraph": "Chargement du graphe...",
+  "searchPlaceholder": "Rechercher des nœuds...",
+  "minConnections": "Connexions minimum :",
+  "exportGraphML": "Exporter GraphML",
+  "exportPNG": "Exporter PNG",
+  "emptyMessage": "Aucune donnée de graphe pour le moment. Ajoutez des fichiers pour commencer à construire votre graphe de connaissances.",
+  "source": "Source",
+  "connectedCount": "Connectés ({{count}})"
+}

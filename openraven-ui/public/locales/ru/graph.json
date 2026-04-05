@@ -1,0 +1,11 @@
+{
+  "title": "Граф знаний",
+  "loadingGraph": "Загрузка графа...",
+  "searchPlaceholder": "Поиск узлов...",
+  "minConnections": "Мин. связей:",
+  "exportGraphML": "Экспорт GraphML",
+  "exportPNG": "Экспорт PNG",
+  "emptyMessage": "Данных графа пока нет. Добавьте файлы, чтобы начать строить граф знаний.",
+  "source": "Источник",
+  "connectedCount": "Связано ({{count}})"
+}

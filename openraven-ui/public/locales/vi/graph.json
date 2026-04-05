@@ -1,0 +1,11 @@
+{
+  "title": "Đồ thị tri thức",
+  "loadingGraph": "Đang tải đồ thị...",
+  "searchPlaceholder": "Tìm kiếm nút...",
+  "minConnections": "Kết nối tối thiểu:",
+  "exportGraphML": "Xuất GraphML",
+  "exportPNG": "Xuất PNG",
+  "emptyMessage": "Chưa có dữ liệu đồ thị. Thêm tệp để bắt đầu xây dựng đồ thị tri thức của bạn.",
+  "source": "Nguồn",
+  "connectedCount": "Đã kết nối ({{count}})"
+}

@@ -1,0 +1,21 @@
+{
+  "title": "Добавить документы",
+  "schemaLabel": "Схема извлечения",
+  "schemaAuto": "Автоопределение (по умолчанию)",
+  "importHint": "Импорт из Notion или Obsidian — загрузите экспортированный .zip файл. Изображения (PNG, JPEG) анализируются с помощью ИИ-зрения.",
+  "stages": {
+    "uploading": "Загрузка файлов...",
+    "processing": "Обработка документов...",
+    "done": "Завершено",
+    "error": "Произошла ошибка"
+  },
+  "stats": {
+    "filesProcessed": "Обработано файлов",
+    "entitiesExtracted": "Извлечено сущностей",
+    "articlesGenerated": "Сгенерировано статей"
+  },
+  "uploadError": "Не удалось подключиться к движку знаний.",
+  "dropFiles": "Перетащите файлы сюда",
+  "fileTypes": "PDF, DOCX, PPTX, XLSX, Markdown, TXT, Изображения (PNG/JPEG) или ZIP (экспорт Notion/Obsidian)",
+  "browseFiles": "ВЫБРАТЬ ФАЙЛЫ"
+}

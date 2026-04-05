@@ -1,0 +1,21 @@
+{
+  "title": "Thêm tài liệu",
+  "schemaLabel": "Lược đồ trích xuất",
+  "schemaAuto": "Tự động phát hiện (mặc định)",
+  "importHint": "Nhập từ Notion hoặc Obsidian — tải lên tệp .zip đã xuất của bạn. Hình ảnh (PNG, JPEG) được phân tích bằng thị giác AI.",
+  "stages": {
+    "uploading": "Đang tải tệp lên...",
+    "processing": "Đang xử lý tài liệu...",
+    "done": "Hoàn thành",
+    "error": "Đã xảy ra lỗi"
+  },
+  "stats": {
+    "filesProcessed": "Tệp đã xử lý",
+    "entitiesExtracted": "Thực thể đã trích xuất",
+    "articlesGenerated": "Bài viết đã tạo"
+  },
+  "uploadError": "Không thể kết nối đến công cụ tri thức.",
+  "dropFiles": "Kéo thả tệp vào đây",
+  "fileTypes": "PDF, DOCX, PPTX, XLSX, Markdown, TXT, Hình ảnh (PNG/JPEG) hoặc ZIP (xuất từ Notion/Obsidian)",
+  "browseFiles": "DUYỆT TỆP"
+}

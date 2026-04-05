@@ -1,0 +1,21 @@
+{
+  "title": "Ajouter des documents",
+  "schemaLabel": "Schéma d'extraction",
+  "schemaAuto": "Détection automatique (par défaut)",
+  "importHint": "Importez depuis Notion ou Obsidian — téléversez votre fichier .zip exporté. Les images (PNG, JPEG) sont analysées par vision IA.",
+  "stages": {
+    "uploading": "Téléversement des fichiers...",
+    "processing": "Traitement des documents...",
+    "done": "Terminé",
+    "error": "Erreur survenue"
+  },
+  "stats": {
+    "filesProcessed": "Fichiers traités",
+    "entitiesExtracted": "Entités extraites",
+    "articlesGenerated": "Articles générés"
+  },
+  "uploadError": "Impossible de se connecter au moteur de connaissances.",
+  "dropFiles": "Déposez les fichiers ici",
+  "fileTypes": "PDF, DOCX, PPTX, XLSX, Markdown, TXT, Images (PNG/JPEG) ou ZIP (export Notion/Obsidian)",
+  "browseFiles": "PARCOURIR LES FICHIERS"
+}

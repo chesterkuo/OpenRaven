@@ -1,0 +1,26 @@
+{
+  "heroTitle": "Bạn muốn biết điều gì?",
+  "discoveriesHeading": "Khám phá từ kho tri thức của bạn",
+  "sourcesCount": "Nguồn ({{count}})",
+  "placeholder": "Hỏi kho tri thức của bạn...",
+  "submit": "Hỏi",
+  "thinking": "Đang suy nghĩ...",
+  "errorReach": "Lỗi: Không thể kết nối đến công cụ tri thức.",
+  "modeLabel": "Chế độ",
+  "modes": {
+    "mix": "Kết hợp",
+    "local": "Cục bộ",
+    "global": "Toàn cục",
+    "hybrid": "Lai",
+    "naive": "Từ khóa",
+    "bypass": "LLM trực tiếp"
+  },
+  "modeDesc": {
+    "mix": "Suy luận cụ thể + rộng (khuyến nghị)",
+    "local": "Tìm kiếm thực thể cụ thể",
+    "global": "Suy luận xuyên tài liệu",
+    "hybrid": "Cục bộ + toàn cục kết hợp",
+    "naive": "Tìm kiếm vector truyền thống",
+    "bypass": "Bỏ qua kho tri thức"
+  }
+}
