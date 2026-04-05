@@ -1,8 +1,10 @@
 import { useCallback } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Props { onUpload: (files: File[]) => void; disabled?: boolean; }
 
 export default function FileUploader({ onUpload, disabled }: Props) {
+  const { t } = useTranslation('ingest');
   const handleDrop = useCallback((e: React.DragEvent) => { e.preventDefault(); if (disabled) return; const files = Array.from(e.dataTransfer.files); if (files.length > 0) onUpload(files); }, [onUpload, disabled]);
   const handleChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => { const files = Array.from(e.target.files ?? []); if (files.length > 0) onUpload(files); }, [onUpload]);
 
@@ -24,10 +26,10 @@ export default function FileUploader({ onUpload, disabled }: Props) {
       }}
     >
       <p className="text-2xl mb-2" style={{ color: disabled ? "var(--color-text-muted)" : "var(--color-text)" }}>
-        Drop files here
+        {t('dropFiles')}
       </p>
       <p className="text-sm mb-4" style={{ color: "var(--color-text-muted)" }}>
-        PDF, DOCX, PPTX, XLSX, Markdown, TXT, Images (PNG/JPEG), or ZIP (Notion/Obsidian export)
+        {t('fileTypes')}
       </p>
       <label
         className="inline-block px-4 py-2 text-sm cursor-pointer"
@@ -36,7 +38,7 @@ export default function FileUploader({ onUpload, disabled }: Props) {
           color: disabled ? "var(--color-text-muted)" : "var(--color-text-on-brand)",
         }}
       >
-        BROWSE FILES
+        {t('browseFiles')}
         <input type="file" multiple onChange={handleChange} disabled={disabled} className="hidden" accept=".pdf,.docx,.pptx,.xlsx,.md,.txt,.html,.png,.jpg,.jpeg,.heic,.webp,.zip" />
       </label>
     </div>

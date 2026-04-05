@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface WikiListItem { slug: string; title: string; }
 interface WikiArticle { slug: string; title: string; content: string; }
 
 export default function WikiPage() {
+  const { t } = useTranslation('wiki');
   const [articles, setArticles] = useState<WikiListItem[]>([]);
   const [selected, setSelected] = useState<WikiArticle | null>(null);
   const [loading, setLoading] = useState(true);
@@ -17,13 +19,13 @@ export default function WikiPage() {
     if (res.ok) setSelected(await res.json());
   }
 
-  if (loading) return <div style={{ color: "var(--color-text-muted)" }}>Loading wiki...</div>;
+  if (loading) return <div style={{ color: "var(--color-text-muted)" }}>{t('loadingWiki')}</div>;
 
   if (articles.length === 0) {
     return (
       <div>
-        <h1 className="text-3xl mb-2" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>Knowledge Wiki</h1>
-        <p style={{ color: "var(--color-text-muted)" }}>No articles yet. Add files to start generating wiki articles.</p>
+        <h1 className="text-3xl mb-2" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>{t('title')}</h1>
+        <p style={{ color: "var(--color-text-muted)" }}>{t('emptyMessage')}</p>
       </div>
     );
   }
@@ -32,9 +34,9 @@ export default function WikiPage() {
     <div className="flex gap-6">
       <div className="w-70 shrink-0" style={{ background: "var(--bg-surface-hover)" }}>
         <div className="flex items-center justify-between p-4">
-          <h2 className="text-lg" style={{ color: "var(--color-text)" }}>Articles ({articles.length})</h2>
+          <h2 className="text-lg" style={{ color: "var(--color-text)" }}>{t('articlesCount', { count: articles.length })}</h2>
           <a href="/api/wiki/export" download className="text-xs px-3 py-1 uppercase"
-            style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}>Export</a>
+            style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}>{t('export', { ns: 'common' })}</a>
         </div>
         <div className="flex flex-col">
           {articles.map((a) => (
@@ -56,7 +58,7 @@ export default function WikiPage() {
             <div className="whitespace-pre-wrap text-base leading-relaxed" style={{ color: "var(--color-text)" }}>{selected.content}</div>
           </div>
         ) : (
-          <div className="text-sm" style={{ color: "var(--color-text-muted)" }}>Select an article to read</div>
+          <div className="text-sm" style={{ color: "var(--color-text-muted)" }}>{t('selectArticle')}</div>
         )}
       </div>
     </div>

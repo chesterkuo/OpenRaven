@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import GraphViewer, { type GraphNode, type GraphEdge } from "../components/GraphViewer";
 import GraphNodeDetail from "../components/GraphNodeDetail";
 
@@ -11,6 +12,7 @@ interface GraphData {
 const ENTITY_TYPES = ["technology", "concept", "person", "organization", "event", "location"];
 
 export default function GraphPage() {
+  const { t } = useTranslation('graph');
   const [data, setData] = useState<GraphData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -131,13 +133,13 @@ export default function GraphPage() {
     });
   };
 
-  if (loading) return <div className="p-8" style={{ color: "var(--color-text-muted)" }} data-testid="graph-loading">Loading graph...</div>;
+  if (loading) return <div className="p-8" style={{ color: "var(--color-text-muted)" }} data-testid="graph-loading">{t('loadingGraph')}</div>;
   if (error) return <div className="p-8" style={{ color: "var(--color-error)" }} data-testid="graph-error">Error: {error}</div>;
   if (!data || data.nodes.length === 0) {
     return (
       <div className="p-8" style={{ color: "var(--color-text-muted)" }} data-testid="graph-empty">
-        <h1 className="text-3xl mb-2" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>Knowledge Graph</h1>
-        <p>No graph data yet. Add files to start building your knowledge graph.</p>
+        <h1 className="text-3xl mb-2" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>{t('title')}</h1>
+        <p>{t('emptyMessage')}</p>
       </div>
     );
   }
@@ -148,8 +150,8 @@ export default function GraphPage() {
       <div className="flex items-center gap-3 px-4 py-2" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-subtle)", borderBottom: "1px solid var(--color-border)" }}>
         <input
           type="text"
-          placeholder="Search nodes..."
-          aria-label="Search nodes"
+          placeholder={t('searchPlaceholder')}
+          aria-label={t('searchPlaceholder')}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="px-3 py-1.5 text-sm w-48 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]" style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
@@ -166,7 +168,7 @@ export default function GraphPage() {
           ))}
         </div>
         <div className="flex items-center gap-2">
-          <label className="text-xs" style={{ color: "var(--color-text-muted)" }}>Min connections:</label>
+          <label className="text-xs" style={{ color: "var(--color-text-muted)" }}>{t('minConnections')}</label>
           <input
             type="range"
             min={0}
@@ -182,17 +184,17 @@ export default function GraphPage() {
           download
           className="text-xs px-2.5 py-1.5 uppercase cursor-pointer" style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}
         >
-          Export GraphML
+          {t('exportGraphML')}
         </a>
         <button
           onClick={exportPNG}
           className="text-xs px-2.5 py-1.5 uppercase cursor-pointer" style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}
         >
-          Export PNG
+          {t('exportPNG')}
         </button>
         <span className="text-xs ml-auto" style={{ color: "var(--color-text-muted)" }}>
           {filteredNodes.length} nodes / {filteredEdges.length} edges
-          {data.is_truncated && " (truncated)"}
+          {data.is_truncated && ` ${t('truncated', { ns: 'common' })}`}
         </span>
       </div>
       {/* Graph + Detail panel */}

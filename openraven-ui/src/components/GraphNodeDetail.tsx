@@ -1,3 +1,5 @@
+import { useTranslation } from "react-i18next";
+
 interface GraphNodeDetailProps {
   node: {
     id: string;
@@ -20,6 +22,7 @@ const TYPE_COLORS: Record<string, string> = {
 };
 
 export default function GraphNodeDetail({ node, neighbors, edges, onClose, onNavigate }: GraphNodeDetailProps) {
+  const { t } = useTranslation('graph');
   if (!node) return null;
   const edgeList = edges ?? [];
 
@@ -42,14 +45,14 @@ export default function GraphNodeDetail({ node, neighbors, edges, onClose, onNav
       )}
       {source && (
         <div className="mb-4">
-          <h3 className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--color-text-muted)" }}>Source</h3>
+          <h3 className="text-xs uppercase tracking-wider mb-1" style={{ color: "var(--color-text-muted)" }}>{t('source')}</h3>
           <p className="text-sm break-all" style={{ color: "var(--color-text-secondary)" }}>{source}</p>
         </div>
       )}
       {neighbors.length > 0 && (
         <div>
           <h3 className="text-xs uppercase tracking-wider mb-2" style={{ color: "var(--color-text-muted)" }}>
-            Connected ({neighbors.length})
+            {t('connectedCount', { count: neighbors.length })}
           </h3>
           <div className="flex flex-col gap-2">
             {neighbors.map((n) => {

@@ -1,17 +1,12 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import FileUploader from "../components/FileUploader";
 
 interface IngestResult { files_processed: number; entities_extracted: number; articles_generated: number; errors: string[]; }
 interface SchemaOption { id: string; name: string; description: string; }
 
-const STAGE_LABELS: Record<string, string> = {
-  uploading: "Uploading files...",
-  processing: "Processing documents...",
-  done: "Complete",
-  error: "Error occurred",
-};
-
 export default function IngestPage() {
+  const { t } = useTranslation('ingest');
   const [result, setResult] = useState<IngestResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [stage, setStage] = useState<string | null>(null);
@@ -37,7 +32,7 @@ export default function IngestPage() {
       setResult(data);
       setStage("done");
     } catch {
-      setResult({ files_processed: 0, entities_extracted: 0, articles_generated: 0, errors: ["Failed to connect to the knowledge engine."] });
+      setResult({ files_processed: 0, entities_extracted: 0, articles_generated: 0, errors: [t('uploadError')] });
       setStage("error");
     } finally {
       setLoading(false);
@@ -46,7 +41,7 @@ export default function IngestPage() {
 
   return (
     <div>
-      <h1 className="text-3xl mb-6" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>Add Documents</h1>
+      <h1 className="text-3xl mb-6" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>{t('title')}</h1>
 
       <div className="mb-6">
         <label
@@ -54,7 +49,7 @@ export default function IngestPage() {
           className="block text-sm mb-2"
           style={{ color: "var(--color-text-secondary)" }}
         >
-          Extraction Schema
+          {t('schemaLabel')}
         </label>
         <select
           id="schema-select"
@@ -69,7 +64,7 @@ export default function IngestPage() {
             borderRadius: "4px",
           }}
         >
-          <option value="auto">Auto-detect (default)</option>
+          <option value="auto">{t('schemaAuto')}</option>
           {schemas.map((s) => (
             <option key={s.id} value={s.id}>
               {s.name}
@@ -85,13 +80,13 @@ export default function IngestPage() {
 
       <FileUploader onUpload={handleUpload} disabled={loading} />
       <p className="mt-3 text-xs" style={{ color: "var(--color-text-muted)" }}>
-        Import from Notion or Obsidian — upload your exported .zip file. Images (PNG, JPEG) are analyzed with AI vision.
+        {t('importHint')}
       </p>
       {loading && stage && (
         <div className="mt-6">
           <div className="flex items-center gap-3">
             <div className="w-4 h-4 border-2 border-t-transparent animate-spin" style={{ borderColor: "var(--color-brand)", borderTopColor: "transparent" }} />
-            <span style={{ color: "var(--color-text-secondary)" }}>{STAGE_LABELS[stage] ?? stage}</span>
+            <span style={{ color: "var(--color-text-secondary)" }}>{t(`stages.${stage}`, { defaultValue: stage })}</span>
           </div>
           <div className="mt-2 h-1 overflow-hidden" style={{ background: "var(--color-border)" }}>
             <div className="h-full animate-pulse" style={{ background: "var(--color-brand)", width: stage === "processing" ? "60%" : "20%" }} />
@@ -101,9 +96,9 @@ export default function IngestPage() {
       {result && !loading && (
         <div className="mt-8 grid grid-cols-3 gap-6 text-center">
           {[
-            { label: "Files processed", value: result.files_processed },
-            { label: "Entities extracted", value: result.entities_extracted },
-            { label: "Articles generated", value: result.articles_generated },
+            { label: t('stats.filesProcessed'), value: result.files_processed },
+            { label: t('stats.entitiesExtracted'), value: result.entities_extracted },
+            { label: t('stats.articlesGenerated'), value: result.articles_generated },
           ].map(stat => (
             <div key={stat.label} className="p-6" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-golden)" }}>
               <div className="text-5xl" style={{ color: "var(--color-text)", letterSpacing: "-1.5px", lineHeight: 0.95 }}>{stat.value}</div>

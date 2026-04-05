@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 
 interface Course {
   id: string;
@@ -18,6 +19,7 @@ interface GenerateJob {
 }
 
 export default function CoursesPage() {
+  const { t } = useTranslation('courses');
   const [courses, setCourses] = useState<Course[]>([]);
   const [title, setTitle] = useState("");
   const [audience, setAudience] = useState("");
@@ -56,7 +58,7 @@ export default function CoursesPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) { setError(data.error || "Generation failed"); setGenerating(false); return; }
+      if (!res.ok) { setError(data.error || t('generationFailed')); setGenerating(false); return; }
 
       const jobId = data.job_id;
       const poll = setInterval(async () => {
@@ -67,14 +69,14 @@ export default function CoursesPage() {
           if (statusData.stage === "done" || statusData.stage === "error") {
             clearInterval(poll);
             setGenerating(false);
-            if (statusData.stage === "error") setError(statusData.error || "Generation failed");
+            if (statusData.stage === "error") setError(statusData.error || t('generationFailed'));
             else { setTitle(""); setAudience(""); setObjectives(""); loadCourses(); }
           }
         } catch { /* ignore polling errors */ }
       }, 2000);
       setTimeout(() => { clearInterval(poll); setGenerating(false); }, 600_000);
     } catch {
-      setError("Failed to start generation");
+      setError(t('startFailed'));
       setGenerating(false);
     }
   }
@@ -91,29 +93,29 @@ export default function CoursesPage() {
   }
 
   const progressText = job
-    ? job.stage === "planning" ? "Planning curriculum..."
-    : job.stage === "generating" ? `Generating chapters (${job.chapters_done}/${job.chapters_total})...`
-    : job.stage === "done" ? "Complete!"
-    : job.stage === "error" ? "Error"
+    ? job.stage === "planning" ? t('progress.planning')
+    : job.stage === "generating" ? t('progress.generating', { done: job.chapters_done, total: job.chapters_total })
+    : job.stage === "done" ? t('progress.done')
+    : job.stage === "error" ? t('progress.error')
     : job.stage
     : "";
 
   return (
     <div>
       <h1 className="text-3xl mb-6" style={{ color: "var(--color-text)", lineHeight: 1.15 }}>
-        Courses
+        {t('title')}
       </h1>
 
       <div className="p-6 mb-8" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
-        <h2 className="text-lg mb-4" style={{ color: "var(--color-text)" }}>Generate a Course</h2>
+        <h2 className="text-lg mb-4" style={{ color: "var(--color-text)" }}>{t('generateCourse')}</h2>
         <form onSubmit={handleGenerate}>
           <div className="mb-4">
             <label className="block text-sm mb-1" style={{ color: "var(--color-text-muted)" }}>
-              Course Title *
+              {t('courseTitle')}
             </label>
             <input
               type="text" value={title} onChange={e => setTitle(e.target.value)}
-              placeholder="e.g., Introduction to Event-Driven Architecture"
+              placeholder={t('courseTitlePlaceholder')}
               required
               className="w-full px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
               style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
@@ -121,22 +123,22 @@ export default function CoursesPage() {
           </div>
           <div className="mb-4">
             <label className="block text-sm mb-1" style={{ color: "var(--color-text-muted)" }}>
-              Target Audience
+              {t('targetAudience')}
             </label>
             <input
               type="text" value={audience} onChange={e => setAudience(e.target.value)}
-              placeholder="e.g., Backend Engineers"
+              placeholder={t('audiencePlaceholder')}
               className="w-full px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
               style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
             />
           </div>
           <div className="mb-4">
             <label className="block text-sm mb-1" style={{ color: "var(--color-text-muted)" }}>
-              Learning Objectives (one per line)
+              {t('learningObjectives')}
             </label>
             <textarea
               value={objectives} onChange={e => setObjectives(e.target.value)}
-              placeholder={"Understand EDA patterns\nImplement Kafka consumers\nDesign event schemas"}
+              placeholder={t('objectivesPlaceholder')}
               rows={3}
               className="w-full px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
               style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)", resize: "vertical" }}
@@ -147,7 +149,7 @@ export default function CoursesPage() {
             className="text-sm px-4 py-2 uppercase cursor-pointer disabled:opacity-50 disabled:cursor-default"
             style={{ background: "var(--color-dark)", color: "var(--color-text-on-brand)" }}
           >
-            {generating ? "Generating..." : "Generate Course"}
+            {generating ? t('generating') : t('generate')}
           </button>
         </form>
 
@@ -174,13 +176,13 @@ export default function CoursesPage() {
 
       {courses.length > 0 && (
         <div>
-          <h2 className="text-lg mb-4" style={{ color: "var(--color-text)" }}>Generated Courses</h2>
+          <h2 className="text-lg mb-4" style={{ color: "var(--color-text)" }}>{t('generatedCourses')}</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {courses.map(c => (
               <div key={c.id} className="p-4" style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-card)" }}>
                 <h3 className="text-base mb-1" style={{ color: "var(--color-text)" }}>{c.title}</h3>
                 <div className="text-xs mb-3" style={{ color: "var(--color-text-muted)" }}>
-                  {c.chapter_count} chapters &middot; {c.audience} &middot; {new Date(c.created_at).toLocaleDateString()}
+                  {t('chaptersCount', { count: c.chapter_count })} &middot; {c.audience} &middot; {new Date(c.created_at).toLocaleDateString()}
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -188,14 +190,14 @@ export default function CoursesPage() {
                     className="text-sm px-3 py-1 cursor-pointer"
                     style={{ background: "var(--bg-surface-warm)", color: "var(--color-text)" }}
                   >
-                    Download
+                    {t('download', { ns: 'common' })}
                   </button>
                   <button
                     onClick={() => handleDelete(c.id)}
                     className="text-sm px-3 py-1 cursor-pointer"
                     style={{ background: "var(--bg-surface-hover)", color: "var(--color-error)" }}
                   >
-                    Delete
+                    {t('delete', { ns: 'common' })}
                   </button>
                 </div>
               </div>
@@ -206,7 +208,7 @@ export default function CoursesPage() {
 
       {courses.length === 0 && !generating && (
         <div className="text-center py-12" style={{ color: "var(--color-text-muted)" }}>
-          No courses generated yet. Fill in the form above and generate your first course.
+          {t('emptyMessage')}
         </div>
       )}
     </div>
