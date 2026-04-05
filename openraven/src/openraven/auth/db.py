@@ -72,6 +72,18 @@ audit_logs = Table(
     Column("timestamp", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
 )
 
+invitations = Table(
+    "invitations", metadata,
+    Column("id", String(36), primary_key=True),
+    Column("tenant_id", String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=False),
+    Column("token", String(64), unique=True, nullable=False),
+    Column("created_by", String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+    Column("expires_at", DateTime(timezone=True), nullable=False),
+    Column("max_uses", Integer, nullable=True),
+    Column("use_count", Integer, nullable=False, default=0),
+    Column("created_at", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
+)
+
 
 def get_engine(database_url: str) -> Engine:
     """Create a SQLAlchemy engine from a database URL."""
