@@ -96,3 +96,157 @@ async def test_parse_image_fallback_on_error(tmp_path: Path) -> None:
     assert isinstance(result, ParsedDocument)
     assert result.text == ""
     assert result.char_count == 0
+
+
+import zipfile
+
+
+def _make_zip(tmp_path: Path, files: dict[str, str | bytes], zip_name: str = "export.zip") -> Path:
+    """Helper to create a zip file with given files."""
+    zip_path = tmp_path / zip_name
+    with zipfile.ZipFile(zip_path, "w") as zf:
+        for name, content in files.items():
+            if isinstance(content, str):
+                zf.writestr(name, content)
+            else:
+                zf.writestr(name, content)
+    return zip_path
+
+
+def test_detect_notion_format(tmp_path: Path) -> None:
+    from openraven.ingestion.importers import _detect_format
+    zip_path = _make_zip(tmp_path, {
+        "Meeting Notes abc123def456789012345678abcdef01.md": "# Meeting",
+        "Tasks abc123def456789012345678abcdef02.csv": "Name,Status",
+    })
+    with zipfile.ZipFile(zip_path) as zf:
+        assert _detect_format(zf) == "notion"
+
+
+def test_detect_obsidian_format(tmp_path: Path) -> None:
+    from openraven.ingestion.importers import _detect_format
+    zip_path = _make_zip(tmp_path, {
+        ".obsidian/app.json": "{}",
+        "notes/daily.md": "# Daily\n\nSee [[weekly review]]",
+    })
+    with zipfile.ZipFile(zip_path) as zf:
+        assert _detect_format(zf) == "obsidian"
+
+
+def test_detect_generic_format(tmp_path: Path) -> None:
+    from openraven.ingestion.importers import _detect_format
+    zip_path = _make_zip(tmp_path, {
+        "notes.md": "# Notes\n\nSome content",
+        "report.md": "# Report",
+    })
+    with zipfile.ZipFile(zip_path) as zf:
+        assert _detect_format(zf) == "generic"
+
+
+def test_import_notion_strips_uuids(tmp_path: Path) -> None:
+    from openraven.ingestion.importers import import_zip
+    zip_path = _make_zip(tmp_path, {
+        "Meeting Notes abc123def456789012345678abcdef01.md": "# Meeting Notes\n\nDiscussed roadmap.",
+        "Project Plan abc123def456789012345678abcdef02.md": "# Project Plan\n\nQ2 goals.",
+    })
+    output_dir = tmp_path / "output"
+    result = import_zip(zip_path, output_dir)
+    assert len(result) == 2
+    names = {p.name for p in result}
+    assert "Meeting Notes.md" in names
+    assert "Project Plan.md" in names
+    for p in result:
+        assert p.read_text(encoding="utf-8").startswith("#")
+
+
+def test_import_notion_converts_csv_to_markdown(tmp_path: Path) -> None:
+    from openraven.ingestion.importers import import_zip
+    zip_path = _make_zip(tmp_path, {
+        "Tasks abc123def456789012345678abcdef01.csv": "Name,Status,Priority\nBuild API,Done,High\nWrite tests,In Progress,Medium",
+    })
+    output_dir = tmp_path / "output"
+    result = import_zip(zip_path, output_dir)
+    assert len(result) == 1
+    content = result[0].read_text(encoding="utf-8")
+    assert "Build API" in content
+    assert "|" in content
+
+
+def test_import_obsidian_converts_wikilinks(tmp_path: Path) -> None:
+    from openraven.ingestion.importers import import_zip
+    zip_path = _make_zip(tmp_path, {
+        "notes/daily.md": "# Daily\n\nReview [[weekly plan]] and check [[project status]].",
+        ".obsidian/app.json": "{}",
+    })
+    output_dir = tmp_path / "output"
+    result = import_zip(zip_path, output_dir)
+    assert len(result) == 1
+    content = result[0].read_text(encoding="utf-8")
+    assert "weekly plan" in content
+    assert "[[" not in content
+
+
+def test_import_obsidian_preserves_frontmatter(tmp_path: Path) -> None:
+    from openraven.ingestion.importers import import_zip
+    zip_path = _make_zip(tmp_path, {
+        "note.md": "---\ntitle: My Note\ntags: [ai, ml]\n---\n\n# My Note\n\nContent here.",
+        ".obsidian/app.json": "{}",
+    })
+    output_dir = tmp_path / "output"
+    result = import_zip(zip_path, output_dir)
+    content = result[0].read_text(encoding="utf-8")
+    assert "title: My Note" in content
+
+
+def test_import_zip_skips_non_content_files(tmp_path: Path) -> None:
+    from openraven.ingestion.importers import import_zip
+    zip_path = _make_zip(tmp_path, {
+        "notes.md": "# Notes",
+        "__MACOSX/._notes.md": "resource fork",
+        ".DS_Store": "binary",
+        ".obsidian/plugins/foo.json": "{}",
+    })
+    output_dir = tmp_path / "output"
+    result = import_zip(zip_path, output_dir)
+    assert len(result) == 1
+    assert result[0].name == "notes.md"
+
+
+def test_import_zip_extracts_images(tmp_path: Path) -> None:
+    from openraven.ingestion.importers import import_zip
+    zip_path = _make_zip(tmp_path, {
+        "notes.md": "# Notes\n\n![diagram](images/arch.png)",
+        "images/arch.png": b"\x89PNG\r\n\x1a\n" + b"\x00" * 50,
+    })
+    output_dir = tmp_path / "output"
+    result = import_zip(zip_path, output_dir)
+    names = {p.name for p in result}
+    assert "notes.md" in names
+    assert "arch.png" in names
+
+
+def test_import_obsidian_wikilink_with_display_text(tmp_path: Path) -> None:
+    from openraven.ingestion.importers import import_zip
+    zip_path = _make_zip(tmp_path, {
+        "note.md": "See [[weekly plan|my weekly plan]] for details.",
+        ".obsidian/app.json": "{}",
+    })
+    output_dir = tmp_path / "output"
+    result = import_zip(zip_path, output_dir)
+    content = result[0].read_text(encoding="utf-8")
+    assert "my weekly plan" in content
+    assert "[[" not in content
+
+
+def test_import_notion_handles_duplicate_filenames(tmp_path: Path) -> None:
+    from openraven.ingestion.importers import import_zip
+    zip_path = _make_zip(tmp_path, {
+        "folder1/Notes abc123def456789012345678abcdef01.md": "# Notes from folder 1",
+        "folder2/Notes abc123def456789012345678abcdef02.md": "# Notes from folder 2",
+    })
+    output_dir = tmp_path / "output"
+    result = import_zip(zip_path, output_dir)
+    assert len(result) == 2
+    contents = {p.read_text(encoding="utf-8") for p in result}
+    assert "# Notes from folder 1" in contents
+    assert "# Notes from folder 2" in contents
