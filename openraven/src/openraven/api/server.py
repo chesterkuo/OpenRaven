@@ -280,16 +280,25 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                 convo = get_conversation(auth_engine, req.conversation_id, tenant_id=ctx.tenant_id)
                 if convo:
                     add_message(auth_engine, req.conversation_id, role="user", content=req.question)
-                    sources_data = [{"document": s.document, "excerpt": s.excerpt, "char_start": s.char_start, "char_end": s.char_end} for s in (result.sources or [])]
+                    def _src_dict(s):
+                        if isinstance(s, dict):
+                            return {"document": s.get("document", ""), "excerpt": s.get("excerpt", ""), "char_start": s.get("char_start", 0), "char_end": s.get("char_end", 0)}
+                        return {"document": s.document, "excerpt": s.excerpt, "char_start": s.char_start, "char_end": s.char_end}
+                    sources_data = [_src_dict(s) for s in (result.sources or [])]
                     add_message(auth_engine, req.conversation_id, role="assistant", content=result.answer, sources=sources_data or None)
                     # Auto-title on first message
                     if not convo.get("title"):
                         set_title(auth_engine, req.conversation_id, req.question[:100])
 
+        def _to_source_ref(s):
+            if isinstance(s, dict):
+                return SourceRef(**s)
+            return SourceRef(document=s.document, excerpt=s.excerpt, char_start=s.char_start, char_end=s.char_end)
+
         return AskResponse(
             answer=result.answer,
             mode=req.mode,
-            sources=[SourceRef(**s) for s in result.sources],
+            sources=[_to_source_ref(s) for s in result.sources],
             conversation_id=req.conversation_id,
         )
 
