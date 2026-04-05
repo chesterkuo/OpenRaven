@@ -79,3 +79,46 @@ def test_demo_session_expires_after_ttl(engine):
         conn.commit()
     ctx = validate_session(engine, sid)
     assert ctx is None
+
+
+# ---------------------------------------------------------------------------
+# Task 3: Demo Routes (Theme Listing & Session Start)
+# ---------------------------------------------------------------------------
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+from openraven.auth.demo import create_demo_router
+
+
+@pytest.fixture
+def demo_client(engine, tmp_path):
+    """Client with demo routes and a seeded demo theme."""
+    themes_dir = tmp_path / "tenants" / "demo"
+    legal = themes_dir / "legal-docs"
+    legal.mkdir(parents=True)
+    (legal / ".theme.json").write_text('{"name": "Legal Docs", "description": "Sample legal documents"}')
+
+    app = FastAPI()
+    app.include_router(create_demo_router(engine, tenants_root=themes_dir.parent))
+    return TestClient(app)
+
+
+def test_list_themes(demo_client):
+    res = demo_client.get("/api/demo/themes")
+    assert res.status_code == 200
+    themes = res.json()
+    assert len(themes) >= 1
+    assert themes[0]["slug"] == "legal-docs"
+    assert themes[0]["name"] == "Legal Docs"
+
+
+def test_start_demo_session(demo_client):
+    res = demo_client.post("/api/auth/demo", json={"theme": "legal-docs"})
+    assert res.status_code == 200
+    assert "session_id" in res.cookies
+    data = res.json()
+    assert data["theme"] == "legal-docs"
+
+
+def test_start_demo_invalid_theme(demo_client):
+    res = demo_client.post("/api/auth/demo", json={"theme": "nonexistent"})
+    assert res.status_code == 404
