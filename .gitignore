@@ -4,6 +4,9 @@
 .superpowers/
 .playwright-mcp/
 
+# Git worktrees
+.worktrees/
+
 # PM2 runtime
 .pm2/
 
