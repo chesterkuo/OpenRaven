@@ -22,6 +22,7 @@ from openraven.pipeline import RavenPipeline
 class AskRequest(BaseModel):
     question: str
     mode: str = "mix"
+    locale: str = "en"
 
 
 class SourceRef(BaseModel):
@@ -186,7 +187,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
 
     @app.post("/api/ask", response_model=AskResponse)
     async def ask(req: AskRequest):
-        result = await pipeline.ask_with_sources(req.question, mode=req.mode)
+        result = await pipeline.ask_with_sources(req.question, mode=req.mode, locale=req.locale)
         return AskResponse(
             answer=result.answer,
             mode=req.mode,

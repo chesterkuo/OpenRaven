@@ -216,8 +216,8 @@ class RavenPipeline:
     async def ask(self, question: str, mode: str = "mix") -> str:
         return await self.graph.query(question, mode=mode)
 
-    async def ask_with_sources(self, question: str, mode: str = "mix") -> QueryResult:
-        return await self.graph.query_with_sources(question, mode=mode)
+    async def ask_with_sources(self, question: str, mode: str = "mix", locale: str = "en") -> QueryResult:
+        return await self.graph.query_with_sources(question, mode=mode, locale=locale)
 
     def get_health_report(self) -> HealthReport:
         file_records = [

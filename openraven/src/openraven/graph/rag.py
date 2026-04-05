@@ -12,6 +12,21 @@ except ImportError:
 
 QueryMode = Literal["local", "global", "hybrid", "mix", "naive", "bypass"]
 
+LOCALE_NAMES = {
+    "en": "English",
+    "zh-TW": "Traditional Chinese (繁體中文)",
+    "zh-CN": "Simplified Chinese (简体中文)",
+    "ja": "Japanese (日本語)",
+    "ko": "Korean (한국어)",
+    "fr": "French (Français)",
+    "es": "Spanish (Español)",
+    "nl": "Dutch (Nederlands)",
+    "it": "Italian (Italiano)",
+    "vi": "Vietnamese (Tiếng Việt)",
+    "th": "Thai (ภาษาไทย)",
+    "ru": "Russian (Русский)",
+}
+
 
 @dataclass
 class QueryResult:
@@ -247,11 +262,15 @@ class RavenGraph:
             return result
         return ""
 
-    async def query_with_sources(self, question: str, mode: QueryMode = "mix") -> QueryResult:
+    async def query_with_sources(self, question: str, mode: QueryMode = "mix", locale: str = "en") -> QueryResult:
         await self.ensure_initialized()
         if not self._rag:
             return QueryResult(answer="", sources=[])
-        answer = await self._rag.aquery(question, param=QueryParam(mode=mode))
+        localized_question = question
+        if locale != "en":
+            locale_name = LOCALE_NAMES.get(locale, "English")
+            localized_question = f"{question}\n\n[IMPORTANT: Respond in {locale_name}. The user's interface language is {locale}.]"
+        answer = await self._rag.aquery(localized_question, param=QueryParam(mode=mode))
         if not answer:
             return QueryResult(answer="", sources=[])
         sources = self._extract_sources_from_answer(answer)
