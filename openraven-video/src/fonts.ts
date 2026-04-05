@@ -9,7 +9,7 @@ const dmSans = loadDMSans("normal", {
 
 const notoSansTC = loadNotoSansTC("normal", {
   weights: ["400", "500", "700"],
-  subsets: ["chinese-traditional"],
+  subsets: ["latin"],
 });
 
 export const fontBody = dmSans.fontFamily;
