@@ -940,6 +940,14 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         shutil.rmtree(course_dir)
         return {"deleted": True}
 
+    @app.on_event("startup")
+    async def startup_cleanup():
+        if auth_engine:
+            from openraven.auth.demo import cleanup_expired_demo_sessions
+            deleted = cleanup_expired_demo_sessions(auth_engine)
+            if deleted:
+                logger.info(f"Cleaned up {deleted} expired demo sessions")
+
     return app
 
 
