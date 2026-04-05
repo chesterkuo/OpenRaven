@@ -169,3 +169,39 @@ def test_demo_blocked_paths():
     for path in DEMO_BLOCKED_PATHS:
         assert is_demo_allowed(path, "POST") is False, f"Should block POST {path}"
         assert is_demo_allowed(path, "GET") is False, f"Should block GET {path}"
+
+
+# ---------------------------------------------------------------------------
+# Task 15: Demo Session Cleanup
+# ---------------------------------------------------------------------------
+
+from openraven.auth.demo import cleanup_expired_demo_sessions
+from openraven.conversations.models import create_conversation, get_conversation
+
+
+def test_cleanup_expired_demo_sessions(engine):
+    from datetime import datetime, timezone
+    from openraven.auth.db import sessions as sessions_table
+
+    # Create an expired demo session
+    sid = create_demo_session(engine, theme="legal-docs", ttl_hours=0)
+    with engine.connect() as conn:
+        conn.execute(
+            sessions_table.update()
+            .where(sessions_table.c.id == sid)
+            .values(expires_at=datetime(2000, 1, 1, tzinfo=timezone.utc))
+        )
+        conn.commit()
+
+    # Create a conversation linked to this session
+    convo_id = create_conversation(
+        engine, tenant_id="demo", user_id=None,
+        session_id=sid, demo_theme="legal-docs",
+    )
+
+    # Run cleanup
+    deleted = cleanup_expired_demo_sessions(engine)
+    assert deleted >= 1
+
+    # Conversation should be gone too
+    assert get_conversation(engine, convo_id, tenant_id="demo") is None

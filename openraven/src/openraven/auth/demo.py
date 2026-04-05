@@ -2,12 +2,14 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException, Response
 from pydantic import BaseModel
-from sqlalchemy import Engine
+from sqlalchemy import Engine, select, delete as sa_delete
 
+from openraven.auth.db import sessions as sessions_table, conversations
 from openraven.auth.sessions import create_demo_session
 
 
@@ -65,3 +67,34 @@ def create_demo_router(engine: Engine, tenants_root: Path = Path("/data/tenants"
         return {"theme": req.theme, "message": "Demo session started"}
 
     return router
+
+
+def cleanup_expired_demo_sessions(engine: Engine) -> int:
+    """Delete expired demo sessions and their associated conversations. Returns count deleted."""
+    now = datetime.now(timezone.utc)
+    with engine.connect() as conn:
+        # Find expired demo sessions
+        expired = conn.execute(
+            select(sessions_table.c.id).where(
+                sessions_table.c.is_demo == True,
+                sessions_table.c.expires_at < now,
+            )
+        ).fetchall()
+        expired_ids = [r.id for r in expired]
+
+        if expired_ids:
+            # Delete conversations linked to these sessions (messages cascade)
+            conn.execute(
+                sa_delete(conversations).where(
+                    conversations.c.session_id.in_(expired_ids)
+                )
+            )
+            # Delete the sessions themselves
+            conn.execute(
+                sa_delete(sessions_table).where(
+                    sessions_table.c.id.in_(expired_ids)
+                )
+            )
+            conn.commit()
+
+    return len(expired_ids)
