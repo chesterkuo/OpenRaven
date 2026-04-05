@@ -127,6 +127,9 @@ function DemoAppShell() {
         <NavLink to="/demo/ask" className={navLinkClass}>{t('nav.ask')}</NavLink>
         <NavLink to="/demo/graph" className={navLinkClass}>{t('nav.graph')}</NavLink>
         <NavLink to="/demo/documents" className={navLinkClass}>{t('nav.wiki')}</NavLink>
+        <div className="ml-auto">
+          <LanguageSelector />
+        </div>
       </nav>
       <main className={isGraphPage ? "flex-1 flex flex-col min-h-0" : "max-w-4xl mx-auto px-6 py-8 w-full flex-1"}>
         <Routes>

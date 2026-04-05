@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import { useTranslation } from "react-i18next";
+import { LanguageSelector } from "../components/LanguageSelector";
 
 interface ThemeInfo {
   slug: string;
@@ -45,7 +46,10 @@ export default function DemoLandingPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-8 p-8" style={{ background: "var(--bg-page)" }}>
+    <div className="min-h-screen flex flex-col items-center justify-center gap-8 p-8 relative" style={{ background: "var(--bg-page)" }}>
+      <div className="absolute top-4 right-4">
+        <LanguageSelector />
+      </div>
       <div className="text-center">
         <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--color-text)" }}>
           {t("heroTitle")}

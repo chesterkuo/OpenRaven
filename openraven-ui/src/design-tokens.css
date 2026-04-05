@@ -33,7 +33,7 @@
   --shadow-subtle: rgba(127,99,21,0.06) 0 2px 12px;
 
   /* Typography */
-  --font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif;
+  --font-family: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
 
   /* Graph node colors */
   --node-technology: #fa520f;
