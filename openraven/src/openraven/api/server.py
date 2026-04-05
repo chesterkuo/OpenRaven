@@ -202,7 +202,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                 ctx = validate_session(auth_engine, session_id)
                 if ctx:
                     from openraven.auth.tenant import get_tenant_pipeline
-                    return get_tenant_pipeline(config, ctx.tenant_id)
+                    return get_tenant_pipeline(config, ctx.tenant_id, demo_theme=ctx.demo_theme)
         return pipeline  # Fallback to default pipeline (local mode)
 
     def _audit(request: Request, action: str, details: dict | None = None) -> None:

@@ -218,3 +218,18 @@ def test_demo_conversation_limit(engine):
         create_conversation(engine, tenant_id="demo", user_id=None, session_id=session_id)
     convos = list_conversations(engine, tenant_id="demo", session_id=session_id)
     assert len(convos) == 5
+
+
+# ---------------------------------------------------------------------------
+# Task 18: Demo Pipeline Resolution (Theme Sub-directories)
+# ---------------------------------------------------------------------------
+
+def test_get_demo_tenant_config_uses_theme_subdir(tmp_path):
+    from openraven.auth.tenant import get_tenant_config
+    from openraven.config import RavenConfig
+    tenants_root = tmp_path / "tenants"
+    demo_dir = tenants_root / "demo" / "legal-docs"
+    demo_dir.mkdir(parents=True)
+    base_config = RavenConfig(working_dir=tmp_path, gemini_api_key="test")
+    config = get_tenant_config(base_config, "demo", tenants_root=tenants_root, demo_theme="legal-docs")
+    assert str(config.working_dir).endswith("demo/legal-docs")
