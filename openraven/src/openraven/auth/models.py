@@ -30,9 +30,11 @@ class TenantResponse(BaseModel):
 
 
 class AuthContext(BaseModel):
-    user_id: str
+    user_id: str | None  # None for demo sessions
     tenant_id: str
-    email: str
+    email: str | None = None  # None for demo sessions
+    is_demo: bool = False
+    demo_theme: str | None = None
 
 
 class AuthMeResponse(BaseModel):

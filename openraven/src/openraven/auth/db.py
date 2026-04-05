@@ -30,9 +30,11 @@ users = Table(
 sessions = Table(
     "sessions", metadata,
     Column("id", String(255), primary_key=True),
-    Column("user_id", String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=False),
+    Column("user_id", String(36), ForeignKey("users.id", ondelete="CASCADE"), nullable=True),
     Column("expires_at", DateTime(timezone=True), nullable=False),
     Column("created_at", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
+    Column("is_demo", Boolean, default=False, nullable=False),
+    Column("demo_theme", String(50), nullable=True),
 )
 
 tenants = Table(
