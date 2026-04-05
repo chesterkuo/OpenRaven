@@ -175,6 +175,22 @@ app.all("/api/sync", async (c) => {
   catch (e) { return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502); }
 });
 
+// Demo routes proxy (public — no auth needed)
+app.all("/api/demo/*", async (c) => {
+  try { return await proxyToCore(c); }
+  catch (e) { return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502); }
+});
+
+// Conversations proxy
+app.all("/api/conversations/*", async (c) => {
+  try { return await proxyToCore(c); }
+  catch (e) { return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502); }
+});
+app.all("/api/conversations", async (c) => {
+  try { return await proxyToCore(c); }
+  catch (e) { return c.json({ error: `Core engine error: ${(e as Error).message}` }, 502); }
+});
+
 // Auth passthrough (with cookie forwarding for session management)
 app.all("/api/auth/*", async (c) => {
   const url = `${CORE_API_URL}${c.req.path}`;
