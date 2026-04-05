@@ -13,6 +13,7 @@ import CoursesPage from "./pages/CoursesPage";
 import LoginPage from "./pages/LoginPage";
 import SignupPage from "./pages/SignupPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import AuditLogPage from "./pages/AuditLogPage";
 
 function BlockLogo() {
   return (
@@ -64,6 +65,7 @@ function AppShell() {
         <NavLink to="/agents" className={navLinkClass}>{t('nav.agents')}</NavLink>
         <NavLink to="/courses" className={navLinkClass}>{t('nav.courses')}</NavLink>
         <NavLink to="/status" className={navLinkClass}>{t('nav.status')}</NavLink>
+        <NavLink to="/audit" className={navLinkClass}>Audit</NavLink>
         {user && (
           <div className="ml-auto flex items-center gap-3">
             <span className="text-sm" style={{ color: "var(--color-text-muted)" }}>{user.email}</span>
@@ -84,6 +86,7 @@ function AppShell() {
           <Route path="/agents" element={<AgentsPage />} />
           <Route path="/courses" element={<CoursesPage />} />
           <Route path="/status" element={<StatusPage />} />
+          <Route path="/audit" element={<AuditLogPage />} />
         </Routes>
       </main>
     </div>
