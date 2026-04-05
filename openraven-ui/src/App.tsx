@@ -107,15 +107,16 @@ function DemoAppShell() {
   const location = useLocation();
   const { demoTheme } = useAuth();
   const { t } = useTranslation('common');
+  const { t: td } = useTranslation('demo');
   const isGraphPage = location.pathname === "/demo/graph";
 
   return (
     <div className="h-screen flex flex-col" style={{ background: "var(--bg-page)", color: "var(--color-text)" }}>
       {/* Demo banner */}
       <div className="px-6 py-2 text-center text-sm" style={{ background: "var(--color-primary)", color: "white" }}>
-        You're exploring a demo{demoTheme ? `: ${demoTheme}` : ""}.{" "}
-        <a href="/signup" className="underline font-medium">Sign up</a> to create your own knowledge base.{" "}
-        <a href="/demo" className="underline opacity-80">Switch theme</a>
+        {td("banner")}{demoTheme ? `: ${demoTheme}` : ""}.{" "}
+        <a href="/signup" className="underline font-medium">{td("bannerSignup")}</a> {td("bannerCta")}{" "}
+        <a href="/demo" className="underline opacity-80">{td("switchTheme")}</a>
       </div>
       <nav className="px-6 py-3 flex items-center gap-6 shrink-0 sticky top-0 z-50"
         style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-subtle)" }}>

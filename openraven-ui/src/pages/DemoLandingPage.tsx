@@ -15,7 +15,8 @@ export default function DemoLandingPage() {
   const [starting, setStarting] = useState<string | null>(null);
   const { startDemo } = useAuth();
   const navigate = useNavigate();
-  const { t } = useTranslation("common");
+  const { t: tc } = useTranslation("common");
+  const { t } = useTranslation("demo");
 
   useEffect(() => {
     fetch("/api/demo/themes")
@@ -38,7 +39,7 @@ export default function DemoLandingPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-page)" }}>
-        <span style={{ color: "var(--color-text-muted)" }}>{t("loading")}</span>
+        <span style={{ color: "var(--color-text-muted)" }}>{tc("loading")}</span>
       </div>
     );
   }
@@ -47,10 +48,10 @@ export default function DemoLandingPage() {
     <div className="min-h-screen flex flex-col items-center justify-center gap-8 p-8" style={{ background: "var(--bg-page)" }}>
       <div className="text-center">
         <h1 className="text-3xl font-bold mb-2" style={{ color: "var(--color-text)" }}>
-          Try OpenRaven
+          {t("heroTitle")}
         </h1>
         <p style={{ color: "var(--color-text-muted)" }}>
-          Explore a sample knowledge base — no account required.
+          {t("heroSubtitle")}
         </p>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full">
@@ -73,16 +74,16 @@ export default function DemoLandingPage() {
             </p>
             {starting === theme.slug && (
               <span className="text-xs mt-2 block" style={{ color: "var(--color-primary)" }}>
-                Starting...
+                {t("starting")}
               </span>
             )}
           </button>
         ))}
       </div>
       <p className="text-sm" style={{ color: "var(--color-text-muted)" }}>
-        Want the full experience?{" "}
+        {t("ctaText")}{" "}
         <a href="/signup" style={{ color: "var(--color-primary)" }}>
-          Create an account
+          {t("ctaLink")}
         </a>
       </p>
     </div>

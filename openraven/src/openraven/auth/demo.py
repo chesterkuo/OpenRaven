@@ -21,6 +21,7 @@ class ThemeInfo(BaseModel):
     slug: str
     name: str
     description: str
+    suggested_questions: list[str] = []
 
 
 def _list_themes(tenants_root: Path) -> list[ThemeInfo]:
@@ -39,6 +40,7 @@ def _list_themes(tenants_root: Path) -> list[ThemeInfo]:
                 slug=child.name,
                 name=meta.get("name", child.name),
                 description=meta.get("description", ""),
+                suggested_questions=meta.get("suggested_questions", []),
             ))
         else:
             themes.append(ThemeInfo(slug=child.name, name=child.name, description=""))

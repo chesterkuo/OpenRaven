@@ -5,6 +5,7 @@ import ChatMessage from "../components/ChatMessage";
 import DiscoveryCard from "../components/DiscoveryCard";
 import { useConversations } from "../hooks/useConversations";
 import ConversationSidebar from "../components/ConversationSidebar";
+import { useAuth } from "../hooks/useAuth";
 
 const QUERY_MODES = ['mix', 'local', 'global', 'hybrid', 'naive', 'bypass'] as const;
 
@@ -14,6 +15,7 @@ interface Insight { insight_type: string; title: string; description: string; re
 
 export default function AskPage() {
   const { t, i18n } = useTranslation('ask');
+  const { isDemo, demoTheme } = useAuth();
   const {
     conversations, activeId, messages, setMessages,
     createConversation, loadConversation, deleteConversation, newChat,
@@ -23,9 +25,21 @@ export default function AskPage() {
   const [loading, setLoading] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
   const [mode, setMode] = useState("mix");
+  const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetch("/api/discovery").then(r => r.json()).then(setInsights).catch(() => {}); }, []);
+
+  useEffect(() => {
+    if (!isDemo || !demoTheme) return;
+    fetch("/api/demo/themes")
+      .then(r => r.json())
+      .then((themes: any[]) => {
+        const theme = themes.find((t: any) => t.slug === demoTheme);
+        if (theme?.suggested_questions) setSuggestedQuestions(theme.suggested_questions);
+      })
+      .catch(() => {});
+  }, [isDemo, demoTheme]);
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   useEffect(() => {
@@ -84,11 +98,34 @@ export default function AskPage() {
         />
       </div>
       <div className="flex-1 flex flex-col h-[calc(100vh-8rem)] px-6">
-        {messages.length === 0 && insights.length === 0 && (
+        {messages.length === 0 && insights.length === 0 && suggestedQuestions.length === 0 && (
           <div className="flex-1 flex items-center justify-center">
             <h2 className="text-5xl" style={{ color: "var(--color-text)", letterSpacing: "-1.5px", lineHeight: 0.95 }}>
               {t('heroTitle')}
             </h2>
+          </div>
+        )}
+        {messages.length === 0 && suggestedQuestions.length > 0 && (
+          <div className="flex-1 flex flex-col items-center justify-center gap-6">
+            <h2 className="text-3xl" style={{ color: "var(--color-text)", letterSpacing: "-1px" }}>
+              {t('heroTitle')}
+            </h2>
+            <div className="grid grid-cols-2 gap-3 max-w-2xl w-full">
+              {suggestedQuestions.map((q, i) => (
+                <button
+                  key={i}
+                  onClick={() => { setInput(q); }}
+                  className="p-3 rounded-lg text-sm text-left hover:scale-[1.02] transition-transform"
+                  style={{
+                    background: "var(--bg-card, var(--bg-surface))",
+                    border: "1px solid var(--color-border)",
+                    color: "var(--color-text-secondary)",
+                  }}
+                >
+                  {q}
+                </button>
+              ))}
+            </div>
           </div>
         )}
         {messages.length === 0 && insights.length > 0 && (
