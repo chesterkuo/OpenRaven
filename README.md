@@ -2,6 +2,9 @@
 
 **AI-powered knowledge asset platform that automatically extracts, organizes, and activates professional knowledge from your documents.**
 
+**Read this in other languages:**
+[繁體中文](docs/README.zh-TW.md) | [简体中文](docs/README.zh-CN.md) | [日本語](docs/README.ja.md) | [한국어](docs/README.ko.md) | [Fran&ccedil;ais](docs/README.fr.md) | [Espa&ntilde;ol](docs/README.es.md) | [Nederlands](docs/README.nl.md) | [Italiano](docs/README.it.md) | [Ti&#7871;ng Vi&#7879;t](docs/README.vi.md) | [ไทย](docs/README.th.md) | [Русский](docs/README.ru.md)
+
 OpenRaven transforms scattered documents — PDFs, DOCX, presentations, meeting transcripts, Notion exports — into a structured, queryable knowledge graph. Ask questions in natural language, explore connections between concepts, generate wiki articles, and build courses from your knowledge base.
 
 ## Why OpenRaven?
