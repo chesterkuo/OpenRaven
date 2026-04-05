@@ -15,6 +15,7 @@ import SignupPage from "./pages/SignupPage";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
 import AuditLogPage from "./pages/AuditLogPage";
 import SettingsPage from "./pages/SettingsPage";
+import DemoLandingPage from "./pages/DemoLandingPage";
 
 function BlockLogo() {
   return (
@@ -33,14 +34,20 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
     : "text-[var(--color-text-secondary)] hover:text-[var(--color-brand)] text-sm pb-1";
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, isDemo } = useAuth();
   const { t } = useTranslation('common');
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-page)" }}>
       <span style={{ color: "var(--color-text-muted)" }}>{t('loading')}</span>
     </div>
   );
-  if (!user) return <Navigate to="/login" />;
+  if (!user && !isDemo) return <Navigate to="/login" />;
+  return <>{children}</>;
+}
+
+function DemoGuard({ children }: { children: React.ReactNode }) {
+  const { isDemo } = useAuth();
+  if (!isDemo) return <Navigate to="/demo" />;
   return <>{children}</>;
 }
 
@@ -96,6 +103,41 @@ function AppShell() {
   );
 }
 
+function DemoAppShell() {
+  const location = useLocation();
+  const { demoTheme } = useAuth();
+  const { t } = useTranslation('common');
+  const isGraphPage = location.pathname === "/demo/graph";
+
+  return (
+    <div className="h-screen flex flex-col" style={{ background: "var(--bg-page)", color: "var(--color-text)" }}>
+      {/* Demo banner */}
+      <div className="px-6 py-2 text-center text-sm" style={{ background: "var(--color-primary)", color: "white" }}>
+        You're exploring a demo{demoTheme ? `: ${demoTheme}` : ""}.{" "}
+        <a href="/signup" className="underline font-medium">Sign up</a> to create your own knowledge base.{" "}
+        <a href="/demo" className="underline opacity-80">Switch theme</a>
+      </div>
+      <nav className="px-6 py-3 flex items-center gap-6 shrink-0 sticky top-0 z-50"
+        style={{ background: "var(--bg-surface)", boxShadow: "var(--shadow-subtle)" }}>
+        <div className="flex items-center gap-2">
+          <BlockLogo />
+          <span className="text-lg tracking-tight" style={{ color: "var(--color-text)", letterSpacing: "-0.5px" }}>OpenRaven</span>
+        </div>
+        <NavLink to="/demo/ask" className={navLinkClass}>{t('nav.ask')}</NavLink>
+        <NavLink to="/demo/graph" className={navLinkClass}>{t('nav.graph')}</NavLink>
+        <NavLink to="/demo/documents" className={navLinkClass}>{t('nav.wiki')}</NavLink>
+      </nav>
+      <main className={isGraphPage ? "flex-1 flex flex-col min-h-0" : "max-w-4xl mx-auto px-6 py-8 w-full flex-1"}>
+        <Routes>
+          <Route path="/demo/ask" element={<AskPage />} />
+          <Route path="/demo/graph" element={<GraphPage />} />
+          <Route path="/demo/documents" element={<WikiPage />} />
+        </Routes>
+      </main>
+    </div>
+  );
+}
+
 export default function App() {
   return (
     <AuthProvider>
@@ -103,6 +145,12 @@ export default function App() {
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/demo" element={<DemoLandingPage />} />
+        <Route path="/demo/*" element={
+          <DemoGuard>
+            <DemoAppShell />
+          </DemoGuard>
+        } />
         <Route path="/*" element={
           <AuthGuard>
             <AppShell />
