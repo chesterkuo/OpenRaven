@@ -2,7 +2,7 @@
 
 from sqlalchemy import (
     MetaData, Table, Column, String, Boolean, Integer, DateTime, ForeignKey,
-    CheckConstraint, UniqueConstraint, Text, create_engine,
+    CheckConstraint, UniqueConstraint, Text, JSON, create_engine,
 )
 from sqlalchemy.engine import Engine
 from datetime import datetime, timezone
@@ -91,6 +91,28 @@ sync_config = Table(
     Column("tenant_id", String(36), ForeignKey("tenants.id", ondelete="CASCADE"), primary_key=True),
     Column("passphrase_hash", String(255), nullable=False),
     Column("last_sync_at", DateTime(timezone=True), nullable=True),
+    Column("created_at", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
+)
+
+conversations = Table(
+    "conversations", metadata,
+    Column("id", String(36), primary_key=True),
+    Column("tenant_id", String(255), nullable=False),
+    Column("user_id", String(36), nullable=True),
+    Column("session_id", String(255), nullable=True),
+    Column("title", String(200), nullable=True),
+    Column("demo_theme", String(50), nullable=True),
+    Column("created_at", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
+    Column("updated_at", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
+)
+
+messages = Table(
+    "messages", metadata,
+    Column("id", String(36), primary_key=True),
+    Column("conversation_id", String(36), ForeignKey("conversations.id", ondelete="CASCADE"), nullable=False),
+    Column("role", String(10), nullable=False),
+    Column("content", Text, nullable=False),
+    Column("sources", JSON, nullable=True),
     Column("created_at", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
 )
 
