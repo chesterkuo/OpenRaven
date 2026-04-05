@@ -1,0 +1,20 @@
+# Development override — only starts databases
+# Usage: docker compose -f docker-compose.yml -f docker-compose.dev.yml up postgres neo4j
+
+services:
+  postgres:
+    ports:
+      - "5433:5432"
+
+  neo4j:
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+
+  # Disable app services in dev (run locally)
+  openraven-api:
+    profiles: ["production"]
+  openraven-ui:
+    profiles: ["production"]
+  nginx:
+    profiles: ["production"]

@@ -1,0 +1,22 @@
+FROM oven/bun:1 AS build
+
+WORKDIR /app
+COPY openraven-ui/package.json openraven-ui/bun.lock* ./
+RUN bun install --frozen-lockfile
+
+COPY openraven-ui/ ./
+RUN bun run build
+
+# Production
+FROM oven/bun:1-slim
+
+WORKDIR /app
+COPY --from=build /app/package.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+COPY --from=build /app/server ./server
+
+EXPOSE 3002
+
+ENV CORE_API_URL=http://openraven-api:8741
+CMD ["bun", "run", "server/index.ts"]
