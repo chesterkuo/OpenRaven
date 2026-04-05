@@ -127,3 +127,86 @@ def test_export_knowledge_base(sole_owner, tmp_path):
         assert "metadata.json" in names
         meta = json.loads(zf.read("metadata.json"))
         assert meta["file_count"] == 2
+
+
+from fastapi.testclient import TestClient
+from openraven.auth.passwords import hash_password
+
+
+@pytest.fixture
+def sole_owner_with_real_password(db_engine, tmp_path):
+    user_id = str(uuid.uuid4())
+    tenant_id = str(uuid.uuid4())
+    now = datetime.now(timezone.utc)
+    pw_hash = hash_password("mypassword123")
+    with db_engine.connect() as conn:
+        conn.execute(insert(users).values(
+            id=user_id, email="api@test.com", name="API User",
+            password_hash=pw_hash, created_at=now, updated_at=now,
+        ))
+        conn.execute(insert(tenants).values(
+            id=tenant_id, name="API Tenant", owner_user_id=user_id, created_at=now,
+        ))
+        conn.execute(insert(tenant_members).values(
+            tenant_id=tenant_id, user_id=user_id, role="owner",
+        ))
+        conn.commit()
+    data_dir = tmp_path / "tenants" / tenant_id
+    wiki_dir = data_dir / "wiki"
+    wiki_dir.mkdir(parents=True)
+    (wiki_dir / "test.md").write_text("# Test")
+    return user_id, tenant_id, data_dir, pw_hash
+
+
+@pytest.fixture
+def app_with_account(db_engine, sole_owner_with_real_password, tmp_path):
+    from openraven.auth.account_routes import create_account_router
+    from openraven.auth.models import AuthContext
+    from fastapi import FastAPI, Request
+    from starlette.middleware.base import BaseHTTPMiddleware
+
+    user_id, tenant_id, data_dir, _ = sole_owner_with_real_password
+
+    app = FastAPI()
+
+    class MockAuthMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            request.state.auth = AuthContext(user_id=user_id, tenant_id=tenant_id, email="api@test.com")
+            return await call_next(request)
+
+    app.add_middleware(MockAuthMiddleware)
+    app.include_router(create_account_router(db_engine, data_root=tmp_path / "tenants"), prefix="/api/account")
+    return app
+
+
+def test_api_account_info(app_with_account):
+    client = TestClient(app_with_account)
+    res = client.get("/api/account/")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["email"] == "api@test.com"
+    assert data["deletion"]["eligible"] is True
+
+
+def test_api_export_kb(app_with_account):
+    client = TestClient(app_with_account)
+    res = client.get("/api/account/export")
+    assert res.status_code == 200
+    ct = res.headers.get("content-type", "")
+    assert "zip" in ct or "octet" in ct
+
+
+def test_api_delete_account_wrong_password(app_with_account):
+    client = TestClient(app_with_account)
+    res = client.request("DELETE", "/api/account/", json={"password": "wrongpassword"})
+    assert res.status_code == 403
+
+
+def test_api_delete_account_correct_password(app_with_account, db_engine, sole_owner_with_real_password):
+    user_id, tenant_id, _, _ = sole_owner_with_real_password
+    client = TestClient(app_with_account)
+    res = client.request("DELETE", "/api/account/", json={"password": "mypassword123"})
+    assert res.status_code == 200
+    assert res.json()["deleted"] is True
+    with db_engine.connect() as conn:
+        assert conn.execute(select(users).where(users.c.id == user_id)).first() is None
