@@ -1,5 +1,6 @@
 import json
 import pytest
+from fastapi.testclient import TestClient
 from sqlalchemy import select
 
 from openraven.auth.db import audit_logs, create_tables, get_engine
@@ -84,3 +85,68 @@ def test_query_audit_logs_returns_dicts(db_engine):
     assert log["user_id"] == "u1"
     assert "timestamp" in log
     assert json.loads(log["details"])["question"] == "test?"
+
+
+@pytest.fixture
+def app_with_audit(db_engine):
+    """Create a FastAPI app with audit routes, mocking auth context."""
+    from openraven.audit.routes import create_audit_router
+    from openraven.auth.models import AuthContext
+    from fastapi import FastAPI, Request
+    from starlette.middleware.base import BaseHTTPMiddleware
+
+    app = FastAPI()
+
+    class MockAuthMiddleware(BaseHTTPMiddleware):
+        async def dispatch(self, request: Request, call_next):
+            request.state.auth = AuthContext(user_id="u1", tenant_id="t1", email="u1@test.com")
+            return await call_next(request)
+
+    app.add_middleware(MockAuthMiddleware)
+    app.include_router(create_audit_router(db_engine), prefix="/api/audit")
+
+    from openraven.audit.logger import log_action
+    log_action(engine=db_engine, user_id="u1", tenant_id="t1", action="login", ip_address="1.2.3.4")
+    log_action(engine=db_engine, user_id="u1", tenant_id="t1", action="file_ingest",
+               details={"files": ["report.pdf"]})
+    log_action(engine=db_engine, user_id="u2", tenant_id="t1", action="kb_query",
+               details={"question": "test?"})
+
+    return app
+
+
+def test_audit_list_returns_logs(app_with_audit):
+    client = TestClient(app_with_audit)
+    res = client.get("/api/audit/")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total"] == 3
+    assert len(data["logs"]) == 3
+
+
+def test_audit_list_filters_by_action(app_with_audit):
+    client = TestClient(app_with_audit)
+    res = client.get("/api/audit/?action=login")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["total"] == 1
+    assert all(log["action"] == "login" for log in data["logs"])
+
+
+def test_audit_list_pagination(app_with_audit):
+    client = TestClient(app_with_audit)
+    res = client.get("/api/audit/?limit=2&offset=0")
+    assert res.status_code == 200
+    data = res.json()
+    assert len(data["logs"]) == 2
+    assert data["total"] == 3
+
+
+def test_audit_export_csv(app_with_audit):
+    client = TestClient(app_with_audit)
+    res = client.get("/api/audit/export")
+    assert res.status_code == 200
+    assert "text/csv" in res.headers["content-type"]
+    lines = res.text.strip().split("\n")
+    assert len(lines) == 4  # header + 3 data rows
+    assert "action" in lines[0]
