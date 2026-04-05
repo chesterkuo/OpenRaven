@@ -1,0 +1,11 @@
+{
+  "title": "Knowledge Graph",
+  "loadingGraph": "Loading graph...",
+  "searchPlaceholder": "Search nodes...",
+  "minConnections": "Min connections:",
+  "exportGraphML": "Export GraphML",
+  "exportPNG": "Export PNG",
+  "emptyMessage": "No graph data yet. Add files to start building your knowledge graph.",
+  "source": "Source",
+  "connectedCount": "Connected ({{count}})"
+}

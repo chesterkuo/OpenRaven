@@ -1,0 +1,21 @@
+{
+  "title": "Add Documents",
+  "schemaLabel": "Extraction Schema",
+  "schemaAuto": "Auto-detect (default)",
+  "importHint": "Import from Notion or Obsidian — upload your exported .zip file. Images (PNG, JPEG) are analyzed with AI vision.",
+  "stages": {
+    "uploading": "Uploading files...",
+    "processing": "Processing documents...",
+    "done": "Complete",
+    "error": "Error occurred"
+  },
+  "stats": {
+    "filesProcessed": "Files processed",
+    "entitiesExtracted": "Entities extracted",
+    "articlesGenerated": "Articles generated"
+  },
+  "uploadError": "Failed to connect to the knowledge engine.",
+  "dropFiles": "Drop files here",
+  "fileTypes": "PDF, DOCX, PPTX, XLSX, Markdown, TXT, Images (PNG/JPEG), or ZIP (Notion/Obsidian export)",
+  "browseFiles": "BROWSE FILES"
+}

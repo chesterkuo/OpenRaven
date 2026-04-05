@@ -1,0 +1,12 @@
+{
+  "title": "Expert Agents",
+  "createAgent": "Create Agent",
+  "namePlaceholder": "Agent name (e.g. Legal Expert)",
+  "descriptionPlaceholder": "Description (what does this agent know?)",
+  "emptyMessage": "No agents yet. Create one to deploy your knowledge base as a queryable expert.",
+  "deployed": "Deployed",
+  "localOnly": "Local only",
+  "copyUrl": "Copy URL",
+  "generateToken": "Generate Token",
+  "tokenCopied": "Token copied!"
+}

@@ -1,0 +1,32 @@
+{
+  "nav": {
+    "ask": "Ask",
+    "addFiles": "Add Files",
+    "graph": "Graph",
+    "wiki": "Wiki",
+    "connectors": "Connectors",
+    "agents": "Agents",
+    "courses": "Courses",
+    "status": "Status"
+  },
+  "signOut": "Sign out",
+  "loading": "Loading...",
+  "cancel": "Cancel",
+  "save": "Save",
+  "delete": "Delete",
+  "error": "Something went wrong",
+  "or": "or",
+  "saving": "Saving...",
+  "syncing": "Syncing...",
+  "connected": "Connected",
+  "notConnected": "Not connected",
+  "connect": "Connect",
+  "syncNow": "Sync Now",
+  "download": "Download",
+  "export": "Export",
+  "create": "Create",
+  "creating": "Creating...",
+  "close": "Close",
+  "copied": "Copied!",
+  "truncated": "(truncated)"
+}

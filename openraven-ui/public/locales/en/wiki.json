@@ -1,0 +1,7 @@
+{
+  "title": "Knowledge Wiki",
+  "loadingWiki": "Loading wiki...",
+  "articlesCount": "Articles ({{count}})",
+  "selectArticle": "Select an article to read",
+  "emptyMessage": "No articles yet. Add files to start generating wiki articles."
+}

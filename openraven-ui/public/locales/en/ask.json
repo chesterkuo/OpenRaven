@@ -1,0 +1,26 @@
+{
+  "heroTitle": "What would you like to know?",
+  "discoveriesHeading": "Discoveries from your knowledge base",
+  "sourcesCount": "Sources ({{count}})",
+  "placeholder": "Ask your knowledge base...",
+  "submit": "Ask",
+  "thinking": "Thinking...",
+  "errorReach": "Error: Could not reach the knowledge engine.",
+  "modeLabel": "Mode",
+  "modes": {
+    "mix": "Mix",
+    "local": "Local",
+    "global": "Global",
+    "hybrid": "Hybrid",
+    "naive": "Keyword",
+    "bypass": "Direct LLM"
+  },
+  "modeDesc": {
+    "mix": "Specific + broad reasoning (recommended)",
+    "local": "Search specific entities",
+    "global": "Cross-document reasoning",
+    "hybrid": "Local + global combined",
+    "naive": "Traditional vector search",
+    "bypass": "Skip knowledge base"
+  }
+}

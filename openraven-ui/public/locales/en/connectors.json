@@ -1,0 +1,28 @@
+{
+  "title": "Connectors",
+  "oauthWarning": "Google OAuth not configured. Set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET in .env to enable connectors.",
+  "gdrive": {
+    "name": "Google Drive",
+    "desc": "Import documents from your Google Drive (PDF, Docs, Sheets, Slides)."
+  },
+  "gmail": {
+    "name": "Gmail",
+    "desc": "Import emails from your Gmail account as knowledge base entries."
+  },
+  "meet": {
+    "name": "Google Meet",
+    "desc": "Import meeting transcripts from Google Meet.",
+    "syncLabel": "Sync Transcripts"
+  },
+  "otter": {
+    "name": "Otter.ai",
+    "desc": "Import meeting transcripts from Otter.ai.",
+    "apiKeyPlaceholder": "Otter.ai API key"
+  },
+  "syncFailed": "Sync failed",
+  "stats": {
+    "filesSynced": "Files synced",
+    "entities": "Entities",
+    "articles": "Articles"
+  }
+}
