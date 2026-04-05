@@ -116,4 +116,69 @@ def create_auth_router(engine: Engine, google_client_id: str = "", google_client
             ),
         ).model_dump()
 
+    @router.get("/google")
+    async def google_auth(request: Request):
+        if not google_client_id:
+            raise HTTPException(501, "Google OAuth not configured")
+        from openraven.auth.google_oauth import build_google_auth_url
+        redirect_uri = str(request.base_url) + "api/auth/google/callback"
+        url = build_google_auth_url(google_client_id, redirect_uri)
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url)
+
+    @router.get("/google/callback")
+    async def google_callback(request: Request, code: str):
+        if not google_client_id or not google_client_secret:
+            raise HTTPException(501, "Google OAuth not configured")
+        from openraven.auth.google_oauth import exchange_google_code
+        redirect_uri = str(request.base_url) + "api/auth/google/callback"
+        profile = await exchange_google_code(code, google_client_id, google_client_secret, redirect_uri)
+
+        google_id = profile.get("id", "")
+        email = profile.get("email", "")
+        name = profile.get("name", email)
+        avatar_url = profile.get("picture", "")
+
+        with engine.connect() as conn:
+            existing = conn.execute(
+                select(users.c.id, users.c.google_id)
+                .where((users.c.google_id == google_id) | (users.c.email == email))
+            ).first()
+
+            if existing:
+                user_id = existing.id
+                if not existing.google_id:
+                    from sqlalchemy import update
+                    conn.execute(
+                        update(users).where(users.c.id == user_id)
+                        .values(google_id=google_id, avatar_url=avatar_url)
+                    )
+                    conn.commit()
+            else:
+                user_id = str(uuid.uuid4())
+                tenant_id = str(uuid.uuid4())
+                now = datetime.now(timezone.utc)
+                conn.execute(insert(users).values(
+                    id=user_id, email=email, name=name,
+                    google_id=google_id, avatar_url=avatar_url,
+                    email_verified=True, created_at=now, updated_at=now,
+                ))
+                conn.execute(insert(tenants).values(
+                    id=tenant_id, name=f"{name}'s workspace",
+                    owner_user_id=user_id, created_at=now,
+                ))
+                conn.execute(insert(tenant_members).values(
+                    tenant_id=tenant_id, user_id=user_id, role="owner",
+                ))
+                conn.commit()
+
+        session_id = create_session(engine, user_id)
+        from fastapi.responses import RedirectResponse
+        resp = RedirectResponse("/")
+        resp.set_cookie(
+            "session_id", session_id,
+            httponly=True, samesite="lax", max_age=7 * 24 * 3600,
+        )
+        return resp
+
     return router

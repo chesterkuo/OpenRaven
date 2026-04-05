@@ -95,3 +95,9 @@ def test_logout_clears_session(client):
     assert res.status_code == 200
     res = client.get("/api/auth/me")
     assert res.status_code == 401
+
+
+def test_google_auth_redirect_not_configured(client):
+    """Google auth endpoint should return 501 when GOOGLE_CLIENT_ID is not set."""
+    res = client.get("/api/auth/google", follow_redirects=False)
+    assert res.status_code == 501
