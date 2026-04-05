@@ -140,6 +140,10 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         app.include_router(create_account_router(auth_engine), prefix="/api/account", tags=["account"])
         from openraven.sync.routes import create_sync_router
         app.include_router(create_sync_router(auth_engine), prefix="/api/sync", tags=["sync"])
+        from openraven.auth.demo import create_demo_router
+        app.include_router(create_demo_router(auth_engine, tenants_root=Path(config.working_dir).parent))
+        from openraven.conversations.routes import create_conversations_router
+        app.include_router(create_conversations_router(auth_engine))
 
         # Auth middleware: protect /api/* routes (except /api/auth/* and /health)
         from starlette.middleware.base import BaseHTTPMiddleware
