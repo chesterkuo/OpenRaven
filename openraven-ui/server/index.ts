@@ -141,6 +141,7 @@ app.all("/api/auth/*", async (c) => {
 
 // Serve built frontend assets from dist/
 app.use("/assets/*", serveStatic({ root: "./dist" }));
+app.use("/locales/*", serveStatic({ root: "./dist" }));
 
 // SPA fallback: serve index.html for all non-API routes
 app.get("*", serveStatic({ root: "./dist", path: "index.html" }));
