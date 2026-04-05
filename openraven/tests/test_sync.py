@@ -43,3 +43,70 @@ def test_encrypt_produces_different_output_each_time():
     ct2, salt2, iv2 = encrypt_blob(plaintext, "pass")
     assert salt1 != salt2 or iv1 != iv2
     assert ct1 != ct2
+
+
+import json
+import zipfile
+from pathlib import Path
+
+
+def test_create_snapshot(tmp_path):
+    from openraven.sync.snapshots import create_snapshot
+    data_dir = tmp_path / "kb"
+    wiki_dir = data_dir / "wiki"
+    wiki_dir.mkdir(parents=True)
+    (wiki_dir / "article.md").write_text("# Test Article")
+    lightrag_dir = data_dir / "lightrag_data"
+    lightrag_dir.mkdir()
+    (lightrag_dir / "graph_chunk_entity_relation.graphml").write_text("<graphml/>")
+
+    zip_path = create_snapshot(data_dir, tmp_path / "out")
+    assert zip_path.exists()
+    assert zip_path.suffix == ".zip"
+    with zipfile.ZipFile(zip_path) as zf:
+        names = zf.namelist()
+        assert "wiki/article.md" in names
+        assert "lightrag_data/graph_chunk_entity_relation.graphml" in names
+        assert "snapshot_meta.json" in names
+
+
+def test_create_snapshot_empty_dir(tmp_path):
+    from openraven.sync.snapshots import create_snapshot
+    data_dir = tmp_path / "empty_kb"
+    data_dir.mkdir()
+    zip_path = create_snapshot(data_dir, tmp_path / "out")
+    assert zip_path.exists()
+
+
+def test_restore_snapshot(tmp_path):
+    from openraven.sync.snapshots import create_snapshot, restore_snapshot
+    src = tmp_path / "src"
+    wiki_dir = src / "wiki"
+    wiki_dir.mkdir(parents=True)
+    (wiki_dir / "article.md").write_text("# Original")
+    zip_path = create_snapshot(src, tmp_path / "snap")
+
+    dest = tmp_path / "dest"
+    dest.mkdir()
+    restore_snapshot(zip_path, dest)
+    assert (dest / "wiki" / "article.md").read_text() == "# Original"
+
+
+def test_list_snapshots(tmp_path):
+    from openraven.sync.snapshots import list_snapshots
+    sync_dir = tmp_path / "sync"
+    sync_dir.mkdir()
+    (sync_dir / "2026-04-05T120000.enc").write_bytes(b"encrypted")
+    (sync_dir / "2026-04-05T120000.meta").write_text(json.dumps({
+        "salt_hex": "aa" * 16, "iv_hex": "bb" * 12,
+        "size": 1024, "created_at": "2026-04-05T12:00:00",
+    }))
+    (sync_dir / "2026-04-05T150000.enc").write_bytes(b"encrypted2")
+    (sync_dir / "2026-04-05T150000.meta").write_text(json.dumps({
+        "salt_hex": "cc" * 16, "iv_hex": "dd" * 12,
+        "size": 2048, "created_at": "2026-04-05T15:00:00",
+    }))
+
+    result = list_snapshots(sync_dir)
+    assert len(result) == 2
+    assert result[0]["size"] == 2048
