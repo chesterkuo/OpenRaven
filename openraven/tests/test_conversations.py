@@ -105,3 +105,35 @@ def test_cannot_access_other_tenants_conversation(engine):
     convo_id = create_conversation(engine, tenant_id="t1", user_id="u1")
     result = get_conversation(engine, convo_id, tenant_id="t2")
     assert result is None
+
+
+from openraven.conversations.history import format_history_prefix
+
+
+def test_format_history_prefix_empty():
+    result = format_history_prefix([], "What is X?")
+    assert result == "What is X?"
+
+
+def test_format_history_prefix_with_messages():
+    history = [
+        {"role": "user", "content": "What is AI?"},
+        {"role": "assistant", "content": "AI is artificial intelligence."},
+    ]
+    result = format_history_prefix(history, "Tell me more")
+    assert "Previous conversation:" in result
+    assert "User: What is AI?" in result
+    assert "Assistant: AI is artificial intelligence." in result
+    assert "Current question: Tell me more" in result
+
+
+def test_format_history_prefix_truncates_to_limit():
+    history = [
+        {"role": "user", "content": f"Q{i}"}
+        for i in range(30)
+    ]
+    result = format_history_prefix(history, "Latest?", max_turns=10)
+    # Should only include last 10 messages
+    assert "Q20" in result
+    assert "Q29" in result
+    assert "Q0" not in result
