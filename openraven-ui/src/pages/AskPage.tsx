@@ -2,6 +2,15 @@ import { useState, useRef, useEffect } from "react";
 import ChatMessage from "../components/ChatMessage";
 import DiscoveryCard from "../components/DiscoveryCard";
 
+const QUERY_MODES = [
+  { value: "mix", label: "Mix", desc: "Specific + broad reasoning (recommended)" },
+  { value: "local", label: "Local", desc: "Search specific entities" },
+  { value: "global", label: "Global", desc: "Cross-document reasoning" },
+  { value: "hybrid", label: "Hybrid", desc: "Local + global combined" },
+  { value: "naive", label: "Keyword", desc: "Traditional vector search" },
+  { value: "bypass", label: "Direct LLM", desc: "Skip knowledge base" },
+] as const;
+
 interface SourceRef { document: string; excerpt: string; char_start: number; char_end: number; }
 interface Message { role: "user" | "assistant"; content: string; sources?: SourceRef[]; }
 interface Insight { insight_type: string; title: string; description: string; related_entities: string[]; }
@@ -11,6 +20,7 @@ export default function AskPage() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [insights, setInsights] = useState<Insight[]>([]);
+  const [mode, setMode] = useState("mix");
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetch("/api/discovery").then(r => r.json()).then(setInsights).catch(() => {}); }, []);
@@ -24,7 +34,7 @@ export default function AskPage() {
     setMessages(prev => [...prev, { role: "user", content: question }]);
     setLoading(true);
     try {
-      const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, mode: "mix" }) });
+      const res = await fetch("/api/ask", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ question, mode }) });
       const data = await res.json();
       setMessages(prev => [...prev, { role: "assistant", content: data.answer, sources: data.sources ?? [] }]);
     } catch {
@@ -67,7 +77,21 @@ export default function AskPage() {
         {loading && <div className="text-sm animate-pulse" style={{ color: "var(--color-text-muted)" }}>Thinking...</div>}
         <div ref={bottomRef} />
       </div>
-      <form onSubmit={handleSubmit} className="flex gap-3 pt-4" style={{ borderTop: "1px solid var(--color-border)" }}>
+      <form onSubmit={handleSubmit} className="flex gap-3 pt-4 items-end" style={{ borderTop: "1px solid var(--color-border)" }}>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="mode-select" className="text-xs" style={{ color: "var(--color-text-muted)" }}>Mode</label>
+          <select
+            id="mode-select"
+            value={mode}
+            onChange={e => setMode(e.target.value)}
+            className="px-2 py-2.5 text-sm cursor-pointer"
+            aria-label="Query mode"
+            title={QUERY_MODES.find(m => m.value === mode)?.desc}
+            style={{ background: "var(--bg-surface)", border: "1px solid var(--color-border)", color: "var(--color-text)" }}
+          >
+            {QUERY_MODES.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+          </select>
+        </div>
         <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="Ask your knowledge base..."
           aria-label="Ask your knowledge base"
           className="flex-1 px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-[var(--color-brand)]"
