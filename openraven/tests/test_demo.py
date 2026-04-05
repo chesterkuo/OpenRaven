@@ -205,3 +205,16 @@ def test_cleanup_expired_demo_sessions(engine):
 
     # Conversation should be gone too
     assert get_conversation(engine, convo_id, tenant_id="demo") is None
+
+
+# ---------------------------------------------------------------------------
+# Task 17: Demo Rate Limiting & Conversation Limit
+# ---------------------------------------------------------------------------
+
+def test_demo_conversation_limit(engine):
+    from openraven.conversations.models import create_conversation, list_conversations
+    session_id = create_demo_session(engine, theme="legal-docs")
+    for i in range(5):
+        create_conversation(engine, tenant_id="demo", user_id=None, session_id=session_id)
+    convos = list_conversations(engine, tenant_id="demo", session_id=session_id)
+    assert len(convos) == 5

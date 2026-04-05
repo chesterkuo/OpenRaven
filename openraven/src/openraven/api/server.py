@@ -175,6 +175,21 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
 
         app.add_middleware(AuthMiddleware)
 
+    from collections import defaultdict
+    import time
+
+    _demo_ask_counts: dict[str, list[float]] = defaultdict(list)
+
+    def _check_demo_rate_limit(ip: str, max_per_hour: int = 30) -> None:
+        now = time.time()
+        window = now - 3600
+        hits = _demo_ask_counts[ip]
+        _demo_ask_counts[ip] = [t for t in hits if t > window]
+        if len(_demo_ask_counts[ip]) >= max_per_hour:
+            from fastapi import HTTPException
+            raise HTTPException(429, "Demo rate limit exceeded (30 queries/hour)")
+        _demo_ask_counts[ip].append(now)
+
     pipeline = RavenPipeline(config)
     ingest_jobs: dict[str, IngestJob] = {}
 
@@ -229,6 +244,10 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     @app.post("/api/ask", response_model=AskResponse)
     async def ask(request: Request, req: AskRequest):
         pipe = resolve_pipeline(request)
+
+        ctx = getattr(request.state, "auth", None)
+        if ctx and ctx.is_demo:
+            _check_demo_rate_limit(request.client.host)
 
         # Build question with history context
         question = req.question

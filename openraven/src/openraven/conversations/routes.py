@@ -33,6 +33,10 @@ def create_conversations_router(engine: Engine) -> APIRouter:
     @router.post("")
     async def create(request: Request, req: CreateConversationRequest):
         ctx, session_id = _get_auth(request, engine)
+        if ctx.is_demo:
+            existing = list_conversations(engine, tenant_id=ctx.tenant_id, session_id=session_id)
+            if len(existing) >= 5:
+                raise HTTPException(429, "Demo limited to 5 conversations")
         convo_id = create_conversation(
             engine,
             tenant_id=ctx.tenant_id,
