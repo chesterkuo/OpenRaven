@@ -160,15 +160,23 @@ DEMO_BLOCKED_PATHS = [
 def test_demo_allowed_paths():
     from openraven.auth.middleware import is_demo_allowed
     for path in DEMO_ALLOWED_PATHS:
-        assert is_demo_allowed(path, "GET") is True, f"Should allow GET {path}"
-    assert is_demo_allowed("/api/ask", "POST") is True  # POST ask is allowed
+        assert is_demo_allowed(path) is True, f"Should allow {path}"
+    assert is_demo_allowed("/api/ask") is True  # POST ask is allowed
 
 
 def test_demo_blocked_paths():
     from openraven.auth.middleware import is_demo_allowed
     for path in DEMO_BLOCKED_PATHS:
-        assert is_demo_allowed(path, "POST") is False, f"Should block POST {path}"
-        assert is_demo_allowed(path, "GET") is False, f"Should block GET {path}"
+        assert is_demo_allowed(path) is False, f"Should block {path}"
+
+
+def test_demo_prefix_boundary():
+    """Ensure /api/ask does not match /api/ask-anything."""
+    from openraven.auth.middleware import is_demo_allowed
+    assert is_demo_allowed("/api/ask") is True
+    assert is_demo_allowed("/api/ask-agents") is False
+    assert is_demo_allowed("/api/graph") is True
+    assert is_demo_allowed("/api/graph/export") is True
 
 
 # ---------------------------------------------------------------------------

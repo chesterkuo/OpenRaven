@@ -35,6 +35,10 @@ export function useConversations() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ title }),
     });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({ detail: "Failed to create conversation" }));
+      throw new Error(err.detail || "Failed to create conversation");
+    }
     const data = await res.json();
     setActiveId(data.id);
     setMessages([]);

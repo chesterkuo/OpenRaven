@@ -20,11 +20,14 @@ def create_require_auth(engine: Engine):
     return require_auth
 
 
-# Prefixes accessible to demo sessions
+# Paths accessible to demo sessions (exact match or prefix with / boundary)
+_DEMO_ALLOWED_EXACT = {"/api/ask"}
 _DEMO_ALLOWED_PREFIXES = (
-    "/api/ask",
+    "/api/graph/",
     "/api/graph",
+    "/api/documents/",
     "/api/documents",
+    "/api/conversations/",
     "/api/conversations",
     "/api/demo/",
     "/api/auth/demo",
@@ -32,6 +35,8 @@ _DEMO_ALLOWED_PREFIXES = (
 )
 
 
-def is_demo_allowed(path: str, method: str = "GET") -> bool:
+def is_demo_allowed(path: str) -> bool:
     """Check if a path is accessible to demo sessions."""
+    if path in _DEMO_ALLOWED_EXACT:
+        return True
     return any(path.startswith(prefix) for prefix in _DEMO_ALLOWED_PREFIXES)

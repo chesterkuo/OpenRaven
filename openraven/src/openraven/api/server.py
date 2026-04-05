@@ -169,7 +169,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                         return JSONResponse({"detail": "Session expired"}, status_code=401)
                     request.state.auth = ctx
                     # If demo session, enforce allowed routes
-                    if ctx.is_demo and not is_demo_allowed(request.url.path, request.method):
+                    if ctx.is_demo and not is_demo_allowed(request.url.path):
                         return JSONResponse(status_code=403, content={"detail": "Not available in demo mode"})
                 return await call_next(request)
 
@@ -272,7 +272,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
 
         # Persist messages if conversation_id provided
         if req.conversation_id and auth_engine:
-            from openraven.conversations.models import add_message, get_conversation, _set_title
+            from openraven.conversations.models import add_message, get_conversation, set_title
             ctx = getattr(request.state, "auth", None)
             if ctx:
                 convo = get_conversation(auth_engine, req.conversation_id, tenant_id=ctx.tenant_id)
@@ -282,7 +282,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                     add_message(auth_engine, req.conversation_id, role="assistant", content=result.answer, sources=sources_data or None)
                     # Auto-title on first message
                     if not convo.get("title"):
-                        _set_title(auth_engine, req.conversation_id, req.question[:100])
+                        set_title(auth_engine, req.conversation_id, req.question[:100])
 
         return AskResponse(
             answer=result.answer,
@@ -977,6 +977,21 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
             deleted = cleanup_expired_demo_sessions(auth_engine)
             if deleted:
                 logger.info(f"Cleaned up {deleted} expired demo sessions")
+            # Start hourly background cleanup task
+            asyncio.create_task(_periodic_demo_cleanup())
+
+    async def _periodic_demo_cleanup():
+        """Run demo session cleanup every hour."""
+        while True:
+            await asyncio.sleep(3600)
+            if auth_engine:
+                try:
+                    from openraven.auth.demo import cleanup_expired_demo_sessions
+                    deleted = cleanup_expired_demo_sessions(auth_engine)
+                    if deleted:
+                        logger.info(f"Hourly cleanup: removed {deleted} expired demo sessions")
+                except Exception:
+                    logger.exception("Error in periodic demo cleanup")
 
     return app
 

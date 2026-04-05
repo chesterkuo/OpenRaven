@@ -206,6 +206,45 @@ def test_ask_request_model_accepts_conversation_fields():
     assert len(req.history) == 2
 
 
+def test_cross_user_conversation_isolation(engine):
+    """User B cannot access User A's conversation within the same tenant."""
+    convo_id = create_conversation(engine, tenant_id="t1", user_id="user-a", title="A's chat")
+    # User B in the same tenant cannot read it
+    result = get_conversation(engine, convo_id, tenant_id="t1", user_id="user-b")
+    assert result is None
+    # User A can read it
+    result = get_conversation(engine, convo_id, tenant_id="t1", user_id="user-a")
+    assert result is not None
+    assert result["title"] == "A's chat"
+
+
+def test_cross_user_cannot_delete_conversation(engine):
+    """User B cannot delete User A's conversation within the same tenant."""
+    convo_id = create_conversation(engine, tenant_id="t1", user_id="user-a")
+    delete_conversation(engine, convo_id, tenant_id="t1", user_id="user-b")
+    # Should still exist — user-b's delete should not match
+    result = get_conversation(engine, convo_id, tenant_id="t1", user_id="user-a")
+    assert result is not None
+
+
+def test_cross_user_api_isolation(engine):
+    """Via API: User B cannot see User A's conversations."""
+    app = FastAPI()
+    app.include_router(create_auth_router(engine))
+    app.include_router(create_conversations_router(engine))
+    client_a = TestClient(app)
+    client_b = TestClient(app)
+    # Sign up two users
+    client_a.post("/api/auth/signup", json={"name": "A", "email": "a@test.com", "password": "pass12345678"})
+    client_b.post("/api/auth/signup", json={"name": "B", "email": "b@test.com", "password": "pass12345678"})
+    # User A creates a conversation
+    res = client_a.post("/api/conversations", json={"title": "Secret"})
+    convo_id = res.json()["id"]
+    # User B cannot access it
+    res_b = client_b.get(f"/api/conversations/{convo_id}")
+    assert res_b.status_code == 404
+
+
 def test_history_fallback_fetches_from_db():
     """When history is not provided but conversation_id is, backend should fetch from DB."""
     from openraven.conversations.history import format_history_prefix

@@ -56,8 +56,12 @@ def create_conversations_router(engine: Engine) -> APIRouter:
 
     @router.get("/{convo_id}")
     async def get(request: Request, convo_id: str):
-        ctx, _ = _get_auth(request, engine)
-        convo = get_conversation(engine, convo_id, tenant_id=ctx.tenant_id)
+        ctx, session_id = _get_auth(request, engine)
+        convo = get_conversation(
+            engine, convo_id, tenant_id=ctx.tenant_id,
+            user_id=ctx.user_id if not ctx.is_demo else None,
+            session_id=session_id if ctx.is_demo else None,
+        )
         if not convo:
             raise HTTPException(404, "Conversation not found")
         msgs = get_recent_messages(engine, convo_id, limit=200)
@@ -65,11 +69,19 @@ def create_conversations_router(engine: Engine) -> APIRouter:
 
     @router.delete("/{convo_id}")
     async def remove(request: Request, convo_id: str):
-        ctx, _ = _get_auth(request, engine)
-        convo = get_conversation(engine, convo_id, tenant_id=ctx.tenant_id)
+        ctx, session_id = _get_auth(request, engine)
+        convo = get_conversation(
+            engine, convo_id, tenant_id=ctx.tenant_id,
+            user_id=ctx.user_id if not ctx.is_demo else None,
+            session_id=session_id if ctx.is_demo else None,
+        )
         if not convo:
             raise HTTPException(404, "Conversation not found")
-        delete_conversation(engine, convo_id, tenant_id=ctx.tenant_id)
+        delete_conversation(
+            engine, convo_id, tenant_id=ctx.tenant_id,
+            user_id=ctx.user_id if not ctx.is_demo else None,
+            session_id=session_id if ctx.is_demo else None,
+        )
         return {"ok": True}
 
     return router

@@ -66,14 +66,25 @@ def list_conversations(
     ]
 
 
-def get_conversation(engine: Engine, convo_id: str, tenant_id: str) -> dict | None:
-    """Get a conversation by ID, scoped to tenant."""
+def get_conversation(
+    engine: Engine,
+    convo_id: str,
+    tenant_id: str,
+    user_id: str | None = None,
+    session_id: str | None = None,
+) -> dict | None:
+    """Get a conversation by ID, scoped to tenant + user/session."""
+    query = (
+        select(conversations)
+        .where(conversations.c.id == convo_id)
+        .where(conversations.c.tenant_id == tenant_id)
+    )
+    if user_id:
+        query = query.where(conversations.c.user_id == user_id)
+    if session_id:
+        query = query.where(conversations.c.session_id == session_id)
     with engine.connect() as conn:
-        row = conn.execute(
-            select(conversations)
-            .where(conversations.c.id == convo_id)
-            .where(conversations.c.tenant_id == tenant_id)
-        ).fetchone()
+        row = conn.execute(query).fetchone()
     if not row:
         return None
     return {
@@ -88,14 +99,25 @@ def get_conversation(engine: Engine, convo_id: str, tenant_id: str) -> dict | No
     }
 
 
-def delete_conversation(engine: Engine, convo_id: str, tenant_id: str) -> None:
-    """Delete a conversation and its messages (cascade)."""
+def delete_conversation(
+    engine: Engine,
+    convo_id: str,
+    tenant_id: str,
+    user_id: str | None = None,
+    session_id: str | None = None,
+) -> None:
+    """Delete a conversation and its messages (cascade), scoped to tenant + user/session."""
+    query = (
+        delete(conversations)
+        .where(conversations.c.id == convo_id)
+        .where(conversations.c.tenant_id == tenant_id)
+    )
+    if user_id:
+        query = query.where(conversations.c.user_id == user_id)
+    if session_id:
+        query = query.where(conversations.c.session_id == session_id)
     with engine.connect() as conn:
-        conn.execute(
-            delete(conversations)
-            .where(conversations.c.id == convo_id)
-            .where(conversations.c.tenant_id == tenant_id)
-        )
+        conn.execute(query)
         conn.commit()
 
 
@@ -128,7 +150,7 @@ def add_message(
     return msg_id
 
 
-def _set_title(engine: Engine, convo_id: str, title: str) -> None:
+def set_title(engine: Engine, convo_id: str, title: str) -> None:
     """Set the title of a conversation (used for auto-titling)."""
     with engine.connect() as conn:
         conn.execute(
