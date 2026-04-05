@@ -2,7 +2,7 @@
 
 from sqlalchemy import (
     MetaData, Table, Column, String, Boolean, Integer, DateTime, ForeignKey,
-    CheckConstraint, UniqueConstraint, create_engine,
+    CheckConstraint, UniqueConstraint, Text, create_engine,
 )
 from sqlalchemy.engine import Engine
 from datetime import datetime, timezone
@@ -59,6 +59,17 @@ password_reset_tokens = Table(
     Column("token_hash", String(255), nullable=False),
     Column("expires_at", DateTime(timezone=True), nullable=False),
     Column("used", Boolean, default=False),
+)
+
+audit_logs = Table(
+    "audit_logs", metadata,
+    Column("id", Integer, primary_key=True, autoincrement=True),
+    Column("user_id", String(36), ForeignKey("users.id", ondelete="SET NULL"), nullable=True),
+    Column("tenant_id", String(36), ForeignKey("tenants.id", ondelete="CASCADE"), nullable=True),
+    Column("action", String(50), nullable=False),
+    Column("details", Text, nullable=True),
+    Column("ip_address", String(45), nullable=True),
+    Column("timestamp", DateTime(timezone=True), default=lambda: datetime.now(timezone.utc)),
 )
 
 
