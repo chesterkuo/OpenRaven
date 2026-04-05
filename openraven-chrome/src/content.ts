@@ -21,6 +21,13 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "EXTRACT_CONTENT") {
     const content = extractPageContent();
     sendResponse(content);
+  } else if (message.type === "EXTRACT_SELECTION") {
+    const selection = window.getSelection()?.toString() ?? "";
+    sendResponse({
+      title: document.title,
+      url: window.location.href,
+      text: selection,
+    });
   }
   return true;
 });

@@ -1,4 +1,4 @@
-import { checkConnection } from "./api";
+import { checkConnection, getSettings } from "./api";
 
 const saveBtn = document.getElementById("save-btn") as HTMLButtonElement;
 const pageTitle = document.getElementById("page-title") as HTMLDivElement;
@@ -9,6 +9,8 @@ const errorMessage = document.getElementById("error-message") as HTMLSpanElement
 const statEntities = document.getElementById("stat-entities") as HTMLDivElement;
 const statArticles = document.getElementById("stat-articles") as HTMLDivElement;
 const statFiles = document.getElementById("stat-files") as HTMLDivElement;
+const authStatus = document.getElementById("auth-status") as HTMLDivElement;
+const loginLink = document.getElementById("login-link") as HTMLAnchorElement;
 
 function hideAll() {
   statusLoading.classList.add("hidden");
@@ -41,11 +43,21 @@ chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
   }
 });
 
-checkConnection().then((connected) => {
+checkConnection().then(({ connected, authenticated }) => {
   if (!connected) {
-    showError("OpenRaven is not running. Start it with: pm2 start");
+    showError("OpenRaven is not running. Check settings.");
     saveBtn.disabled = true;
+    return;
   }
+  getSettings().then((settings) => {
+    if (settings.authMode === "cloud" && !authenticated) {
+      authStatus.classList.remove("hidden");
+      loginLink.addEventListener("click", (e) => {
+        e.preventDefault();
+        chrome.tabs.create({ url: `${settings.apiUrl}/login` });
+      });
+    }
+  });
 });
 
 saveBtn.addEventListener("click", async () => {
