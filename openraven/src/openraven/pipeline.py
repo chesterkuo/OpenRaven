@@ -14,13 +14,13 @@ from openraven.extraction.schemas.base import BASE_SCHEMA
 from openraven.graph.rag import QueryResult, RavenGraph
 from openraven.health.reporter import HealthReport, generate_health_report
 from openraven.ingestion.hasher import compute_file_hash
-from openraven.ingestion.parser import ParsedDocument, parse_document
+from openraven.ingestion.parser import IMAGE_EXTENSIONS, ParsedDocument, parse_document, parse_image
 from openraven.storage import FileRecord, MetadataStore
 from openraven.wiki.compiler import compile_wiki_for_graph
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf", ".docx", ".pptx", ".xlsx", ".html"}
+SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf", ".docx", ".pptx", ".xlsx", ".html"} | IMAGE_EXTENSIONS
 
 
 @dataclass
@@ -116,9 +116,21 @@ class RavenPipeline:
         parsed_docs: list[ParsedDocument] = []
         for fp in files_to_process:
             try:
-                doc = parse_document(fp)
-                parsed_docs.append(doc)
                 fp_path = Path(fp) if not isinstance(fp, Path) else fp
+                if fp_path.suffix.lower() in IMAGE_EXTENSIONS:
+                    doc = await parse_image(
+                        fp_path,
+                        api_key=self.config.llm_api_key,
+                        model=self.config.llm_model,
+                        base_url=(
+                            f"{self.config.ollama_base_url}/v1"
+                            if self.config.llm_provider == "ollama"
+                            else "https://generativelanguage.googleapis.com/v1beta/openai/"
+                        ),
+                    )
+                else:
+                    doc = parse_document(fp)
+                parsed_docs.append(doc)
                 self.store.upsert_file(FileRecord(
                     path=str(fp), hash=compute_file_hash(fp_path) if fp_path.exists() else "url",
                     format=doc.format, char_count=doc.char_count, status="ingested",

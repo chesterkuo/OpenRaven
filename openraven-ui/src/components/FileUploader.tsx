@@ -27,7 +27,7 @@ export default function FileUploader({ onUpload, disabled }: Props) {
         Drop files here
       </p>
       <p className="text-sm mb-4" style={{ color: "var(--color-text-muted)" }}>
-        PDF, DOCX, PPTX, XLSX, Markdown, TXT
+        PDF, DOCX, PPTX, XLSX, Markdown, TXT, Images (PNG/JPEG), or ZIP (Notion/Obsidian export)
       </p>
       <label
         className="inline-block px-4 py-2 text-sm cursor-pointer"
@@ -37,7 +37,7 @@ export default function FileUploader({ onUpload, disabled }: Props) {
         }}
       >
         BROWSE FILES
-        <input type="file" multiple onChange={handleChange} disabled={disabled} className="hidden" accept=".pdf,.docx,.pptx,.xlsx,.md,.txt,.html" />
+        <input type="file" multiple onChange={handleChange} disabled={disabled} className="hidden" accept=".pdf,.docx,.pptx,.xlsx,.md,.txt,.html,.png,.jpg,.jpeg,.heic,.webp,.zip" />
       </label>
     </div>
   );
