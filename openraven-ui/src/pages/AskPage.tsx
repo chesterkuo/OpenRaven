@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import ChatMessage from "../components/ChatMessage";
 import DiscoveryCard from "../components/DiscoveryCard";
+import OnboardingBanner from "../components/OnboardingBanner";
 
 const QUERY_MODES = [
   { value: "mix", label: "Mix", desc: "Specific + broad reasoning (recommended)" },
@@ -44,6 +45,7 @@ export default function AskPage() {
 
   return (
     <div className="flex flex-col h-[calc(100vh-8rem)]">
+      {messages.length === 0 && <OnboardingBanner />}
       {messages.length === 0 && insights.length === 0 && (
         <div className="flex-1 flex items-center justify-center">
           <h2 className="text-5xl" style={{ color: "var(--color-text)", letterSpacing: "-1.5px", lineHeight: 0.95 }}>
