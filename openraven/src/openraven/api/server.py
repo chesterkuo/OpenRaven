@@ -127,6 +127,18 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     pipeline = RavenPipeline(config)
     ingest_jobs: dict[str, IngestJob] = {}
 
+    def resolve_pipeline(request: Request) -> RavenPipeline:
+        """Get the pipeline for the current request — tenant-scoped if auth enabled."""
+        if config.auth_enabled and auth_engine:
+            session_id = request.cookies.get("session_id")
+            if session_id:
+                from openraven.auth.sessions import validate_session
+                ctx = validate_session(auth_engine, session_id)
+                if ctx:
+                    from openraven.auth.tenant import get_tenant_pipeline
+                    return get_tenant_pipeline(config, ctx.tenant_id)
+        return pipeline  # Fallback to default pipeline (local mode)
+
     @app.get("/health")
     async def health():
         return {"status": "ok", "version": "0.1.0"}
