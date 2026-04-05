@@ -84,6 +84,9 @@ export default function IngestPage() {
       </div>
 
       <FileUploader onUpload={handleUpload} disabled={loading} />
+      <p className="mt-3 text-xs" style={{ color: "var(--color-text-muted)" }}>
+        Import from Notion or Obsidian — upload your exported .zip file. Images (PNG, JPEG) are analyzed with AI vision.
+      </p>
       {loading && stage && (
         <div className="mt-6">
           <div className="flex items-center gap-3">

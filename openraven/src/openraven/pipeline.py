@@ -14,13 +14,14 @@ from openraven.extraction.schemas.base import BASE_SCHEMA
 from openraven.graph.rag import QueryResult, RavenGraph
 from openraven.health.reporter import HealthReport, generate_health_report
 from openraven.ingestion.hasher import compute_file_hash
+from openraven.ingestion.importers import import_zip
 from openraven.ingestion.parser import IMAGE_EXTENSIONS, ParsedDocument, parse_document, parse_image
 from openraven.storage import FileRecord, MetadataStore
 from openraven.wiki.compiler import compile_wiki_for_graph
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf", ".docx", ".pptx", ".xlsx", ".html"} | IMAGE_EXTENSIONS
+SUPPORTED_EXTENSIONS = {".md", ".txt", ".pdf", ".docx", ".pptx", ".xlsx", ".html", ".zip"} | IMAGE_EXTENSIONS
 
 
 @dataclass
@@ -107,6 +108,23 @@ class RavenPipeline:
 
         file_paths = self._expand_paths(paths)
         files_to_process = self._filter_unchanged(file_paths)
+
+        # Pre-stage: expand zip files
+        expanded: list[Path | str] = []
+        for fp in files_to_process:
+            fp_path = Path(fp) if not isinstance(fp, Path) else fp
+            if fp_path.suffix.lower() == ".zip":
+                try:
+                    zip_output = self.config.ingestion_dir / f"_import_{fp_path.stem}"
+                    imported = import_zip(fp_path, zip_output)
+                    expanded.extend(imported)
+                    logger.info(f"Extracted {len(imported)} files from {fp_path.name}")
+                except Exception as e:
+                    errors.append(f"Zip import failed for {fp}: {e}")
+                    logger.error(f"Zip import failed for {fp}", exc_info=True)
+            else:
+                expanded.append(fp)
+        files_to_process = expanded
 
         if not files_to_process:
             logger.info("No new or changed files to process.")
