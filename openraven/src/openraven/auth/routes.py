@@ -79,10 +79,21 @@ def create_auth_router(
 ) -> APIRouter:
     router = APIRouter(prefix="/api/auth")
 
-    def _audit_auth(request: Request, action: str, user_id: str | None = None, details: dict | None = None):
+    def _audit_auth(request: Request, action: str, user_id: str | None = None, tenant_id: str | None = None, details: dict | None = None):
         from openraven.audit.logger import log_action
         ip = request.client.host if request.client else ""
-        log_action(engine=engine, user_id=user_id, tenant_id=None, action=action, details=details, ip_address=ip)
+        # Resolve tenant_id from user if not provided
+        if user_id and not tenant_id:
+            try:
+                with engine.connect() as conn:
+                    row = conn.execute(
+                        select(tenant_members.c.tenant_id).where(tenant_members.c.user_id == user_id)
+                    ).first()
+                    if row:
+                        tenant_id = row.tenant_id
+            except Exception:
+                pass
+        log_action(engine=engine, user_id=user_id, tenant_id=tenant_id, action=action, details=details, ip_address=ip)
 
     @router.post("/signup")
     async def signup(data: UserCreate, request: Request, response: Response):

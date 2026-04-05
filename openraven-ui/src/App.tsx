@@ -65,7 +65,7 @@ function AppShell() {
         <NavLink to="/agents" className={navLinkClass}>{t('nav.agents')}</NavLink>
         <NavLink to="/courses" className={navLinkClass}>{t('nav.courses')}</NavLink>
         <NavLink to="/status" className={navLinkClass}>{t('nav.status')}</NavLink>
-        <NavLink to="/audit" className={navLinkClass}>Audit</NavLink>
+        <NavLink to="/audit" className={navLinkClass}>{t('nav.audit')}</NavLink>
         {user && (
           <div className="ml-auto flex items-center gap-3">
             <span className="text-sm" style={{ color: "var(--color-text-muted)" }}>{user.email}</span>

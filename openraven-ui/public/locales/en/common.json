@@ -7,7 +7,8 @@
     "connectors": "Connectors",
     "agents": "Agents",
     "courses": "Courses",
-    "status": "Status"
+    "status": "Status",
+    "audit": "Audit"
   },
   "signOut": "Sign out",
   "loading": "Loading...",

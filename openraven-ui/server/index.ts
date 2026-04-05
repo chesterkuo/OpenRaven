@@ -28,6 +28,8 @@ const CORE_API_URL = process.env.CORE_API_URL ?? "http://127.0.0.1:8741";
 async function proxyToCore(c: any, extraPath?: string) {
   const url = `${CORE_API_URL}${c.req.path}${c.req.url.includes("?") ? "?" + c.req.url.split("?")[1] : ""}`;
   const headers: Record<string, string> = {};
+  const cookie = c.req.header("cookie");
+  if (cookie) headers["cookie"] = cookie;
   const ct = c.req.header("content-type");
   if (ct) headers["content-type"] = ct;
   const body = c.req.method === "GET" || c.req.method === "HEAD" ? undefined : await c.req.text();
