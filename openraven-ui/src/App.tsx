@@ -1,5 +1,7 @@
 import { Routes, Route, NavLink, useLocation, Navigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { AuthProvider, useAuth } from "./hooks/useAuth";
+import { LanguageSelector } from "./components/LanguageSelector";
 import AskPage from "./pages/AskPage";
 import StatusPage from "./pages/StatusPage";
 import IngestPage from "./pages/IngestPage";
@@ -30,9 +32,10 @@ const navLinkClass = ({ isActive }: { isActive: boolean }) =>
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  const { t } = useTranslation('common');
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-page)" }}>
-      <span style={{ color: "var(--color-text-muted)" }}>Loading...</span>
+      <span style={{ color: "var(--color-text-muted)" }}>{t('loading')}</span>
     </div>
   );
   if (!user) return <Navigate to="/login" />;
@@ -42,6 +45,7 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
 function AppShell() {
   const location = useLocation();
   const { user, logout } = useAuth();
+  const { t } = useTranslation('common');
   const isGraphPage = location.pathname === "/graph";
 
   return (
@@ -52,19 +56,20 @@ function AppShell() {
           <BlockLogo />
           <span className="text-lg tracking-tight" style={{ color: "var(--color-text)", letterSpacing: "-0.5px" }}>OpenRaven</span>
         </div>
-        <NavLink to="/" end className={navLinkClass}>Ask</NavLink>
-        <NavLink to="/ingest" className={navLinkClass}>Add Files</NavLink>
-        <NavLink to="/graph" className={navLinkClass}>Graph</NavLink>
-        <NavLink to="/wiki" className={navLinkClass}>Wiki</NavLink>
-        <NavLink to="/connectors" className={navLinkClass}>Connectors</NavLink>
-        <NavLink to="/agents" className={navLinkClass}>Agents</NavLink>
-        <NavLink to="/courses" className={navLinkClass}>Courses</NavLink>
-        <NavLink to="/status" className={navLinkClass}>Status</NavLink>
+        <NavLink to="/" end className={navLinkClass}>{t('nav.ask')}</NavLink>
+        <NavLink to="/ingest" className={navLinkClass}>{t('nav.addFiles')}</NavLink>
+        <NavLink to="/graph" className={navLinkClass}>{t('nav.graph')}</NavLink>
+        <NavLink to="/wiki" className={navLinkClass}>{t('nav.wiki')}</NavLink>
+        <NavLink to="/connectors" className={navLinkClass}>{t('nav.connectors')}</NavLink>
+        <NavLink to="/agents" className={navLinkClass}>{t('nav.agents')}</NavLink>
+        <NavLink to="/courses" className={navLinkClass}>{t('nav.courses')}</NavLink>
+        <NavLink to="/status" className={navLinkClass}>{t('nav.status')}</NavLink>
         {user && (
           <div className="ml-auto flex items-center gap-3">
             <span className="text-sm" style={{ color: "var(--color-text-muted)" }}>{user.email}</span>
+            <LanguageSelector />
             <button onClick={logout} className="text-sm cursor-pointer hover:opacity-70" style={{ color: "var(--color-brand)" }}>
-              Sign out
+              {t('signOut')}
             </button>
           </div>
         )}
