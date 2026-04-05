@@ -55,8 +55,9 @@ async def exchange_code(
 def save_token(token_data: dict, token_path: Path) -> None:
     """Save OAuth token to disk with restrictive permissions."""
     import os
-    token_path.write_text(json.dumps(token_data, indent=2), encoding="utf-8")
-    os.chmod(token_path, 0o600)
+    fd = os.open(str(token_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(json.dumps(token_data, indent=2))
     logger.info(f"Saved Google token to {token_path}")
 
 

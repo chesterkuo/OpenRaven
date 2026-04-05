@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 interface ConnectorStatus {
   gdrive: { connected: boolean };
@@ -21,9 +21,11 @@ export default function ConnectorsPage() {
   const [result, setResult] = useState<SyncResult | null>(null);
   const [otterKey, setOtterKey] = useState("");
   const [savingKey, setSavingKey] = useState(false);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
     fetch("/api/connectors/status").then(r => r.json()).then(setStatus).catch(() => {});
+    return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, []);
 
   async function handleConnect() {
@@ -31,17 +33,20 @@ export default function ConnectorsPage() {
     const data = await res.json();
     if (data.auth_url) {
       window.open(data.auth_url, "_blank", "width=500,height=600");
+      if (pollRef.current) clearInterval(pollRef.current);
       const poll = setInterval(async () => {
         try {
           const statusRes = await fetch("/api/connectors/status");
           const statusData = await statusRes.json();
           if (statusData.gdrive?.connected) {
             clearInterval(poll);
+            pollRef.current = null;
             setStatus(statusData);
           }
         } catch { /* ignore polling errors */ }
       }, 2000);
-      setTimeout(() => clearInterval(poll), 120_000);
+      pollRef.current = poll;
+      setTimeout(() => { clearInterval(poll); pollRef.current = null; }, 120_000);
     }
   }
 

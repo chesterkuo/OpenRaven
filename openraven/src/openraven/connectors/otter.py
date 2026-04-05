@@ -19,8 +19,9 @@ def transcript_to_markdown(title: str, date: str, speakers: list[dict]) -> str:
 
 def save_api_key(api_key: str, key_path: Path) -> None:
     """Save Otter.ai API key to disk with restrictive permissions."""
-    key_path.write_text(api_key.strip(), encoding="utf-8")
-    os.chmod(key_path, 0o600)
+    fd = os.open(str(key_path), os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    with os.fdopen(fd, "w", encoding="utf-8") as f:
+        f.write(api_key.strip())
     logger.info(f"Saved Otter.ai API key to {key_path}")
 
 
