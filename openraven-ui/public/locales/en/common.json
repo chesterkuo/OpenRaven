@@ -8,7 +8,8 @@
     "agents": "Agents",
     "courses": "Courses",
     "status": "Status",
-    "audit": "Audit"
+    "audit": "Audit",
+    "settings": "Settings"
   },
   "signOut": "Sign out",
   "loading": "Loading...",
