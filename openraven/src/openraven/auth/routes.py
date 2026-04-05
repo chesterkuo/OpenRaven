@@ -79,6 +79,11 @@ def create_auth_router(
 ) -> APIRouter:
     router = APIRouter(prefix="/api/auth")
 
+    def _audit_auth(request: Request, action: str, user_id: str | None = None, details: dict | None = None):
+        from openraven.audit.logger import log_action
+        ip = request.client.host if request.client else ""
+        log_action(engine=engine, user_id=user_id, tenant_id=None, action=action, details=details, ip_address=ip)
+
     @router.post("/signup")
     async def signup(data: UserCreate, request: Request, response: Response):
         _check_rate_limit(request.client.host if request.client else "unknown")
@@ -101,6 +106,7 @@ def create_auth_router(
 
         session_id = create_session(engine, user_id)
         _set_session_cookie(response, session_id, secure=secure_cookies)
+        _audit_auth(request, "signup", user_id=user_id, details={"email": data.email})
         return {
             "user": UserResponse(id=user_id, email=data.email, name=data.name).model_dump(),
             "tenant": TenantResponse(id=tenant_id, name=f"{data.name}'s workspace").model_dump(),
@@ -122,12 +128,15 @@ def create_auth_router(
 
         session_id = create_session(engine, row.id)
         _set_session_cookie(response, session_id, secure=secure_cookies)
+        _audit_auth(request, "login", user_id=row.id, details={"email": data.email})
         return {"user": UserResponse(id=row.id, email=row.email, name=row.name).model_dump()}
 
     @router.post("/logout")
     async def logout(request: Request, response: Response):
         session_id = request.cookies.get("session_id")
         if session_id:
+            ctx = validate_session(engine, session_id)
+            _audit_auth(request, "logout", user_id=ctx.user_id if ctx else None)
             delete_session(engine, session_id)
         response.delete_cookie("session_id")
         return {"ok": True}

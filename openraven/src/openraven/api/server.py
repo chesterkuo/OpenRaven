@@ -124,6 +124,8 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
             google_client_id=config.google_client_id,
             google_client_secret=config.google_client_secret,
         ))
+        from openraven.audit.routes import create_audit_router
+        app.include_router(create_audit_router(auth_engine), prefix="/api/audit", tags=["audit"])
 
         # Auth middleware: protect /api/* routes (except /api/auth/* and /health)
         from starlette.middleware.base import BaseHTTPMiddleware
@@ -164,6 +166,21 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                     return get_tenant_pipeline(config, ctx.tenant_id)
         return pipeline  # Fallback to default pipeline (local mode)
 
+    def _audit(request: Request, action: str, details: dict | None = None) -> None:
+        """Log an audit event if auth is enabled."""
+        if not config.auth_enabled or not auth_engine:
+            return
+        from openraven.audit.logger import log_action
+        auth_ctx = getattr(request.state, "auth", None)
+        log_action(
+            engine=auth_engine,
+            user_id=auth_ctx.user_id if auth_ctx else None,
+            tenant_id=auth_ctx.tenant_id if auth_ctx else None,
+            action=action,
+            details=details,
+            ip_address=request.client.host if request.client else "",
+        )
+
     @app.get("/health")
     async def health():
         return {"status": "ok", "version": "0.1.0"}
@@ -186,8 +203,9 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         )
 
     @app.post("/api/ask", response_model=AskResponse)
-    async def ask(req: AskRequest):
+    async def ask(request: Request, req: AskRequest):
         result = await pipeline.ask_with_sources(req.question, mode=req.mode, locale=req.locale)
+        _audit(request, "kb_query", {"question": req.question[:200], "mode": req.mode})
         return AskResponse(
             answer=result.answer,
             mode=req.mode,
@@ -213,7 +231,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         }
 
     @app.post("/api/ingest", response_model=IngestResponse)
-    async def ingest(files: list[UploadFile] = File(...), schema: str | None = Form(default=None)):
+    async def ingest(request: Request, files: list[UploadFile] = File(...), schema: str | None = Form(default=None)):
         schema_name: str | None = schema if schema and schema != "auto" else None
 
         saved_paths: list[Path] = []
@@ -243,6 +261,11 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
             "errors": result.errors,
         }
 
+        _audit(request, "file_ingest", {
+            "files": [Path(upload.filename).name for upload in files if upload.filename],
+            "files_processed": result.files_processed,
+            "entities_extracted": result.entities_extracted,
+        })
         return IngestResponse(
             files_processed=result.files_processed,
             entities_extracted=result.entities_extracted,
