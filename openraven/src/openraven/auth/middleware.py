@@ -25,6 +25,8 @@ _DEMO_ALLOWED_EXACT = {"/api/ask"}
 _DEMO_ALLOWED_PREFIXES = (
     "/api/graph/",
     "/api/graph",
+    "/api/wiki/",
+    "/api/wiki",
     "/api/documents/",
     "/api/documents",
     "/api/conversations/",
@@ -32,6 +34,10 @@ _DEMO_ALLOWED_PREFIXES = (
     "/api/demo/",
     "/api/auth/demo",
     "/api/auth/logout",
+    "/api/discovery",
+    "/api/status",
+    "/api/config/",
+    "/api/health/",
 )
 
 

@@ -195,6 +195,18 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     pipeline = RavenPipeline(config)
     ingest_jobs: dict[str, IngestJob] = {}
 
+    def resolve_config(request: Request) -> RavenConfig:
+        """Get the config for the current request — tenant-scoped if auth enabled."""
+        if config.auth_enabled and auth_engine:
+            session_id = request.cookies.get("session_id")
+            if session_id:
+                from openraven.auth.sessions import validate_session
+                ctx = validate_session(auth_engine, session_id)
+                if ctx:
+                    from openraven.auth.tenant import get_tenant_config
+                    return get_tenant_config(config, ctx.tenant_id, tenants_root=Path(config.working_dir).parent, demo_theme=ctx.demo_theme)
+        return config
+
     def resolve_pipeline(request: Request) -> RavenPipeline:
         """Get the pipeline for the current request — tenant-scoped if auth enabled."""
         if config.auth_enabled and auth_engine:
@@ -379,10 +391,11 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         )
 
     @app.get("/api/graph", response_model=GraphResponse)
-    async def graph(max_nodes: int = Query(default=500, ge=1, le=5000)):
+    async def graph(request: Request, max_nodes: int = Query(default=500, ge=1, le=5000)):
         # Run blocking NetworkX read in thread pool to avoid blocking event loop
+        pipe = resolve_pipeline(request)
         data = await asyncio.get_event_loop().run_in_executor(
-            None, lambda: pipeline.graph.get_graph_data(max_nodes=max_nodes)
+            None, lambda: pipe.graph.get_graph_data(max_nodes=max_nodes)
         )
         return GraphResponse(**data)
 
@@ -406,8 +419,9 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         )
 
     @app.get("/api/wiki")
-    async def wiki_list():
-        wiki_dir = config.wiki_dir
+    async def wiki_list(request: Request):
+        rcfg = resolve_config(request)
+        wiki_dir = rcfg.wiki_dir
         if not wiki_dir.exists():
             return []
         articles = []
@@ -418,12 +432,13 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         return articles
 
     @app.get("/api/wiki/{slug}")
-    async def wiki_article(slug: str):
+    async def wiki_article(request: Request, slug: str):
         import re as _re
         from fastapi.responses import JSONResponse
         if not _re.fullmatch(r"[a-zA-Z0-9_-]+", slug):
             return JSONResponse({"error": "Invalid slug"}, status_code=400)
-        wiki_file = config.wiki_dir / f"{slug}.md"
+        rcfg = resolve_config(request)
+        wiki_file = rcfg.wiki_dir / f"{slug}.md"
         if not wiki_file.exists():
             return JSONResponse({"error": "Article not found"}, status_code=404)
         content = wiki_file.read_text(encoding="utf-8")
