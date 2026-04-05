@@ -87,6 +87,31 @@ app.get("/api/schemas", async (c) => {
   }
 });
 
+// Auth passthrough (with cookie forwarding for session management)
+app.all("/api/auth/*", async (c) => {
+  const url = `${CORE_API_URL}${c.req.path}`;
+  const headers: Record<string, string> = { "content-type": c.req.header("content-type") || "application/json" };
+  const cookie = c.req.header("cookie");
+  if (cookie) headers["cookie"] = cookie;
+
+  const init: RequestInit = { method: c.req.method, headers };
+  if (c.req.method === "POST") {
+    init.body = await c.req.text();
+  }
+
+  const res = await fetch(url, init);
+  const responseHeaders = new Headers();
+  // Forward Set-Cookie headers for session management
+  const setCookie = res.headers.get("set-cookie");
+  if (setCookie) responseHeaders.set("set-cookie", setCookie);
+  responseHeaders.set("content-type", res.headers.get("content-type") || "application/json");
+
+  return new Response(await res.text(), {
+    status: res.status,
+    headers: responseHeaders,
+  });
+});
+
 // Serve built frontend assets from dist/
 app.use("/assets/*", serveStatic({ root: "./dist" }));
 
