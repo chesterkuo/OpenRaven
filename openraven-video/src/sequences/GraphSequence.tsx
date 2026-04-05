@@ -3,9 +3,13 @@ import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { Caption } from "../components/Caption";
 import { FadeIn } from "../components/FadeIn";
 import { MiniGraph } from "../components/MiniGraph";
-import { colors } from "../styles";
+import { colors, Locale } from "../styles";
 
-export const GraphSequence: React.FC = () => {
+type GraphSequenceProps = {
+  locale?: Locale;
+};
+
+export const GraphSequence: React.FC<GraphSequenceProps> = ({ locale = "zh" }) => {
   const frame = useCurrentFrame();
 
   // Slow zoom in
@@ -32,8 +36,9 @@ export const GraphSequence: React.FC = () => {
           <Caption
             zh="AI 自動萃取概念、建立連結、生成可查詢的知識庫"
             en="AI extracts concepts, builds connections, generates a queryable knowledge base"
-            zhSize={38}
-            enSize={18}
+            locale={locale}
+            primarySize={38}
+            subSize={18}
             color={colors.text}
           />
         </FadeIn>

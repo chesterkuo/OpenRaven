@@ -3,9 +3,13 @@ import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } fr
 import { BlockLogo } from "../components/BlockLogo";
 import { FadeIn } from "../components/FadeIn";
 import { fontBody, fontChinese } from "../fonts";
-import { colors } from "../styles";
+import { colors, Locale } from "../styles";
 
-export const CTASequence: React.FC = () => {
+type CTASequenceProps = {
+  locale?: Locale;
+};
+
+export const CTASequence: React.FC<CTASequenceProps> = ({ locale = "zh" }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -39,23 +43,23 @@ export const CTASequence: React.FC = () => {
           <div style={{ textAlign: "center" }}>
             <div
               style={{
-                fontFamily: fontChinese,
+                fontFamily: locale === "zh" ? fontChinese : fontBody,
                 fontSize: 32,
                 color: colors.white,
                 opacity: 0.8,
               }}
             >
-              為律師、分析師、顧問、工程師而建
+              {locale === "zh" ? "為律師、分析師、顧問、工程師而建" : "Built for lawyers, analysts, consultants, engineers"}
             </div>
             <div
               style={{
-                fontFamily: fontBody,
+                fontFamily: locale === "zh" ? fontBody : fontChinese,
                 fontSize: 18,
                 color: colors.textLight,
                 marginTop: 8,
               }}
             >
-              Built for lawyers, analysts, consultants, engineers
+              {locale === "zh" ? "Built for lawyers, analysts, consultants, engineers" : "為律師、分析師、顧問、工程師而建"}
             </div>
           </div>
         </FadeIn>
@@ -64,7 +68,7 @@ export const CTASequence: React.FC = () => {
         <FadeIn delay={30}>
           <div
             style={{
-              fontFamily: fontChinese,
+              fontFamily: locale === "zh" ? fontChinese : fontBody,
               fontSize: 52,
               fontWeight: 700,
               color: colors.white,
@@ -72,18 +76,18 @@ export const CTASequence: React.FC = () => {
               lineHeight: 1.4,
             }}
           >
-            你的職涯知識，不應該隨人走。
+            {locale === "zh" ? "你的職涯知識，不應該隨人走。" : "Your career knowledge shouldn't walk away with people."}
           </div>
           <div
             style={{
-              fontFamily: fontBody,
+              fontFamily: locale === "zh" ? fontBody : fontChinese,
               fontSize: 22,
               color: colors.textLight,
               textAlign: "center",
               marginTop: 8,
             }}
           >
-            Your career knowledge shouldn't walk away with people.
+            {locale === "zh" ? "Your career knowledge shouldn't walk away with people." : "你的職涯知識，不應該隨人走。"}
           </div>
         </FadeIn>
 

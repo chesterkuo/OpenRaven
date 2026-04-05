@@ -2,7 +2,7 @@ import React from "react";
 import { AbsoluteFill, interpolate, useCurrentFrame } from "remotion";
 import { FadeIn } from "../components/FadeIn";
 import { fontBody, fontChinese } from "../fonts";
-import { colors } from "../styles";
+import { colors, Locale } from "../styles";
 
 const lines = [
   {
@@ -63,7 +63,11 @@ const docs = [
   { x: 1750, y: 650, delay: 50, size: 48 },
 ];
 
-export const HookSequence: React.FC = () => {
+type HookSequenceProps = {
+  locale?: Locale;
+};
+
+export const HookSequence: React.FC<HookSequenceProps> = ({ locale = "zh" }) => {
   return (
     <AbsoluteFill
       style={{
@@ -83,25 +87,25 @@ export const HookSequence: React.FC = () => {
             <div style={{ marginBottom: 32 }}>
               <div
                 style={{
-                  fontFamily: fontChinese,
+                  fontFamily: locale === "zh" ? fontChinese : fontBody,
                   fontSize: 46,
                   fontWeight: 700,
                   color: colors.white,
                   lineHeight: 1.5,
                 }}
               >
-                {line.zh}
+                {locale === "zh" ? line.zh : line.en}
               </div>
               <div
                 style={{
-                  fontFamily: fontBody,
+                  fontFamily: locale === "zh" ? fontBody : fontChinese,
                   fontSize: 20,
                   color: colors.textLight,
                   lineHeight: 1.5,
                   marginTop: 4,
                 }}
               >
-                {line.en}
+                {locale === "zh" ? line.en : line.zh}
               </div>
             </div>
           </FadeIn>

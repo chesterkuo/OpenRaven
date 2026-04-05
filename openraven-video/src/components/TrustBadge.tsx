@@ -1,16 +1,17 @@
 import React from "react";
 import { spring, useCurrentFrame, useVideoConfig } from "remotion";
 import { fontBody, fontChinese } from "../fonts";
-import { colors } from "../styles";
+import { colors, Locale } from "../styles";
 
 type TrustBadgeProps = {
   icon: React.ReactNode;
   zh: string;
   en: string;
   delay?: number;
+  locale?: Locale;
 };
 
-export const TrustBadge: React.FC<TrustBadgeProps> = ({ icon, zh, en, delay = 0 }) => {
+export const TrustBadge: React.FC<TrustBadgeProps> = ({ icon, zh, en, delay = 0, locale = "zh" }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -23,6 +24,11 @@ export const TrustBadge: React.FC<TrustBadgeProps> = ({ icon, zh, en, delay = 0 
   });
 
   const translateY = (1 - progress) * 60;
+
+  const primary = locale === "zh" ? zh : en;
+  const sub = locale === "zh" ? en : zh;
+  const primaryFont = locale === "zh" ? fontChinese : fontBody;
+  const subFont = locale === "zh" ? fontBody : fontChinese;
 
   return (
     <div
@@ -39,22 +45,22 @@ export const TrustBadge: React.FC<TrustBadgeProps> = ({ icon, zh, en, delay = 0 
       <div style={{ fontSize: 64, lineHeight: 1 }}>{icon}</div>
       <div
         style={{
-          fontFamily: fontChinese,
+          fontFamily: primaryFont,
           fontSize: 28,
           fontWeight: 700,
           color: colors.text,
         }}
       >
-        {zh}
+        {primary}
       </div>
       <div
         style={{
-          fontFamily: fontBody,
+          fontFamily: subFont,
           fontSize: 18,
           color: colors.textMuted,
         }}
       >
-        {en}
+        {sub}
       </div>
     </div>
   );

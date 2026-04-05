@@ -4,12 +4,18 @@ import { Caption } from "../components/Caption";
 import { Counter } from "../components/Counter";
 import { FadeIn } from "../components/FadeIn";
 import { fontBody } from "../fonts";
-import { colors } from "../styles";
+import { colors, Locale } from "../styles";
 
-const FILE_ICONS = [
+const FILE_ICONS_ZH = [
   { name: "報告.pdf", color: "#dc2626", delay: 30 },
   { name: "備忘錄.docx", color: "#2563eb", delay: 45 },
   { name: "會議記錄.pptx", color: "#d97706", delay: 60 },
+];
+
+const FILE_ICONS_EN = [
+  { name: "Report.pdf", color: "#dc2626", delay: 30 },
+  { name: "Memo.docx", color: "#2563eb", delay: 45 },
+  { name: "Minutes.pptx", color: "#d97706", delay: 60 },
 ];
 
 const FileIcon: React.FC<{ name: string; color: string; delay: number }> = ({
@@ -65,7 +71,11 @@ const FileIcon: React.FC<{ name: string; color: string; delay: number }> = ({
   );
 };
 
-export const UploadSequence: React.FC = () => {
+type UploadSequenceProps = {
+  locale?: Locale;
+};
+
+export const UploadSequence: React.FC<UploadSequenceProps> = ({ locale = "zh" }) => {
   const frame = useCurrentFrame();
 
   // Progress bar fill
@@ -73,6 +83,8 @@ export const UploadSequence: React.FC = () => {
     extrapolateLeft: "clamp",
     extrapolateRight: "clamp",
   });
+
+  const fileIcons = locale === "en" ? FILE_ICONS_EN : FILE_ICONS_ZH;
 
   return (
     <AbsoluteFill
@@ -89,6 +101,7 @@ export const UploadSequence: React.FC = () => {
         <Caption
           zh="上傳報告、備忘錄、會議記錄"
           en="Upload reports, memos, meeting notes"
+          locale={locale}
           color={colors.text}
         />
       </FadeIn>
@@ -106,7 +119,7 @@ export const UploadSequence: React.FC = () => {
           gap: 40,
         }}
       >
-        {FILE_ICONS.map((f) => (
+        {fileIcons.map((f) => (
           <FileIcon key={f.name} {...f} />
         ))}
       </div>

@@ -1,3 +1,5 @@
+export type Locale = "zh" | "en";
+
 export const colors = {
   dark: "#1a1a1a",
   warmCream: "#fef9ef",

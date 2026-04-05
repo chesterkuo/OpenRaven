@@ -3,7 +3,7 @@ import { AbsoluteFill } from "remotion";
 import { Caption } from "../components/Caption";
 import { FadeIn } from "../components/FadeIn";
 import { TrustBadge } from "../components/TrustBadge";
-import { colors } from "../styles";
+import { colors, Locale } from "../styles";
 
 // SVG icons (simple, clean)
 const OpenSourceIcon = (
@@ -32,7 +32,11 @@ const LocalLLMIcon = (
   </svg>
 );
 
-export const TrustSequence: React.FC = () => {
+type TrustSequenceProps = {
+  locale?: Locale;
+};
+
+export const TrustSequence: React.FC<TrustSequenceProps> = ({ locale = "zh" }) => {
   return (
     <AbsoluteFill
       style={{
@@ -48,14 +52,15 @@ export const TrustSequence: React.FC = () => {
         <Caption
           zh="值得信賴的技術基礎"
           en="A trustworthy technical foundation"
+          locale={locale}
           color={colors.text}
         />
       </FadeIn>
 
       <div style={{ display: "flex", gap: 80 }}>
-        <TrustBadge icon={OpenSourceIcon} zh="核心引擎開源" en="Apache 2.0 License" delay={20} />
-        <TrustBadge icon={EncryptionIcon} zh="E2EE 加密" en="Zero-knowledge encryption" delay={30} />
-        <TrustBadge icon={LocalLLMIcon} zh="支援本地 LLM" en="No cloud required" delay={40} />
+        <TrustBadge icon={OpenSourceIcon} zh="核心引擎開源" en="Apache 2.0 License" delay={20} locale={locale} />
+        <TrustBadge icon={EncryptionIcon} zh="E2EE 加密" en="Zero-knowledge encryption" delay={30} locale={locale} />
+        <TrustBadge icon={LocalLLMIcon} zh="支援本地 LLM" en="No cloud required" delay={40} locale={locale} />
       </div>
     </AbsoluteFill>
   );

@@ -5,13 +5,25 @@ import { Video } from "./Video";
 
 export const Root: React.FC = () => {
   return (
-    <Composition
-      id="Video"
-      component={Video}
-      durationInFrames={TOTAL_FRAMES}
-      fps={30}
-      width={1920}
-      height={1080}
-    />
+    <>
+      <Composition
+        id="Video"
+        component={Video}
+        durationInFrames={TOTAL_FRAMES}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={{ locale: "zh" as const }}
+      />
+      <Composition
+        id="VideoEN"
+        component={Video}
+        durationInFrames={TOTAL_FRAMES}
+        fps={30}
+        width={1920}
+        height={1080}
+        defaultProps={{ locale: "en" as const }}
+      />
+    </>
   );
 };

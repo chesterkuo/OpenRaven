@@ -3,7 +3,7 @@ import { AbsoluteFill, interpolate, spring, useCurrentFrame, useVideoConfig } fr
 import { ChatBubble } from "../components/ChatBubble";
 import { TypewriterText } from "../components/TypewriterText";
 import { fontBody, fontChinese } from "../fonts";
-import { colors } from "../styles";
+import { colors, Locale } from "../styles";
 
 const QUESTION = "上次我怎麼處理 NDA 的智慧財產條款？";
 const QUESTION_EN = "How did I handle the IP clause in the NDA last time?";
@@ -51,7 +51,11 @@ const ThinkingDots: React.FC<{ delay: number }> = ({ delay }) => {
   );
 };
 
-export const AskSequence: React.FC = () => {
+type AskSequenceProps = {
+  locale?: Locale;
+};
+
+export const AskSequence: React.FC<AskSequenceProps> = ({ locale = "zh" }) => {
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
 
@@ -67,6 +71,16 @@ export const AskSequence: React.FC = () => {
     to: 1,
     config: { damping: 15, stiffness: 120 },
   });
+
+  const primaryQuestion = locale === "zh" ? QUESTION : QUESTION_EN;
+  const subQuestion = locale === "zh" ? QUESTION_EN : QUESTION;
+  const primaryQuestionFont = locale === "zh" ? fontChinese : fontBody;
+  const subQuestionFont = locale === "zh" ? fontBody : fontChinese;
+
+  const primaryAnswer = locale === "zh" ? ANSWER : ANSWER_EN;
+  const subAnswer = locale === "zh" ? ANSWER_EN : ANSWER;
+  const primaryAnswerFont = locale === "zh" ? fontChinese : fontBody;
+  const subAnswerFont = locale === "zh" ? fontBody : fontChinese;
 
   return (
     <AbsoluteFill
@@ -94,17 +108,17 @@ export const AskSequence: React.FC = () => {
 
       {/* User question */}
       <ChatBubble role="user" delay={0}>
-        <TypewriterText text={QUESTION} startFrame={5} speed={2} />
+        <TypewriterText text={primaryQuestion} startFrame={5} speed={2} style={{ fontFamily: primaryQuestionFont }} />
         {frame > QUESTION_DONE && (
           <div
             style={{
-              fontFamily: fontBody,
+              fontFamily: subQuestionFont,
               fontSize: 16,
               opacity: 0.7,
               marginTop: 4,
             }}
           >
-            {QUESTION_EN}
+            {subQuestion}
           </div>
         )}
       </ChatBubble>
@@ -120,21 +134,21 @@ export const AskSequence: React.FC = () => {
       {frame >= ANSWER_START && (
         <ChatBubble role="assistant" delay={ANSWER_START}>
           <TypewriterText
-            text={ANSWER}
+            text={primaryAnswer}
             startFrame={ANSWER_START}
             speed={1}
-            style={{ fontFamily: fontChinese }}
+            style={{ fontFamily: primaryAnswerFont }}
           />
           {frame > ANSWER_START + 60 && (
             <div
               style={{
-                fontFamily: fontBody,
+                fontFamily: subAnswerFont,
                 fontSize: 15,
                 color: colors.textMuted,
                 marginTop: 8,
               }}
             >
-              {ANSWER_EN}
+              {subAnswer}
             </div>
           )}
 
