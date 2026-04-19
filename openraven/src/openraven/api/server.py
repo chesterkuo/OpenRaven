@@ -417,22 +417,19 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         )
 
     @app.get("/api/graph", response_model=GraphResponse)
-    async def graph(request: Request, max_nodes: int = Query(default=500, ge=1, le=5000)):
-        # Run blocking NetworkX read in thread pool to avoid blocking event loop
-        pipe = resolve_pipeline(request)
-        data = await asyncio.get_event_loop().run_in_executor(
+    async def graph(max_nodes: int = Query(default=500, ge=1, le=5000), pipe: RavenPipeline = Depends(get_tenant_pipeline)):
+        data = await asyncio.get_running_loop().run_in_executor(
             None, lambda: pipe.graph.get_graph_data(max_nodes=max_nodes)
         )
         return GraphResponse(**data)
 
     @app.get("/api/graph/subgraph")
     async def graph_subgraph(
-        request: Request,
         entities: str | None = Query(default=None),
         files: str | None = Query(default=None),
         max_nodes: int = Query(default=30, ge=1, le=200),
+        pipe: RavenPipeline = Depends(get_tenant_pipeline),
     ):
-        pipe = resolve_pipeline(request)
         entity_list = [e.strip() for e in entities.split(",") if e.strip()] if entities else None
         file_list = [f.strip() for f in files.split(",") if f.strip()] if files else None
         data = await asyncio.get_running_loop().run_in_executor(
@@ -441,8 +438,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         return data
 
     @app.get("/api/graph/node/{node_id}/context")
-    async def graph_node_context(request: Request, node_id: str):
-        pipe = resolve_pipeline(request)
+    async def graph_node_context(node_id: str, pipe: RavenPipeline = Depends(get_tenant_pipeline)):
         search_dirs = [pipe.config.working_dir, pipe.config.working_dir.parent]
         data = await asyncio.get_running_loop().run_in_executor(
             None, lambda: pipe.graph.get_node_context(node_id, search_dirs=search_dirs)
@@ -469,9 +465,8 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         )
 
     @app.get("/api/wiki")
-    async def wiki_list(request: Request):
-        rcfg = resolve_config(request)
-        wiki_dir = rcfg.wiki_dir
+    async def wiki_list(cfg: RavenConfig = Depends(get_tenant_config)):
+        wiki_dir = cfg.wiki_dir
         if not wiki_dir.exists():
             return []
         articles = []
@@ -482,13 +477,12 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         return articles
 
     @app.get("/api/wiki/{slug}")
-    async def wiki_article(request: Request, slug: str):
+    async def wiki_article(slug: str, cfg: RavenConfig = Depends(get_tenant_config)):
         import re as _re
         from fastapi.responses import JSONResponse
         if not _re.fullmatch(r"[a-zA-Z0-9_-]+", slug):
             return JSONResponse({"error": "Invalid slug"}, status_code=400)
-        rcfg = resolve_config(request)
-        wiki_file = rcfg.wiki_dir / f"{slug}.md"
+        wiki_file = cfg.wiki_dir / f"{slug}.md"
         if not wiki_file.exists():
             return JSONResponse({"error": "Article not found"}, status_code=404)
         content = wiki_file.read_text(encoding="utf-8")
@@ -687,9 +681,9 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         return {"files_synced": 0, "entities_extracted": 0, "articles_generated": 0, "errors": []}
 
     @app.get("/api/discovery", response_model=list[DiscoveryInsightResponse])
-    async def discovery():
+    async def discovery(pipe: RavenPipeline = Depends(get_tenant_pipeline)):
         from openraven.discovery.analyzer import analyze_themes
-        graph_stats = pipeline.graph.get_detailed_stats()
+        graph_stats = pipe.graph.get_detailed_stats()
         insights = analyze_themes(graph_stats)
         return [
             DiscoveryInsightResponse(
