@@ -258,6 +258,22 @@ def test_get_subgraph_by_files(graph: RavenGraph) -> None:
     assert "個人資料盤點" in node_ids
 
 
+def test_get_subgraph_directed_graph(graph: RavenGraph) -> None:
+    import networkx as nx
+    g = nx.DiGraph()
+    g.add_node("A", entity_type="concept", file_path="/data/a.md")
+    g.add_node("B", entity_type="concept", file_path="/data/a.md")
+    g.add_node("C", entity_type="concept", file_path="/data/b.md")
+    g.add_edge("A", "B", description="relates")
+    g.add_edge("B", "C", description="relates")
+    nx.write_graphml(g, str(graph.working_dir / "graph_chunk_entity_relation.graphml"))
+    result = graph.get_subgraph(entities=["A"], max_nodes=30)
+    node_ids = {n["id"] for n in result["nodes"]}
+    assert "A" in node_ids
+    assert "B" in node_ids
+    assert "C" not in node_ids
+
+
 def test_get_subgraph_empty(graph: RavenGraph) -> None:
     result = graph.get_subgraph(entities=["nonexistent"], max_nodes=30)
     assert result["nodes"] == []

@@ -3,23 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "../hooks/useAuth";
 import GraphViewer, { type GraphNode } from "./GraphViewer";
+import { TYPE_LABELS } from "../constants/graphTypes";
 
 interface MiniGraphProps {
   sourceFiles: string[];
   height?: number;
 }
-
-interface FloatingCard {
-  node: GraphNode;
-  x: number;
-  y: number;
-}
-
-const TYPE_LABELS: Record<string, string> = {
-  concept: "概念", content: "內容", organization: "組織", person: "人物",
-  method: "方法", data: "數據", event: "判決/事件", statute: "法條",
-  artifact: "文件", location: "地點", technology: "技術",
-};
 
 export default function MiniGraph({ sourceFiles, height = 280 }: MiniGraphProps) {
   const { t, i18n } = useTranslation("graph");
@@ -27,7 +16,7 @@ export default function MiniGraph({ sourceFiles, height = 280 }: MiniGraphProps)
   const navigate = useNavigate();
   const [data, setData] = useState<{ nodes: GraphNode[]; edges: any[] } | null>(null);
   const [loading, setLoading] = useState(false);
-  const [card, setCard] = useState<FloatingCard | null>(null);
+  const [card, setCard] = useState<{ node: GraphNode } | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -44,7 +33,7 @@ export default function MiniGraph({ sourceFiles, height = 280 }: MiniGraphProps)
 
   const handleNodeClick = useCallback((node: GraphNode) => {
     setSelectedId(node.id);
-    setCard({ node, x: 0, y: 0 });
+    setCard({ node });
   }, []);
 
   const handleNavigate = useCallback(

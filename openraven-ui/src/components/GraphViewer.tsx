@@ -1,5 +1,6 @@
 import { useRef, useEffect, useMemo, useCallback } from "react";
 import { forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide, type SimulationNodeDatum, type SimulationLinkDatum } from "d3-force";
+import { TYPE_COLORS } from "../constants/graphTypes";
 
 export interface GraphNode {
   id: string;
@@ -35,19 +36,6 @@ interface GraphViewerProps {
   focusNodeId?: string | null;
 }
 
-const TYPE_COLORS: Record<string, string> = {
-  technology: "#fa520f",
-  concept: "#1f1f1f",
-  person: "#ffa110",
-  organization: "#d94800",
-  event: "#dc2626",
-  location: "#8b6914",
-  statute: "#2563eb",
-  content: "#6b7280",
-  method: "#8b6914",
-  data: "#a0a0a0",
-  artifact: "#16a34a",
-};
 const DEFAULT_COLOR = "#999999";
 
 function getNodeColor(node: GraphNode): string {
@@ -354,7 +342,7 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
 
     ctx.save();
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = "#fef9ef";
+    ctx.fillStyle = isMini ? "#f8f6f0" : "#fef9ef";
     ctx.fillRect(0, 0, w, h);
     ctx.translate(tx, ty);
     ctx.scale(k, k);

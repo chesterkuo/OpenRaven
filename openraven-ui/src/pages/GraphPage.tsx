@@ -3,18 +3,13 @@ import { useTranslation } from "react-i18next";
 import { useSearchParams } from "react-router-dom";
 import GraphViewer, { type GraphNode, type GraphEdge } from "../components/GraphViewer";
 import GraphNodeDetail from "../components/GraphNodeDetail";
+import { TYPE_LABELS } from "../constants/graphTypes";
 
 interface GraphData {
   nodes: GraphNode[];
   edges: GraphEdge[];
   is_truncated: boolean;
 }
-
-const TYPE_LABELS: Record<string, string> = {
-  concept: "概念", content: "內容", organization: "組織", person: "人物",
-  method: "方法", data: "數據", event: "判決/事件", statute: "法條",
-  artifact: "文件", location: "地點", technology: "技術",
-};
 
 export default function GraphPage() {
   const { t, i18n } = useTranslation("graph");

@@ -27,7 +27,7 @@ export default function AskPage() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [mode, setMode] = useState("mix");
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
-  const [showMiniGraph, setShowMiniGraph] = useState(false);
+  const [openMiniGraphs, setOpenMiniGraphs] = useState<Set<number>>(new Set());
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetch("/api/discovery").then(r => r.json()).then(setInsights).catch(() => {}); }, []);
@@ -150,13 +150,17 @@ export default function AskPage() {
                     </div>
                   ))}
                   <button
-                    onClick={() => setShowMiniGraph((prev) => !prev)}
+                    onClick={() => setOpenMiniGraphs((prev) => {
+                      const next = new Set(prev);
+                      if (next.has(i)) next.delete(i); else next.add(i);
+                      return next;
+                    })}
                     className="text-xs mt-2 cursor-pointer hover:opacity-80"
                     style={{ color: "var(--color-brand)" }}
                   >
-                    {showMiniGraph ? "▲" : "▼"} {t('expandMiniGraph', { ns: 'graph' })}
+                    {openMiniGraphs.has(i) ? "▲" : "▼"} {t('expandMiniGraph', { ns: 'graph' })}
                   </button>
-                  {showMiniGraph && (
+                  {openMiniGraphs.has(i) && (
                     <div className="mt-2" style={{ border: "1px solid var(--color-border)" }}>
                       <MiniGraph sourceFiles={msg.sources.map((s) => s.document)} />
                     </div>

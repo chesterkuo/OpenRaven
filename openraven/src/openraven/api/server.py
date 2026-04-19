@@ -409,7 +409,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         pipe = resolve_pipeline(request)
         entity_list = [e.strip() for e in entities.split(",") if e.strip()] if entities else None
         file_list = [f.strip() for f in files.split(",") if f.strip()] if files else None
-        data = await asyncio.get_event_loop().run_in_executor(
+        data = await asyncio.get_running_loop().run_in_executor(
             None, lambda: pipe.graph.get_subgraph(entities=entity_list, files=file_list, max_nodes=max_nodes)
         )
         return data
@@ -417,8 +417,8 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     @app.get("/api/graph/node/{node_id}/context")
     async def graph_node_context(request: Request, node_id: str):
         pipe = resolve_pipeline(request)
-        search_dirs = [pipe.config.working_dir]
-        data = await asyncio.get_event_loop().run_in_executor(
+        search_dirs = [pipe.config.working_dir, pipe.config.working_dir.parent]
+        data = await asyncio.get_running_loop().run_in_executor(
             None, lambda: pipe.graph.get_node_context(node_id, search_dirs=search_dirs)
         )
         return data
