@@ -70,8 +70,10 @@ export async function askQuestion(question: string, mode: string = "mix"): Promi
   return res.json();
 }
 
-export async function ingestFiles(formData: FormData): Promise<IngestResponse> {
-  const res = await fetch(`${CORE_API_URL}/api/ingest`, { method: "POST", body: formData });
+export async function ingestFiles(formData: FormData, cookie?: string): Promise<IngestResponse> {
+  const headers: Record<string, string> = {};
+  if (cookie) headers["cookie"] = cookie;
+  const res = await fetch(`${CORE_API_URL}/api/ingest`, { method: "POST", body: formData, headers });
   if (!res.ok) throw new Error(`Core API error: ${res.status}`);
   return res.json();
 }

@@ -14,7 +14,8 @@ ingestRouter.post("/", async (c) => {
     }
   }
   try {
-    const result = await ingestFiles(coreForm);
+    const cookie = c.req.header("cookie");
+    const result = await ingestFiles(coreForm, cookie);
     return c.json(result);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
