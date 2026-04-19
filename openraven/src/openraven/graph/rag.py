@@ -451,8 +451,12 @@ class RavenGraph:
                 neighbor_ids.update(graph.neighbors(sid))
         all_ids = seed_ids | neighbor_ids
 
-        # Trim if exceeding max_nodes — keep seeds, sort neighbors by degree
-        if len(all_ids) > max_nodes:
+        # Trim seeds first if too many, then trim neighbors
+        if len(seed_ids) > max_nodes:
+            ranked_seeds = sorted(seed_ids, key=lambda n: graph.degree(n), reverse=True)
+            seed_ids = set(ranked_seeds[:max_nodes])
+            all_ids = seed_ids
+        elif len(all_ids) > max_nodes:
             extras = all_ids - seed_ids
             ranked = sorted(extras, key=lambda n: graph.degree(n), reverse=True)
             all_ids = seed_ids | set(ranked[: max_nodes - len(seed_ids)])
