@@ -150,8 +150,6 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         # Auth middleware: protect /api/* routes (except /api/auth/* and /health)
         from starlette.middleware.base import BaseHTTPMiddleware
         from openraven.auth.sessions import validate_session as _validate_session
-        from openraven.auth.tenant import get_tenant_config as _get_tenant_config_fn
-        from openraven.auth.tenant import get_tenant_pipeline as _get_tenant_pipeline_fn
         from openraven.auth.middleware import is_demo_allowed
 
         class AuthMiddleware(BaseHTTPMiddleware):
@@ -198,29 +196,25 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     ingest_jobs: dict[str, IngestJob] = {}
 
     async def get_tenant_config(request: Request) -> RavenConfig:
-        if config.auth_enabled and auth_engine:
-            session_id = request.cookies.get("session_id")
-            if session_id:
-                ctx = _validate_session(auth_engine, session_id)
-                if ctx:
-                    return _get_tenant_config_fn(
-                        config, ctx.tenant_id,
-                        tenants_root=Path(config.working_dir).parent,
-                        demo_theme=ctx.demo_theme,
-                    )
+        ctx = getattr(request.state, "auth", None)
+        if ctx:
+            from openraven.auth.tenant import get_tenant_config as _get_tc
+            return _get_tc(
+                config, ctx.tenant_id,
+                tenants_root=Path(config.working_dir).parent,
+                demo_theme=ctx.demo_theme,
+            )
         return config
 
     async def get_tenant_pipeline(request: Request) -> RavenPipeline:
-        if config.auth_enabled and auth_engine:
-            session_id = request.cookies.get("session_id")
-            if session_id:
-                ctx = _validate_session(auth_engine, session_id)
-                if ctx:
-                    return _get_tenant_pipeline_fn(
-                        config, ctx.tenant_id,
-                        tenants_root=Path(config.working_dir).parent,
-                        demo_theme=ctx.demo_theme,
-                    )
+        ctx = getattr(request.state, "auth", None)
+        if ctx:
+            from openraven.auth.tenant import get_tenant_pipeline as _get_tp
+            return _get_tp(
+                config, ctx.tenant_id,
+                tenants_root=Path(config.working_dir).parent,
+                demo_theme=ctx.demo_theme,
+            )
         return pipeline
 
     def _audit(request: Request, action: str, details: dict | None = None) -> None:
@@ -477,9 +471,9 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         }
 
     @app.get("/api/health/insights")
-    async def health_insights():
+    async def health_insights(cfg: RavenConfig = Depends(get_tenant_config), pipe: RavenPipeline = Depends(get_tenant_pipeline)):
         from openraven.health.maintainer import HealthMaintainer
-        maintainer = HealthMaintainer(store=pipeline.store, graph=pipeline.graph, config=config)
+        maintainer = HealthMaintainer(store=pipe.store, graph=pipe.graph, config=cfg)
         insights = maintainer.run_all()
         return [
             {
@@ -493,9 +487,9 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         ]
 
     @app.post("/api/health/run")
-    async def health_run():
+    async def health_run(cfg: RavenConfig = Depends(get_tenant_config), pipe: RavenPipeline = Depends(get_tenant_pipeline)):
         from openraven.health.maintainer import HealthMaintainer
-        maintainer = HealthMaintainer(store=pipeline.store, graph=pipeline.graph, config=config)
+        maintainer = HealthMaintainer(store=pipe.store, graph=pipe.graph, config=cfg)
         insights = maintainer.run_all()
         return {"insights_count": len(insights), "insights": [
             {"insight_type": i.insight_type, "title": i.title, "severity": i.severity}

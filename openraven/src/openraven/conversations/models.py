@@ -164,7 +164,7 @@ def set_title(engine: Engine, convo_id: str, title: str) -> None:
 def get_recent_messages(
     engine: Engine,
     conversation_id: str,
-    tenant_id: str | None = None,
+    tenant_id: str | None,
     limit: int = 20,
 ) -> list[dict]:
     """Get the most recent messages for a conversation, in chronological order."""
