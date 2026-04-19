@@ -262,3 +262,25 @@ def test_get_subgraph_empty(graph: RavenGraph) -> None:
     result = graph.get_subgraph(entities=["nonexistent"], max_nodes=30)
     assert result["nodes"] == []
     assert result["edges"] == []
+
+
+def test_get_node_context(graph: RavenGraph, tmp_working_dir: Path) -> None:
+    _create_test_graphml(graph.working_dir)
+    md_file = tmp_working_dir / "pdpa.md"
+    md_file.write_text(
+        "# 個資法\n\n## 第 27 條\n\n依個資法第 27 條及施行細則第 12 條，企業應建立個資安全維護計畫。\n\n## 第 48 條\n\n違反者處罰鍰。\n",
+        encoding="utf-8",
+    )
+    result = graph.get_node_context("個資法第27條", search_dirs=[tmp_working_dir])
+    assert result["node_id"] == "個資法第27條"
+    assert len(result["excerpts"]) >= 1
+    assert "個資法第 27 條" in result["excerpts"][0]["text"]
+    assert "pdpa.md" in result["excerpts"][0]["file"]
+    assert len(result["files"]) >= 1
+
+
+def test_get_node_context_not_found(graph: RavenGraph, tmp_working_dir: Path) -> None:
+    result = graph.get_node_context("不存在的節點", search_dirs=[tmp_working_dir])
+    assert result["node_id"] == "不存在的節點"
+    assert result["excerpts"] == []
+    assert result["files"] == []

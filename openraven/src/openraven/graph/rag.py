@@ -481,6 +481,56 @@ class RavenGraph:
 
         return {"nodes": nodes, "edges": edges}
 
+    def get_node_context(
+        self,
+        node_id: str,
+        search_dirs: list[Path] | None = None,
+        max_excerpt_chars: int = 500,
+        context_lines: int = 3,
+    ) -> dict:
+        """Search .md files for passages mentioning node_id, return excerpts."""
+        if search_dirs is None:
+            search_dirs = [self.working_dir.parent]
+
+        excerpts: list[dict] = []
+        seen_files: set[str] = set()
+
+        for search_dir in search_dirs:
+            if not search_dir.is_dir():
+                continue
+            for md_file in sorted(search_dir.rglob("*.md")):
+                fname = md_file.name
+                if fname.startswith("."):
+                    continue
+                try:
+                    content = md_file.read_text(encoding="utf-8")
+                except Exception:
+                    continue
+                lines = content.split("\n")
+                node_id_compact = node_id.replace(" ", "")
+                for i, line in enumerate(lines):
+                    line_compact = line.replace(" ", "")
+                    if (node_id in line or node_id_compact in line_compact) and fname not in seen_files:
+                        seen_files.add(fname)
+                        start = max(0, i - context_lines)
+                        end = min(len(lines), i + context_lines + 1)
+                        text = "\n".join(lines[start:end])
+                        if len(text) > max_excerpt_chars:
+                            text = text[:max_excerpt_chars] + "..."
+                        excerpts.append({
+                            "file": fname,
+                            "text": text,
+                            "line_start": start + 1,
+                            "line_end": end,
+                        })
+                        break
+
+        return {
+            "node_id": node_id,
+            "excerpts": excerpts,
+            "files": list(seen_files),
+        }
+
     def _get_graph_data_neo4j(self, max_nodes: int = 500) -> dict:
         """Query Neo4j directly for graph data."""
         from neo4j import GraphDatabase
