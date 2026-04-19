@@ -30,8 +30,9 @@ interface GraphViewerProps {
   edges: GraphEdge[];
   selectedNodeId: string | null;
   onNodeClick: (node: GraphNode) => void;
-
   searchTerm: string;
+  mode?: "full" | "mini";
+  focusNodeId?: string | null;
 }
 
 const TYPE_COLORS: Record<string, string> = {
@@ -39,8 +40,13 @@ const TYPE_COLORS: Record<string, string> = {
   concept: "#1f1f1f",
   person: "#ffa110",
   organization: "#d94800",
-  event: "#b8860b",
+  event: "#dc2626",
   location: "#8b6914",
+  statute: "#2563eb",
+  content: "#6b7280",
+  method: "#8b6914",
+  data: "#a0a0a0",
+  artifact: "#16a34a",
 };
 const DEFAULT_COLOR = "#999999";
 
@@ -49,7 +55,8 @@ function getNodeColor(node: GraphNode): string {
   return TYPE_COLORS[type] ?? DEFAULT_COLOR;
 }
 
-export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick, searchTerm }: GraphViewerProps) {
+export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick, searchTerm, mode = "full", focusNodeId }: GraphViewerProps) {
+  const isMini = mode === "mini";
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const simNodesRef = useRef<SimNode[]>([]);
@@ -107,9 +114,9 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
     const h = canvas.height / devicePixelRatio;
 
     const simulation = forceSimulation<SimNode>(simNodes)
-      .force("link", forceLink<SimNode, SimLink>(simLinks).id((d) => d.id).distance(60))
-      .force("charge", forceManyBody().strength(-120))
-      .force("center", forceCenter(w / 2, h / 2))
+      .force("link", forceLink<SimNode, SimLink>(simLinks).id((d) => d.id).distance(isMini ? 40 : 60))
+      .force("charge", forceManyBody().strength(isMini ? -60 : -120))
+      .force("center", forceCenter(w / 2, h / 2).strength(isMini ? 0.3 : 0.1))
       .force("collide", forceCollide<SimNode>().radius((d) => getRadius(d.id) + 2))
       .alphaDecay(0.02)
       .velocityDecay(0.3);
@@ -188,8 +195,10 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
         }
 
         const degree = degreeMap.get(node.id) ?? 1;
-        if (degree >= 3 || isSelected || isMatch || isHovered) {
-          ctx.font = `${isSelected ? "bold " : ""}${Math.max(3, radius * 0.8)}px sans-serif`;
+        const showLabel = isMini ? (isSelected || isHovered) : (degree >= 3 || isSelected || isMatch || isHovered);
+        if (showLabel) {
+          const fontSize = isMini ? 10 : Math.max(3, radius * 0.8);
+          ctx.font = `${isSelected ? "bold " : ""}${fontSize}px sans-serif`;
           ctx.textAlign = "center";
           ctx.textBaseline = "top";
           ctx.fillStyle = dimmed ? "#1f1f1f33" : "#1f1f1f";
@@ -232,8 +241,10 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
         dragNode = hit;
         simulation.alphaTarget(0.3).restart();
       } else {
-        isPanning = true;
-        panStart = { x: e.clientX - transformRef.current.x, y: e.clientY - transformRef.current.y };
+        if (!isMini) {
+          isPanning = true;
+          panStart = { x: e.clientX - transformRef.current.x, y: e.clientY - transformRef.current.y };
+        }
       }
     };
 
@@ -293,6 +304,7 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
     };
 
     const handleWheel = (e: WheelEvent) => {
+      if (isMini) return;
       e.preventDefault();
       const rect = canvas.getBoundingClientRect();
       const mx = e.clientX - rect.left;
@@ -325,7 +337,7 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
       canvas.removeEventListener("dblclick", handleDblClick);
       canvas.removeEventListener("wheel", handleWheel);
     };
-  }, [nodes, edges, getRadius, degreeMap]);
+  }, [nodes, edges, getRadius, degreeMap, isMini]);
 
   // Repaint on selection/search change without restarting simulation
   useEffect(() => {
@@ -412,8 +424,10 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
       }
 
       const degree = degreeMap.get(node.id) ?? 1;
-      if (degree >= 3 || isSelected || isMatch || isHovered) {
-        ctx.font = `${isSelected ? "bold " : ""}${Math.max(3, radius * 0.8)}px sans-serif`;
+      const showLabel = isMini ? (isSelected || isHovered) : (degree >= 3 || isSelected || isMatch || isHovered);
+      if (showLabel) {
+        const fontSize = isMini ? 10 : Math.max(3, radius * 0.8);
+        ctx.font = `${isSelected ? "bold " : ""}${fontSize}px sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
         ctx.fillStyle = dimmed ? "#1f1f1f33" : "#1f1f1f";
@@ -422,10 +436,55 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
     }
 
     ctx.restore();
-  }, [selectedNodeId, searchTerm, degreeMap, getRadius]);
+  }, [selectedNodeId, searchTerm, degreeMap, getRadius, isMini]);
+
+  useEffect(() => {
+    if (!focusNodeId) return;
+    const canvas = canvasRef.current;
+    if (!canvas || simNodesRef.current.length === 0) return;
+
+    const targetNode = simNodesRef.current.find((n) => n.id === focusNodeId);
+    if (!targetNode || targetNode.x == null) return;
+
+    const rect = canvas.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+    const t = transformRef.current;
+    t.x = w / 2 - targetNode.x * t.k;
+    t.y = h / 2 - targetNode.y! * t.k;
+
+    let start: number | null = null;
+    const duration = 2000;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const animate = (timestamp: number) => {
+      if (!start) start = timestamp;
+      const elapsed = timestamp - start;
+      if (elapsed > duration) return;
+      const progress = elapsed / duration;
+      const pulseRadius = getRadius(focusNodeId) + 20 * Math.sin(progress * Math.PI * 4) * (1 - progress);
+      const alpha = 0.4 * (1 - progress);
+
+      const { x: tx, y: ty, k } = transformRef.current;
+      ctx.save();
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+      ctx.translate(tx, ty);
+      ctx.scale(k, k);
+      ctx.beginPath();
+      ctx.arc(targetNode.x!, targetNode.y!, pulseRadius, 0, 2 * Math.PI);
+      ctx.strokeStyle = `rgba(250, 82, 15, ${alpha})`;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      ctx.restore();
+
+      requestAnimationFrame(animate);
+    };
+    requestAnimationFrame(animate);
+  }, [focusNodeId, getRadius]);
 
   return (
-    <div ref={containerRef} className="flex-1 relative" style={{ background: "#fef9ef" }} data-testid="graph-viewer">
+    <div ref={containerRef} className="flex-1 relative" style={{ background: isMini ? "transparent" : "#fef9ef" }} data-testid="graph-viewer">
       <canvas ref={canvasRef} className="absolute inset-0" />
       {nodes.length === 0 && (
         <div className="absolute inset-0 flex items-center justify-center" style={{ color: "var(--color-text-muted)" }}>
