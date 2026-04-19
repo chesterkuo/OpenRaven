@@ -299,7 +299,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
             from openraven.conversations.models import get_recent_messages
             ctx = getattr(request.state, "auth", None)
             if ctx:
-                db_msgs = get_recent_messages(auth_engine, req.conversation_id, limit=20)
+                db_msgs = get_recent_messages(auth_engine, req.conversation_id, tenant_id=ctx.tenant_id, limit=20)
                 if db_msgs:
                     history_dicts = [{"role": m["role"], "content": m["content"]} for m in db_msgs]
 

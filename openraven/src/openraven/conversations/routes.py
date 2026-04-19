@@ -64,7 +64,7 @@ def create_conversations_router(engine: Engine) -> APIRouter:
         )
         if not convo:
             raise HTTPException(404, "Conversation not found")
-        msgs = get_recent_messages(engine, convo_id, limit=200)
+        msgs = get_recent_messages(engine, convo_id, tenant_id=ctx.tenant_id, limit=200)
         return {**convo, "messages": msgs}
 
     @router.delete("/{convo_id}")

@@ -83,7 +83,7 @@ def test_add_and_get_messages(engine):
     convo_id = create_conversation(engine, tenant_id="t1", user_id="u1")
     add_message(engine, convo_id, role="user", content="Hello")
     add_message(engine, convo_id, role="assistant", content="Hi there!", sources=[{"document": "doc.pdf", "excerpt": "..."}])
-    msgs = get_recent_messages(engine, convo_id, limit=20)
+    msgs = get_recent_messages(engine, convo_id, tenant_id="t1", limit=20)
     assert len(msgs) == 2
     assert msgs[0]["role"] == "user"
     assert msgs[1]["role"] == "assistant"
@@ -94,7 +94,7 @@ def test_get_recent_messages_respects_limit(engine):
     convo_id = create_conversation(engine, tenant_id="t1", user_id="u1")
     for i in range(25):
         add_message(engine, convo_id, role="user", content=f"Message {i}")
-    msgs = get_recent_messages(engine, convo_id, limit=20)
+    msgs = get_recent_messages(engine, convo_id, tenant_id="t1", limit=20)
     assert len(msgs) == 20
     # Should be the 20 most recent, in chronological order
     assert msgs[0]["content"] == "Message 5"

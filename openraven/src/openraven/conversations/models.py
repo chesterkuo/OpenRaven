@@ -164,15 +164,21 @@ def set_title(engine: Engine, convo_id: str, title: str) -> None:
 def get_recent_messages(
     engine: Engine,
     conversation_id: str,
+    tenant_id: str | None = None,
     limit: int = 20,
 ) -> list[dict]:
     """Get the most recent messages for a conversation, in chronological order."""
     with engine.connect() as conn:
-        rows = conn.execute(
+        query = (
             select(messages)
             .where(messages.c.conversation_id == conversation_id)
-            .order_by(desc(messages.c.created_at))
-            .limit(limit)
+        )
+        if tenant_id:
+            query = query.join(
+                conversations, messages.c.conversation_id == conversations.c.id
+            ).where(conversations.c.tenant_id == tenant_id)
+        rows = conn.execute(
+            query.order_by(desc(messages.c.created_at)).limit(limit)
         ).fetchall()
     result = [
         {
