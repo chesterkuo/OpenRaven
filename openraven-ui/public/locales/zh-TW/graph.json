@@ -7,5 +7,16 @@
   "exportPNG": "匯出 PNG",
   "emptyMessage": "尚無圖譜資料。新增檔案以開始建立您的知識圖譜。",
   "source": "來源",
-  "connectedCount": "已連線 ({{count}})"
+  "connectedCount": "已連線 ({{count}})",
+  "guideSummary": "此知識庫包含 {{nodes}} 個實體、{{edges}} 條關聯。點擊節點查看詳情與原文，或使用篩選器聚焦特定類型。",
+  "expandMiniGraph": "關聯圖譜",
+  "viewInGraph": "在圖譜中查看",
+  "askAbout": "問 OpenRaven",
+  "viewWiki": "查看 Wiki",
+  "excerptHeading": "原文摘錄",
+  "appearsIn": "出現在 {{count}} 份文件",
+  "viewFullDocument": "查看完整文件",
+  "relatedCount": "關聯 ({{count}})",
+  "loadingContext": "載入原文中...",
+  "entityNotFound": "找不到該實體"
 }

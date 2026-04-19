@@ -7,5 +7,16 @@
   "exportPNG": "Exportar PNG",
   "emptyMessage": "Aún no hay datos de grafo. Agregue archivos para comenzar a construir su grafo de conocimientos.",
   "source": "Fuente",
-  "connectedCount": "Conectados ({{count}})"
+  "connectedCount": "Conectados ({{count}})",
+  "guideSummary": "This knowledge base contains {{nodes}} entities and {{edges}} relations. Click a node for details, or use filters to focus on specific types.",
+  "expandMiniGraph": "Related Graph",
+  "viewInGraph": "View in graph",
+  "askAbout": "Ask OpenRaven",
+  "viewWiki": "View Wiki",
+  "excerptHeading": "Original Text",
+  "appearsIn": "Appears in {{count}} files",
+  "viewFullDocument": "View full document",
+  "relatedCount": "Related ({{count}})",
+  "loadingContext": "Loading context...",
+  "entityNotFound": "Entity not found"
 }

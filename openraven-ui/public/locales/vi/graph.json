@@ -7,5 +7,16 @@
   "exportPNG": "Xuất PNG",
   "emptyMessage": "Chưa có dữ liệu đồ thị. Thêm tệp để bắt đầu xây dựng đồ thị tri thức của bạn.",
   "source": "Nguồn",
-  "connectedCount": "Đã kết nối ({{count}})"
+  "connectedCount": "Đã kết nối ({{count}})",
+  "guideSummary": "This knowledge base contains {{nodes}} entities and {{edges}} relations. Click a node for details, or use filters to focus on specific types.",
+  "expandMiniGraph": "Related Graph",
+  "viewInGraph": "View in graph",
+  "askAbout": "Ask OpenRaven",
+  "viewWiki": "View Wiki",
+  "excerptHeading": "Original Text",
+  "appearsIn": "Appears in {{count}} files",
+  "viewFullDocument": "View full document",
+  "relatedCount": "Related ({{count}})",
+  "loadingContext": "Loading context...",
+  "entityNotFound": "Entity not found"
 }

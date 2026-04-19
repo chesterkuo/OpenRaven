@@ -7,5 +7,16 @@
   "exportPNG": "ส่งออก PNG",
   "emptyMessage": "ยังไม่มีข้อมูลกราฟ เพิ่มไฟล์เพื่อเริ่มสร้างกราฟความรู้��องคุณ",
   "source": "แหล่งที่มา",
-  "connectedCount": "เชื่อมต่อแล้ว ({{count}})"
+  "connectedCount": "เชื่อมต่อแล้ว ({{count}})",
+  "guideSummary": "This knowledge base contains {{nodes}} entities and {{edges}} relations. Click a node for details, or use filters to focus on specific types.",
+  "expandMiniGraph": "Related Graph",
+  "viewInGraph": "View in graph",
+  "askAbout": "Ask OpenRaven",
+  "viewWiki": "View Wiki",
+  "excerptHeading": "Original Text",
+  "appearsIn": "Appears in {{count}} files",
+  "viewFullDocument": "View full document",
+  "relatedCount": "Related ({{count}})",
+  "loadingContext": "Loading context...",
+  "entityNotFound": "Entity not found"
 }

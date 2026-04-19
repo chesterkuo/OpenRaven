@@ -7,5 +7,16 @@
   "exportPNG": "导出 PNG",
   "emptyMessage": "暂无图谱数据。添加文件以开始构建您的知识图谱。",
   "source": "来源",
-  "connectedCount": "已连接 ({{count}})"
+  "connectedCount": "已连接 ({{count}})",
+  "guideSummary": "此知识库包含 {{nodes}} 个实体、{{edges}} 条关联。点击节点查看详情与原文，或使用筛选器聚焦特定类型。",
+  "expandMiniGraph": "关联图谱",
+  "viewInGraph": "在图谱中查看",
+  "askAbout": "问 OpenRaven",
+  "viewWiki": "查看 Wiki",
+  "excerptHeading": "原文摘录",
+  "appearsIn": "出现在 {{count}} 份文件",
+  "viewFullDocument": "查看完整文件",
+  "relatedCount": "关联 ({{count}})",
+  "loadingContext": "加载原文中...",
+  "entityNotFound": "找不到该实体"
 }
