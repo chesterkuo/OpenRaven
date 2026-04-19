@@ -871,7 +871,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     course_jobs: dict[str, CourseJob] = {}
 
     @app.post("/api/courses/generate")
-    async def courses_generate(body: dict):
+    async def courses_generate(body: dict, cfg: RavenConfig = Depends(get_tenant_config), pipe: RavenPipeline = Depends(get_tenant_pipeline)):
         from fastapi.responses import JSONResponse
         title = body.get("title", "").strip()
         audience = body.get("audience", "").strip()
@@ -889,13 +889,13 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                 from openraven.courses.renderer import generate_course
 
                 base_url = (
-                    f"{config.ollama_base_url}/v1"
-                    if config.llm_provider == "ollama"
+                    f"{cfg.ollama_base_url}/v1"
+                    if cfg.llm_provider == "ollama"
                     else "https://generativelanguage.googleapis.com/v1beta/openai/"
                 )
 
                 # Get entity names from graph
-                graph_stats = pipeline.graph.get_stats()
+                graph_stats = pipe.graph.get_stats()
                 entity_names = graph_stats.get("topics", [])[:100]
 
                 job.stage = "planning"
@@ -903,8 +903,8 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                     title=title, audience=audience or "General",
                     objectives=objectives if objectives else [f"Learn about {title}"],
                     entity_names=entity_names,
-                    api_key=config.llm_api_key,
-                    model=config.llm_model,
+                    api_key=cfg.llm_api_key,
+                    model=cfg.llm_model,
                     base_url=base_url,
                 )
 
@@ -914,13 +914,13 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                 def on_progress(done: int, total: int) -> None:
                     job.chapters_done = done
 
-                config.courses_dir.mkdir(parents=True, exist_ok=True)
+                cfg.courses_dir.mkdir(parents=True, exist_ok=True)
                 course_dir = await generate_course(
                     outline=outline,
-                    ask_fn=pipeline.ask_with_sources,
-                    output_dir=config.courses_dir,
-                    api_key=config.llm_api_key,
-                    model=config.llm_model,
+                    ask_fn=pipe.ask_with_sources,
+                    output_dir=cfg.courses_dir,
+                    api_key=cfg.llm_api_key,
+                    model=cfg.llm_model,
                     base_url=base_url,
                     on_progress=on_progress,
                 )
@@ -951,8 +951,8 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         }
 
     @app.get("/api/courses")
-    async def courses_list():
-        courses_dir = config.courses_dir
+    async def courses_list(cfg: RavenConfig = Depends(get_tenant_config)):
+        courses_dir = cfg.courses_dir
         if not courses_dir.exists():
             return []
         courses = []
@@ -980,11 +980,11 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         return bool(re.fullmatch(r"[a-f0-9]{8}", cid))
 
     @app.get("/api/courses/{course_id}")
-    async def courses_get(course_id: str):
+    async def courses_get(course_id: str, cfg: RavenConfig = Depends(get_tenant_config)):
         from fastapi.responses import JSONResponse
         if not _valid_course_id(course_id):
             return JSONResponse({"error": "Invalid course ID"}, status_code=400)
-        course_dir = config.courses_dir / course_id
+        course_dir = cfg.courses_dir / course_id
         meta_file = course_dir / "metadata.json"
         if not course_dir.exists() or not meta_file.exists():
             return JSONResponse({"error": "Course not found"}, status_code=404)
@@ -1000,13 +1000,13 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         }
 
     @app.get("/api/courses/{course_id}/download")
-    async def courses_download(course_id: str, background_tasks: BackgroundTasks):
+    async def courses_download(course_id: str, background_tasks: BackgroundTasks, cfg: RavenConfig = Depends(get_tenant_config)):
         import os
         import zipfile
         from fastapi.responses import JSONResponse
         if not _valid_course_id(course_id):
             return JSONResponse({"error": "Invalid course ID"}, status_code=400)
-        course_dir = config.courses_dir / course_id
+        course_dir = cfg.courses_dir / course_id
         if not course_dir.exists():
             return JSONResponse({"error": "Course not found"}, status_code=404)
         tmp = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
@@ -1028,12 +1028,12 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         )
 
     @app.delete("/api/courses/{course_id}")
-    async def courses_delete(course_id: str):
+    async def courses_delete(course_id: str, cfg: RavenConfig = Depends(get_tenant_config)):
         import shutil
         from fastapi.responses import JSONResponse
         if not _valid_course_id(course_id):
             return JSONResponse({"error": "Invalid course ID"}, status_code=400)
-        course_dir = config.courses_dir / course_id
+        course_dir = cfg.courses_dir / course_id
         if not course_dir.exists():
             return JSONResponse({"error": "Course not found"}, status_code=404)
         shutil.rmtree(course_dir)
