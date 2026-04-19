@@ -6,6 +6,7 @@ import DiscoveryCard from "../components/DiscoveryCard";
 import { useConversations } from "../hooks/useConversations";
 import ConversationSidebar from "../components/ConversationSidebar";
 import { useAuth } from "../hooks/useAuth";
+import MiniGraph from "../components/MiniGraph";
 
 const QUERY_MODES = ['mix', 'local', 'global', 'hybrid', 'naive', 'bypass'] as const;
 
@@ -26,6 +27,7 @@ export default function AskPage() {
   const [insights, setInsights] = useState<Insight[]>([]);
   const [mode, setMode] = useState("mix");
   const [suggestedQuestions, setSuggestedQuestions] = useState<string[]>([]);
+  const [showMiniGraph, setShowMiniGraph] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { fetch("/api/discovery").then(r => r.json()).then(setInsights).catch(() => {}); }, []);
@@ -147,6 +149,18 @@ export default function AskPage() {
                       {s.excerpt && <span className="ml-2" style={{ color: "var(--color-text-muted)" }}>— {s.excerpt}</span>}
                     </div>
                   ))}
+                  <button
+                    onClick={() => setShowMiniGraph((prev) => !prev)}
+                    className="text-xs mt-2 cursor-pointer hover:opacity-80"
+                    style={{ color: "var(--color-brand)" }}
+                  >
+                    {showMiniGraph ? "▲" : "▼"} {t('expandMiniGraph', { ns: 'graph' })}
+                  </button>
+                  {showMiniGraph && (
+                    <div className="mt-2" style={{ border: "1px solid var(--color-border)" }}>
+                      <MiniGraph sourceFiles={msg.sources.map((s) => s.document)} />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
