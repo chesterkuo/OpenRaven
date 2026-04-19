@@ -359,14 +359,14 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         }
 
     @app.post("/api/ingest", response_model=IngestResponse)
-    async def ingest(request: Request, files: list[UploadFile] = File(...), schema: str | None = Form(default=None)):
+    async def ingest(request: Request, files: list[UploadFile] = File(...), schema: str | None = Form(default=None), cfg: RavenConfig = Depends(get_tenant_config), pipe: RavenPipeline = Depends(get_tenant_pipeline)):
         schema_name: str | None = schema if schema and schema != "auto" else None
 
         saved_paths: list[Path] = []
-        config.ingestion_dir.mkdir(parents=True, exist_ok=True)
+        cfg.ingestion_dir.mkdir(parents=True, exist_ok=True)
         for upload in files:
             safe_name = Path(upload.filename).name if upload.filename else f"upload_{uuid.uuid4().hex[:8]}"
-            dest = config.ingestion_dir / safe_name
+            dest = cfg.ingestion_dir / safe_name
             content = await upload.read()
             dest.write_bytes(content)
             saved_paths.append(dest)
@@ -375,7 +375,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         job = IngestJob(job_id=job_id, files_total=len(saved_paths), stage="processing")
         ingest_jobs[job_id] = job
 
-        result = await pipeline.add_files(saved_paths, schema_name=schema_name)
+        result = await pipe.add_files(saved_paths, schema_name=schema_name)
 
         job.stage = "done"
         job.files_done = result.files_processed
@@ -402,12 +402,12 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         )
 
     @app.get("/api/graph/export")
-    async def graph_export(background_tasks: BackgroundTasks):
+    async def graph_export(background_tasks: BackgroundTasks, pipe: RavenPipeline = Depends(get_tenant_pipeline)):
         import os
         tmp = tempfile.NamedTemporaryFile(suffix=".graphml", delete=False)
         tmp.close()
         await asyncio.get_running_loop().run_in_executor(
-            None, lambda: pipeline.graph.export_graphml(Path(tmp.name))
+            None, lambda: pipe.graph.export_graphml(Path(tmp.name))
         )
         background_tasks.add_task(os.unlink, tmp.name)
         return FileResponse(
@@ -450,11 +450,11 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         return data
 
     @app.get("/api/wiki/export")
-    async def wiki_export(background_tasks: BackgroundTasks):
+    async def wiki_export(background_tasks: BackgroundTasks, cfg: RavenConfig = Depends(get_tenant_config)):
         """Download all wiki articles as a zip of markdown files."""
         import os
         import zipfile
-        wiki_dir = config.wiki_dir
+        wiki_dir = cfg.wiki_dir
         tmp = tempfile.NamedTemporaryFile(suffix=".zip", delete=False)
         tmp.close()
         with zipfile.ZipFile(tmp.name, "w", zipfile.ZIP_DEFLATED) as zf:
