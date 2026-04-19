@@ -529,39 +529,39 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     # --- Google Connectors ---
 
     @app.get("/api/connectors/status")
-    async def connectors_status():
+    async def connectors_status(cfg: RavenConfig = Depends(get_tenant_config)):
         from openraven.connectors.google_auth import load_token
-        token = load_token(config.google_token_path)
+        token = load_token(cfg.google_token_path)
         google_connected = token is not None
         return {
             "gdrive": {"connected": google_connected},
             "gmail": {"connected": google_connected},
             "meet": {"connected": google_connected},
-            "otter": {"connected": bool(config.otter_api_key)},
-            "google_configured": bool(config.google_client_id and config.google_client_secret),
+            "otter": {"connected": bool(cfg.otter_api_key)},
+            "google_configured": bool(cfg.google_client_id and cfg.google_client_secret),
         }
 
     @app.get("/api/connectors/google/auth-url")
-    async def google_auth_url():
+    async def google_auth_url(cfg: RavenConfig = Depends(get_tenant_config)):
         from fastapi.responses import JSONResponse
-        if not config.google_client_id:
+        if not cfg.google_client_id:
             return JSONResponse({"error": "GOOGLE_CLIENT_ID not configured"}, status_code=400)
         from openraven.connectors.google_auth import ALL_SCOPES, build_auth_url
         url = build_auth_url(
-            client_id=config.google_client_id,
+            client_id=cfg.google_client_id,
             scopes=ALL_SCOPES,
         )
         return {"auth_url": url}
 
     @app.get("/api/connectors/google/callback")
-    async def google_callback(code: str):
+    async def google_callback(code: str, cfg: RavenConfig = Depends(get_tenant_config)):
         from fastapi.responses import HTMLResponse
         from openraven.connectors.google_auth import exchange_code, save_token
         try:
             token_data = await exchange_code(
                 code=code,
-                client_id=config.google_client_id,
-                client_secret=config.google_client_secret,
+                client_id=cfg.google_client_id,
+                client_secret=cfg.google_client_secret,
             )
         except Exception as e:
             logger.error(f"OAuth code exchange failed: {e}")
@@ -570,7 +570,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                 "<p>Please try again.</p></body></html>",
                 status_code=400,
             )
-        save_token(token_data, config.google_token_path)
+        save_token(token_data, cfg.google_token_path)
         return HTMLResponse(
             "<html><body><h2>Connected successfully.</h2>"
             "<p>You can close this window.</p>"
@@ -578,20 +578,20 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         )
 
     @app.post("/api/connectors/gdrive/sync")
-    async def gdrive_sync():
+    async def gdrive_sync(cfg: RavenConfig = Depends(get_tenant_config), pipe: RavenPipeline = Depends(get_tenant_pipeline)):
         from fastapi.responses import JSONResponse
         from openraven.connectors.gdrive import sync_drive
         from openraven.connectors.google_auth import get_credentials
         creds = get_credentials(
-            config.google_token_path, config.google_client_id, config.google_client_secret
+            cfg.google_token_path, cfg.google_client_id, cfg.google_client_secret
         )
         if not creds:
             return JSONResponse(
                 {"error": "Not authenticated. Connect Google account first."}, status_code=401
             )
-        files = await sync_drive(credentials=creds, output_dir=config.ingestion_dir / "gdrive")
+        files = await sync_drive(credentials=creds, output_dir=cfg.ingestion_dir / "gdrive")
         if files:
-            result = await pipeline.add_files(files)
+            result = await pipe.add_files(files)
             return {
                 "files_synced": len(files),
                 "entities_extracted": result.entities_extracted,
@@ -601,20 +601,20 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         return {"files_synced": 0, "entities_extracted": 0, "articles_generated": 0, "errors": []}
 
     @app.post("/api/connectors/gmail/sync")
-    async def gmail_sync():
+    async def gmail_sync(cfg: RavenConfig = Depends(get_tenant_config), pipe: RavenPipeline = Depends(get_tenant_pipeline)):
         from fastapi.responses import JSONResponse
         from openraven.connectors.gmail import sync_gmail
         from openraven.connectors.google_auth import get_credentials
         creds = get_credentials(
-            config.google_token_path, config.google_client_id, config.google_client_secret
+            cfg.google_token_path, cfg.google_client_id, cfg.google_client_secret
         )
         if not creds:
             return JSONResponse(
                 {"error": "Not authenticated. Connect Google account first."}, status_code=401
             )
-        files = await sync_gmail(credentials=creds, output_dir=config.ingestion_dir / "gmail")
+        files = await sync_gmail(credentials=creds, output_dir=cfg.ingestion_dir / "gmail")
         if files:
-            result = await pipeline.add_files(files)
+            result = await pipe.add_files(files)
             return {
                 "files_synced": len(files),
                 "entities_extracted": result.entities_extracted,
@@ -624,22 +624,22 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         return {"files_synced": 0, "entities_extracted": 0, "articles_generated": 0, "errors": []}
 
     @app.post("/api/connectors/meet/sync")
-    async def meet_sync():
+    async def meet_sync(cfg: RavenConfig = Depends(get_tenant_config), pipe: RavenPipeline = Depends(get_tenant_pipeline)):
         from fastapi.responses import JSONResponse
         from openraven.connectors.gdrive import sync_meet_transcripts
         from openraven.connectors.google_auth import get_credentials
         creds = get_credentials(
-            config.google_token_path, config.google_client_id, config.google_client_secret
+            cfg.google_token_path, cfg.google_client_id, cfg.google_client_secret
         )
         if not creds:
             return JSONResponse(
                 {"error": "Not authenticated. Connect Google account first."}, status_code=401
             )
         files = await sync_meet_transcripts(
-            credentials=creds, output_dir=config.ingestion_dir / "meet"
+            credentials=creds, output_dir=cfg.ingestion_dir / "meet"
         )
         if files:
-            result = await pipeline.add_files(files)
+            result = await pipe.add_files(files)
             return {
                 "files_synced": len(files),
                 "entities_extracted": result.entities_extracted,
@@ -649,29 +649,29 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         return {"files_synced": 0, "entities_extracted": 0, "articles_generated": 0, "errors": []}
 
     @app.post("/api/connectors/otter/save-key")
-    async def otter_save_key(body: dict):
+    async def otter_save_key(body: dict, cfg: RavenConfig = Depends(get_tenant_config)):
         from openraven.connectors.otter import save_api_key
         api_key = body.get("api_key", "")
         if not api_key:
             from fastapi.responses import JSONResponse
             return JSONResponse({"error": "api_key is required"}, status_code=400)
-        save_api_key(api_key, config.otter_key_path)
+        save_api_key(api_key, cfg.otter_key_path)
         return {"saved": True}
 
     @app.post("/api/connectors/otter/sync")
-    async def otter_sync():
+    async def otter_sync(cfg: RavenConfig = Depends(get_tenant_config), pipe: RavenPipeline = Depends(get_tenant_pipeline)):
         from fastapi.responses import JSONResponse
         from openraven.connectors.otter import sync_otter
-        api_key = config.otter_api_key
+        api_key = cfg.otter_api_key
         if not api_key:
             return JSONResponse(
                 {"error": "Otter.ai API key not configured. Save your key first."}, status_code=401
             )
         files = await sync_otter(
-            api_key=api_key, output_dir=config.ingestion_dir / "otter"
+            api_key=api_key, output_dir=cfg.ingestion_dir / "otter"
         )
         if files:
-            result = await pipeline.add_files(files)
+            result = await pipe.add_files(files)
             return {
                 "files_synced": len(files),
                 "entities_extracted": result.entities_extracted,
