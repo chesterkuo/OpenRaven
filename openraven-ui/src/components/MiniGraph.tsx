@@ -61,7 +61,7 @@ export default function MiniGraph({ sourceFiles, height = 280 }: MiniGraphProps)
   const isChinese = i18n.language?.startsWith("zh");
 
   return (
-    <div className="relative" style={{ height }}>
+    <div className="relative flex flex-col" style={{ height }}>
       <GraphViewer
         nodes={data.nodes}
         edges={data.edges}
