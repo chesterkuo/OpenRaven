@@ -114,18 +114,18 @@ export default function GraphViewer({ nodes, edges, selectedNodeId, onNodeClick,
     const h = canvas.height / devicePixelRatio;
 
     const simulation = forceSimulation<SimNode>(simNodes)
-      .force("link", forceLink<SimNode, SimLink>(simLinks).id((d) => d.id).distance(isMini ? 40 : 60))
-      .force("charge", forceManyBody().strength(isMini ? -60 : -120))
-      .force("center", forceCenter(w / 2, h / 2).strength(isMini ? 0.3 : 0.1))
+      .force("link", forceLink<SimNode, SimLink>(simLinks).id((d) => d.id).distance(isMini ? 30 : 60))
+      .force("charge", forceManyBody().strength(isMini ? -30 : -120))
+      .force("center", forceCenter(w / 2, h / 2).strength(isMini ? 1 : 0.1))
       .force("collide", forceCollide<SimNode>().radius((d) => getRadius(d.id) + 2))
-      .alphaDecay(0.02)
-      .velocityDecay(0.3);
+      .alphaDecay(isMini ? 0.05 : 0.02)
+      .velocityDecay(isMini ? 0.5 : 0.3);
 
     const paint = () => {
       const { x: tx, y: ty, k } = transformRef.current;
       ctx.save();
       ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = "#fef9ef";
+      ctx.fillStyle = isMini ? "#f8f6f0" : "#fef9ef";
       ctx.fillRect(0, 0, w, h);
       ctx.translate(tx, ty);
       ctx.scale(k, k);
