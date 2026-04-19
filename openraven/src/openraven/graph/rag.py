@@ -406,6 +406,81 @@ class RavenGraph:
 
         return {"nodes": nodes, "edges": edges, "is_truncated": is_truncated}
 
+    def get_subgraph(
+        self,
+        entities: list[str] | None = None,
+        files: list[str] | None = None,
+        max_nodes: int = 30,
+    ) -> dict:
+        """Return a subgraph centered on the given entities or files, with 1-hop neighbors."""
+        import networkx as nx
+
+        graph_file = self.working_dir / "graph_chunk_entity_relation.graphml"
+        if not graph_file.exists():
+            return {"nodes": [], "edges": []}
+
+        try:
+            graph = nx.read_graphml(str(graph_file))
+        except Exception:
+            return {"nodes": [], "edges": []}
+
+        seed_ids: set[str] = set()
+
+        if entities:
+            for eid in entities:
+                if eid in graph:
+                    seed_ids.add(eid)
+
+        if files:
+            file_suffixes = {f.split("/")[-1] for f in files}
+            for node_id, attrs in graph.nodes(data=True):
+                file_path = attrs.get("file_path", "")
+                for part in file_path.split("<SEP>"):
+                    fname = part.strip().split("/")[-1]
+                    if fname in file_suffixes:
+                        seed_ids.add(node_id)
+                        break
+
+        if not seed_ids:
+            return {"nodes": [], "edges": []}
+
+        # BFS 1-hop neighbors
+        neighbor_ids: set[str] = set()
+        for sid in seed_ids:
+            if graph.has_node(sid):
+                neighbor_ids.update(graph.predecessors(sid))
+                neighbor_ids.update(graph.successors(sid))
+        all_ids = seed_ids | neighbor_ids
+
+        # Trim if exceeding max_nodes — keep seeds, sort neighbors by degree
+        if len(all_ids) > max_nodes:
+            extras = all_ids - seed_ids
+            ranked = sorted(extras, key=lambda n: graph.degree(n), reverse=True)
+            all_ids = seed_ids | set(ranked[: max_nodes - len(seed_ids)])
+
+        nodes = []
+        for node_id in all_ids:
+            attrs = dict(graph.nodes[node_id])
+            nodes.append({
+                "id": node_id,
+                "labels": [attrs.get("entity_type", "unknown")],
+                "properties": attrs,
+                "is_seed": node_id in seed_ids,
+            })
+
+        edges = []
+        for source, target, attrs in graph.edges(data=True):
+            if source in all_ids and target in all_ids:
+                edges.append({
+                    "id": f"{source}-{target}",
+                    "type": "DIRECTED",
+                    "source": source,
+                    "target": target,
+                    "properties": dict(attrs),
+                })
+
+        return {"nodes": nodes, "edges": edges}
+
     def _get_graph_data_neo4j(self, max_nodes: int = 500) -> dict:
         """Query Neo4j directly for graph data."""
         from neo4j import GraphDatabase

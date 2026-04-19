@@ -211,3 +211,54 @@ def test_extract_sources_empty_graph(tmp_path) -> None:
     rg = RavenGraph(working_dir=tmp_path)
     sources = rg._extract_sources_from_answer("Some answer text")
     assert sources == []
+
+
+def _create_test_graphml(working_dir: Path) -> None:
+    """Create a small test GraphML file for subgraph/context tests."""
+    import networkx as nx
+
+    graph = nx.DiGraph()
+    graph.add_node("個資法第27條", entity_type="statute", description="Article 27 of PDPA",
+                   file_path="/data/pdpa.md", source_id="chunk-1")
+    graph.add_node("個人資料盤點", entity_type="concept", description="Personal data inventory",
+                   file_path="/data/pdpa.md", source_id="chunk-1")
+    graph.add_node("安全維護計畫", entity_type="concept", description="Security maintenance plan",
+                   file_path="/data/compliance.md", source_id="chunk-2")
+    graph.add_node("個資法第48條", entity_type="statute", description="Article 48 penalties",
+                   file_path="/data/compliance.md", source_id="chunk-3")
+    graph.add_node("獨立節點", entity_type="concept", description="Isolated node",
+                   file_path="/data/other.md", source_id="chunk-4")
+
+    graph.add_edge("個資法第27條", "個人資料盤點", description="requires", keywords="requirement")
+    graph.add_edge("個資法第27條", "安全維護計畫", description="requires", keywords="requirement")
+    graph.add_edge("安全維護計畫", "個資法第48條", description="penalty for violation", keywords="penalty")
+
+    nx.write_graphml(graph, str(working_dir / "graph_chunk_entity_relation.graphml"))
+
+
+def test_get_subgraph_by_entities(graph: RavenGraph) -> None:
+    _create_test_graphml(graph.working_dir)
+    result = graph.get_subgraph(entities=["個資法第27條"], max_nodes=30)
+    node_ids = {n["id"] for n in result["nodes"]}
+    assert "個資法第27條" in node_ids
+    assert "個人資料盤點" in node_ids
+    assert "安全維護計畫" in node_ids
+    assert "獨立節點" not in node_ids
+    seed_nodes = [n for n in result["nodes"] if n.get("is_seed")]
+    assert len(seed_nodes) == 1
+    assert seed_nodes[0]["id"] == "個資法第27條"
+    assert len(result["edges"]) >= 2
+
+
+def test_get_subgraph_by_files(graph: RavenGraph) -> None:
+    _create_test_graphml(graph.working_dir)
+    result = graph.get_subgraph(files=["pdpa.md"], max_nodes=30)
+    node_ids = {n["id"] for n in result["nodes"]}
+    assert "個資法第27條" in node_ids
+    assert "個人資料盤點" in node_ids
+
+
+def test_get_subgraph_empty(graph: RavenGraph) -> None:
+    result = graph.get_subgraph(entities=["nonexistent"], max_nodes=30)
+    assert result["nodes"] == []
+    assert result["edges"] == []
