@@ -217,7 +217,7 @@ def _create_test_graphml(working_dir: Path) -> None:
     """Create a small test GraphML file for subgraph/context tests."""
     import networkx as nx
 
-    graph = nx.DiGraph()
+    graph = nx.Graph()
     graph.add_node("個資法第27條", entity_type="statute", description="Article 27 of PDPA",
                    file_path="/data/pdpa.md", source_id="chunk-1")
     graph.add_node("個人資料盤點", entity_type="concept", description="Personal data inventory",

@@ -448,8 +448,7 @@ class RavenGraph:
         neighbor_ids: set[str] = set()
         for sid in seed_ids:
             if graph.has_node(sid):
-                neighbor_ids.update(graph.predecessors(sid))
-                neighbor_ids.update(graph.successors(sid))
+                neighbor_ids.update(graph.neighbors(sid))
         all_ids = seed_ids | neighbor_ids
 
         # Trim if exceeding max_nodes — keep seeds, sort neighbors by degree
