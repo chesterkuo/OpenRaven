@@ -10,7 +10,7 @@ from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
-from fastapi import BackgroundTasks, FastAPI, File, Form, Query, Request, UploadFile
+from fastapi import BackgroundTasks, Depends, FastAPI, File, Form, Query, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
@@ -150,6 +150,8 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         # Auth middleware: protect /api/* routes (except /api/auth/* and /health)
         from starlette.middleware.base import BaseHTTPMiddleware
         from openraven.auth.sessions import validate_session as _validate_session
+        from openraven.auth.tenant import get_tenant_config as _get_tenant_config_fn
+        from openraven.auth.tenant import get_tenant_pipeline as _get_tenant_pipeline_fn
         from openraven.auth.middleware import is_demo_allowed
 
         class AuthMiddleware(BaseHTTPMiddleware):
@@ -219,6 +221,32 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
                     return get_tenant_pipeline(config, ctx.tenant_id, tenants_root=Path(config.working_dir).parent, demo_theme=ctx.demo_theme)
         return pipeline  # Fallback to default pipeline (local mode)
 
+    async def get_tenant_config(request: Request) -> RavenConfig:
+        if config.auth_enabled and auth_engine:
+            session_id = request.cookies.get("session_id")
+            if session_id:
+                ctx = _validate_session(auth_engine, session_id)
+                if ctx:
+                    return _get_tenant_config_fn(
+                        config, ctx.tenant_id,
+                        tenants_root=Path(config.working_dir).parent,
+                        demo_theme=ctx.demo_theme,
+                    )
+        return config
+
+    async def get_tenant_pipeline(request: Request) -> RavenPipeline:
+        if config.auth_enabled and auth_engine:
+            session_id = request.cookies.get("session_id")
+            if session_id:
+                ctx = _validate_session(auth_engine, session_id)
+                if ctx:
+                    return _get_tenant_pipeline_fn(
+                        config, ctx.tenant_id,
+                        tenants_root=Path(config.working_dir).parent,
+                        demo_theme=ctx.demo_theme,
+                    )
+        return pipeline
+
     def _audit(request: Request, action: str, details: dict | None = None) -> None:
         """Log an audit event if auth is enabled."""
         if not config.auth_enabled or not auth_engine:
@@ -244,8 +272,8 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         return list_schemas()
 
     @app.get("/api/status", response_model=StatusResponse)
-    async def status():
-        report = pipeline.get_health_report()
+    async def status(pipe: RavenPipeline = Depends(get_tenant_pipeline)):
+        report = pipe.get_health_report()
         return StatusResponse(
             total_files=report.total_files,
             total_entities=report.total_entities,
@@ -256,9 +284,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         )
 
     @app.post("/api/ask", response_model=AskResponse)
-    async def ask(request: Request, req: AskRequest):
-        pipe = resolve_pipeline(request)
-
+    async def ask(request: Request, req: AskRequest, pipe: RavenPipeline = Depends(get_tenant_pipeline)):
         ctx = getattr(request.state, "auth", None)
         if ctx and ctx.is_demo:
             _check_demo_rate_limit(request.client.host)
