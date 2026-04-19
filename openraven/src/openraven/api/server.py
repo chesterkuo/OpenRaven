@@ -695,23 +695,22 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
 
     # --- Agent Deployment ---
 
-    agents_dir = config.working_dir / "agents"
-    agents_dir.mkdir(parents=True, exist_ok=True)
-
     from openraven.agents.ratelimit import RateLimiter
     agent_rate_limiter = RateLimiter()
 
     @app.post("/api/agents")
-    async def create_agent_endpoint(body: dict):
+    async def create_agent_endpoint(body: dict, cfg: RavenConfig = Depends(get_tenant_config)):
         from fastapi.responses import JSONResponse
         from openraven.agents.registry import create_agent
+        tenant_agents_dir = cfg.working_dir / "agents"
+        tenant_agents_dir.mkdir(parents=True, exist_ok=True)
         if not body.get("name", "").strip():
             return JSONResponse({"error": "name is required"}, status_code=400)
         agent = create_agent(
-            agents_dir=agents_dir,
+            agents_dir=tenant_agents_dir,
             name=body.get("name", ""),
             description=body.get("description", ""),
-            kb_path=str(config.working_dir),
+            kb_path=str(cfg.working_dir),
             is_public=body.get("is_public", True),
             rate_limit_anonymous=body.get("rate_limit_anonymous", 10),
             rate_limit_token=body.get("rate_limit_token", 100),
@@ -725,9 +724,9 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         }
 
     @app.get("/api/agents")
-    async def list_agents_endpoint():
+    async def list_agents_endpoint(cfg: RavenConfig = Depends(get_tenant_config)):
         from openraven.agents.registry import list_agents
-        agents = list_agents(agents_dir)
+        agents = list_agents(cfg.working_dir / "agents")
         return [
             {"id": a.id, "name": a.name, "description": a.description,
              "is_public": a.is_public, "tunnel_url": a.tunnel_url,
@@ -736,10 +735,10 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         ]
 
     @app.get("/api/agents/{agent_id}")
-    async def get_agent_endpoint(agent_id: str):
+    async def get_agent_endpoint(agent_id: str, cfg: RavenConfig = Depends(get_tenant_config)):
         from fastapi.responses import JSONResponse
         from openraven.agents.registry import get_agent
-        agent = get_agent(agents_dir, agent_id)
+        agent = get_agent(cfg.working_dir / "agents", agent_id)
         if not agent:
             return JSONResponse({"error": "Agent not found"}, status_code=404)
         return {
@@ -753,44 +752,44 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         }
 
     @app.delete("/api/agents/{agent_id}")
-    async def delete_agent_endpoint(agent_id: str):
+    async def delete_agent_endpoint(agent_id: str, cfg: RavenConfig = Depends(get_tenant_config)):
         from fastapi.responses import JSONResponse
         from openraven.agents.registry import delete_agent
-        if delete_agent(agents_dir, agent_id):
+        if delete_agent(cfg.working_dir / "agents", agent_id):
             return {"deleted": True}
         return JSONResponse({"error": "Agent not found"}, status_code=404)
 
     @app.post("/api/agents/{agent_id}/tokens")
-    async def generate_token_endpoint(agent_id: str):
+    async def generate_token_endpoint(agent_id: str, cfg: RavenConfig = Depends(get_tenant_config)):
         from fastapi.responses import JSONResponse
         from openraven.agents.registry import generate_token
         try:
-            token = generate_token(agents_dir, agent_id)
+            token = generate_token(cfg.working_dir / "agents", agent_id)
             return {"token": token}
         except ValueError:
             return JSONResponse({"error": "Agent not found"}, status_code=404)
 
     @app.post("/api/agents/{agent_id}/deploy")
-    async def deploy_agent_endpoint(agent_id: str):
+    async def deploy_agent_endpoint(agent_id: str, cfg: RavenConfig = Depends(get_tenant_config)):
         from fastapi.responses import JSONResponse
         from openraven.agents.registry import get_agent, update_agent
         from openraven.agents.tunnel import start_tunnel
-        agent = get_agent(agents_dir, agent_id)
+        agent = get_agent(cfg.working_dir / "agents", agent_id)
         if not agent:
             return JSONResponse({"error": "Agent not found"}, status_code=404)
         try:
-            url = start_tunnel(port=config.api_port, working_dir=config.working_dir)
-            update_agent(agents_dir, agent_id, tunnel_url=url)
+            url = start_tunnel(port=cfg.api_port, working_dir=cfg.working_dir)
+            update_agent(cfg.working_dir / "agents", agent_id, tunnel_url=url)
             return {"tunnel_url": url}
         except RuntimeError as e:
             return JSONResponse({"error": str(e)}, status_code=500)
 
     @app.post("/api/agents/{agent_id}/undeploy")
-    async def undeploy_agent_endpoint(agent_id: str):
+    async def undeploy_agent_endpoint(agent_id: str, cfg: RavenConfig = Depends(get_tenant_config)):
         from openraven.agents.registry import update_agent
         from openraven.agents.tunnel import stop_tunnel
-        stop_tunnel(config.working_dir)
-        update_agent(agents_dir, agent_id, tunnel_url="")
+        stop_tunnel(cfg.working_dir)
+        update_agent(cfg.working_dir / "agents", agent_id, tunnel_url="")
         return {"undeployed": True}
 
     # --- Public Agent Endpoints (exposed via tunnel) ---
@@ -800,7 +799,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         from fastapi.responses import HTMLResponse, JSONResponse
         from openraven.agents.chat_page import render_chat_page
         from openraven.agents.registry import get_agent
-        agent = get_agent(agents_dir, agent_id)
+        agent = get_agent(config.working_dir / "agents", agent_id)
         if not agent:
             return JSONResponse({"error": "Agent not found"}, status_code=404)
         page_html = render_chat_page(agent.id, agent.name, agent.description)
@@ -810,7 +809,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     async def agent_info(agent_id: str):
         from fastapi.responses import JSONResponse
         from openraven.agents.registry import get_agent
-        agent = get_agent(agents_dir, agent_id)
+        agent = get_agent(config.working_dir / "agents", agent_id)
         if not agent:
             return JSONResponse({"error": "Agent not found"}, status_code=404)
         return {"name": agent.name, "description": agent.description}
@@ -820,7 +819,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         from fastapi.responses import JSONResponse
         from openraven.agents.registry import get_agent, verify_token
 
-        agent = get_agent(agents_dir, agent_id)
+        agent = get_agent(config.working_dir / "agents", agent_id)
         if not agent:
             return JSONResponse({"error": "Agent not found"}, status_code=404)
 
@@ -829,7 +828,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
 
         if not agent.is_public and not token:
             return JSONResponse({"error": "This agent requires an access token."}, status_code=403)
-        if token and not verify_token(agents_dir, agent_id, token):
+        if token and not verify_token(config.working_dir / "agents", agent_id, token):
             return JSONResponse({"error": "Invalid access token."}, status_code=403)
 
         if token:
