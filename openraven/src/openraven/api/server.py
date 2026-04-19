@@ -197,30 +197,6 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
     pipeline = RavenPipeline(config)
     ingest_jobs: dict[str, IngestJob] = {}
 
-    def resolve_config(request: Request) -> RavenConfig:
-        """Get the config for the current request — tenant-scoped if auth enabled."""
-        if config.auth_enabled and auth_engine:
-            session_id = request.cookies.get("session_id")
-            if session_id:
-                from openraven.auth.sessions import validate_session
-                ctx = validate_session(auth_engine, session_id)
-                if ctx:
-                    from openraven.auth.tenant import get_tenant_config
-                    return get_tenant_config(config, ctx.tenant_id, tenants_root=Path(config.working_dir).parent, demo_theme=ctx.demo_theme)
-        return config
-
-    def resolve_pipeline(request: Request) -> RavenPipeline:
-        """Get the pipeline for the current request — tenant-scoped if auth enabled."""
-        if config.auth_enabled and auth_engine:
-            session_id = request.cookies.get("session_id")
-            if session_id:
-                from openraven.auth.sessions import validate_session
-                ctx = validate_session(auth_engine, session_id)
-                if ctx:
-                    from openraven.auth.tenant import get_tenant_pipeline
-                    return get_tenant_pipeline(config, ctx.tenant_id, tenants_root=Path(config.working_dir).parent, demo_theme=ctx.demo_theme)
-        return pipeline  # Fallback to default pipeline (local mode)
-
     async def get_tenant_config(request: Request) -> RavenConfig:
         if config.auth_enabled and auth_engine:
             session_id = request.cookies.get("session_id")
