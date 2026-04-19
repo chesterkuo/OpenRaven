@@ -33,8 +33,9 @@ export default function MiniGraph({ sourceFiles, height = 280 }: MiniGraphProps)
   useEffect(() => {
     if (sourceFiles.length === 0) return;
     setLoading(true);
-    const fileNames = sourceFiles.map((f) => f.split("/").pop() || f);
-    const unique = [...new Set(fileNames)];
+    const allPaths = sourceFiles.flatMap((f) => f.split("<SEP>"));
+    const fileNames = allPaths.map((f) => f.trim().split("/").pop() || f.trim());
+    const unique = [...new Set(fileNames)].filter(Boolean);
     fetch(`/api/graph/subgraph?files=${encodeURIComponent(unique.join(","))}&max_nodes=30`)
       .then((r) => r.json())
       .then((d) => { setData(d); setLoading(false); })
