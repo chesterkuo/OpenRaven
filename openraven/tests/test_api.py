@@ -104,6 +104,33 @@ def test_ingest_status_unknown_job(client: TestClient) -> None:
     assert response.status_code == 404
 
 
+def test_graph_subgraph_entities(client):
+    """GET /api/graph/subgraph with entities param returns subgraph."""
+    res = client.get("/api/graph/subgraph", params={"entities": "nonexistent"})
+    assert res.status_code == 200
+    data = res.json()
+    assert "nodes" in data
+    assert "edges" in data
+
+
+def test_graph_subgraph_files(client):
+    """GET /api/graph/subgraph with files param returns subgraph."""
+    res = client.get("/api/graph/subgraph", params={"files": "test.md"})
+    assert res.status_code == 200
+    data = res.json()
+    assert "nodes" in data
+
+
+def test_graph_node_context(client):
+    """GET /api/graph/node/{id}/context returns context."""
+    res = client.get("/api/graph/node/testnode/context")
+    assert res.status_code == 200
+    data = res.json()
+    assert data["node_id"] == "testnode"
+    assert "excerpts" in data
+    assert "files" in data
+
+
 def test_provider_endpoint(client: TestClient) -> None:
     response = client.get("/api/config/provider")
     assert response.status_code == 200

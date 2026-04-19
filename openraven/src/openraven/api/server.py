@@ -399,6 +399,30 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
         )
         return GraphResponse(**data)
 
+    @app.get("/api/graph/subgraph")
+    async def graph_subgraph(
+        request: Request,
+        entities: str | None = Query(default=None),
+        files: str | None = Query(default=None),
+        max_nodes: int = Query(default=30, ge=1, le=200),
+    ):
+        pipe = resolve_pipeline(request)
+        entity_list = [e.strip() for e in entities.split(",") if e.strip()] if entities else None
+        file_list = [f.strip() for f in files.split(",") if f.strip()] if files else None
+        data = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: pipe.graph.get_subgraph(entities=entity_list, files=file_list, max_nodes=max_nodes)
+        )
+        return data
+
+    @app.get("/api/graph/node/{node_id}/context")
+    async def graph_node_context(request: Request, node_id: str):
+        pipe = resolve_pipeline(request)
+        search_dirs = [pipe.config.working_dir]
+        data = await asyncio.get_event_loop().run_in_executor(
+            None, lambda: pipe.graph.get_node_context(node_id, search_dirs=search_dirs)
+        )
+        return data
+
     @app.get("/api/wiki/export")
     async def wiki_export(background_tasks: BackgroundTasks):
         """Download all wiki articles as a zip of markdown files."""
