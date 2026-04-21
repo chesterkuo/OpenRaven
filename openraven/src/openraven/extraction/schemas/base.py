@@ -1,6 +1,6 @@
 """Base (generic) extraction schema for knowledge extraction."""
 
-from langextract.core.data import ExampleData, Extraction
+from openraven.extraction.schemas.types import Example as ExampleData, Extraction
 
 BASE_EXAMPLES = [
     ExampleData(

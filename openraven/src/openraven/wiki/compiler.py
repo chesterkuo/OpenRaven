@@ -1,11 +1,32 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
 
 import openai
+
+
+_MAX_FILENAME_BYTES = 200  # leave room for ".md" suffix under ext4's 255-byte limit
+
+
+def _safe_filename(name: str) -> str:
+    """Produce a filesystem-safe stem from an entity name.
+
+    Mis-extractions occasionally yield entity names that are whole paragraphs;
+    raw slugs then overflow ext4's 255-byte filename limit. Truncate by UTF-8
+    byte length and append a short hash to keep truncated names unique.
+    """
+    base = name.replace("/", "_").replace(" ", "_").lower()
+    encoded = base.encode("utf-8")
+    if len(encoded) <= _MAX_FILENAME_BYTES:
+        return base
+    digest = hashlib.sha1(encoded).hexdigest()[:8]
+    # truncate conservatively; -9 for "_<hash>" suffix in bytes
+    truncated = encoded[: _MAX_FILENAME_BYTES - 9].decode("utf-8", errors="ignore")
+    return f"{truncated}_{digest}"
 
 logger = logging.getLogger(__name__)
 
@@ -117,43 +138,75 @@ def render_article_markdown(article: WikiArticle) -> str:
     return "\n".join(lines)
 
 
+def _render_entity_from_graph(
+    name: str,
+    graph,
+    sources_map: dict,
+) -> WikiArticle:
+    """Build a WikiArticle from graph data alone — no LLM calls.
+
+    Pulls the entity's node + 1-hop neighbors via RavenGraph.get_subgraph,
+    synthesizes a summary from the node's description attribute, and uses
+    pre-collected source excerpts from sources_map.
+    """
+    subgraph = graph.get_subgraph(entities=[name], max_nodes=30)
+    nodes = subgraph.get("nodes", [])
+
+    seed = next((n for n in nodes if n.get("is_seed") or n.get("id") == name), None)
+    description = ""
+    entity_type = "Concept"
+    if seed:
+        props = seed.get("properties", {}) or {}
+        description = props.get("description", "") or ""
+        entity_type = props.get("entity_type") or (seed.get("labels", ["Concept"]) or ["Concept"])[0]
+
+    related = [n["id"] for n in nodes if n.get("id") != name]
+
+    sources = sources_map.get(name, [])
+
+    summary = description if description else name
+    sections = [
+        {"heading": "Type", "content": entity_type},
+    ]
+    if sources:
+        excerpts = "\n\n".join(f"> {s.get('excerpt', '').strip()}" for s in sources if s.get("excerpt"))
+        if excerpts:
+            sections.append({"heading": "Source Excerpts", "content": excerpts})
+
+    return WikiArticle(
+        title=name,
+        summary=summary,
+        sections=sections,
+        sources=sources,
+        related_topics=related,
+        confidence_score=1.0,
+    )
+
+
 async def compile_wiki_for_graph(
     graph, entities: list[str], sources_map: dict, api_key: str,
     output_dir: Path, model: str = "claude-sonnet-4-6", max_concurrent: int = 5,
     on_progress: callable | None = None,
     base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/",
 ) -> list[WikiArticle]:
-    import asyncio
+    """Render one wiki article per entity directly from the graph.
 
+    No LLM is invoked; `api_key`, `model`, `base_url`, and `max_concurrent`
+    are accepted for call-site compatibility but unused. Use
+    `compile_article()` (still exported) for on-demand LLM prose via a
+    future "Improve with AI" UI button.
+    """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    semaphore = asyncio.Semaphore(max_concurrent)
-    completed_count = 0
+    articles: list[WikiArticle] = []
+    for i, name in enumerate(entities, start=1):
+        article = _render_entity_from_graph(name, graph, sources_map)
+        (output_dir / f"{_safe_filename(name)}.md").write_text(
+            render_article_markdown(article), encoding="utf-8"
+        )
+        articles.append(article)
+        if on_progress:
+            on_progress(i, len(entities))
 
-    async def compile_one(entity_name: str) -> WikiArticle | None:
-        nonlocal completed_count
-        async with semaphore:
-            try:
-                context = await graph.query(
-                    f"Tell me everything about: {entity_name}", mode="local"
-                )
-                sources = sources_map.get(entity_name, [])
-                article = await compile_article(
-                    topic=entity_name, context=context, sources=sources,
-                    api_key=api_key, model=model, base_url=base_url,
-                )
-                safe_name = entity_name.replace("/", "_").replace(" ", "_").lower()
-                md_path = output_dir / f"{safe_name}.md"
-                md_path.write_text(render_article_markdown(article), encoding="utf-8")
-                completed_count += 1
-                if on_progress:
-                    on_progress(completed_count, len(entities))
-                return article
-            except Exception as e:
-                logger.warning(f"Failed to compile wiki for '{entity_name}': {e}")
-                completed_count += 1
-                return None
-
-    results = await asyncio.gather(*[compile_one(name) for name in entities])
-    return [a for a in results if a is not None]
+    return articles

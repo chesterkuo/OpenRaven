@@ -103,13 +103,13 @@ def test_legal_taiwan_schema_structure() -> None:
     assert "description" in LEGAL_TAIWAN_SCHEMA
 
 
-def test_legal_taiwan_schema_examples_use_langextract() -> None:
-    from langextract.core.data import ExampleData
+def test_legal_taiwan_schema_examples_use_example_type() -> None:
+    from openraven.extraction.schemas.types import Example
 
     from openraven.extraction.schemas.legal_taiwan import LEGAL_TAIWAN_SCHEMA
 
     for example in LEGAL_TAIWAN_SCHEMA["examples"]:
-        assert isinstance(example, ExampleData)
+        assert isinstance(example, Example)
         assert len(example.extractions) >= 1
 
 
@@ -133,13 +133,13 @@ def test_finance_taiwan_schema_structure() -> None:
     assert "description" in FINANCE_TAIWAN_SCHEMA
 
 
-def test_finance_taiwan_schema_examples_use_langextract() -> None:
-    from langextract.core.data import ExampleData
+def test_finance_taiwan_schema_examples_use_example_type() -> None:
+    from openraven.extraction.schemas.types import Example
 
     from openraven.extraction.schemas.finance_taiwan import FINANCE_TAIWAN_SCHEMA
 
     for example in FINANCE_TAIWAN_SCHEMA["examples"]:
-        assert isinstance(example, ExampleData)
+        assert isinstance(example, Example)
         assert len(example.extractions) >= 1
 
 

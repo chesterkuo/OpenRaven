@@ -84,6 +84,27 @@ def test_wiki_article_endpoint_not_found(client: TestClient) -> None:
     assert response.status_code == 404
 
 
+def test_wiki_article_endpoint_allows_cjk_slug(client: TestClient, config) -> None:
+    """zh-TW entity names (like '產品功能總覽') produce CJK wiki slugs that
+    must be readable — the previous ASCII-only regex silently 400'd them."""
+    config.wiki_dir.mkdir(parents=True, exist_ok=True)
+    (config.wiki_dir / "產品功能總覽.md").write_text("# 產品功能總覽\n\nContent in Chinese.")
+    response = client.get("/api/wiki/產品功能總覽")
+    assert response.status_code == 200
+    data = response.json()
+    assert data["slug"] == "產品功能總覽"
+    assert data["title"] == "產品功能總覽"
+
+
+def test_wiki_article_endpoint_blocks_path_traversal(client: TestClient) -> None:
+    """Slugs containing path separators or .. must be rejected with 400."""
+    for bad in ["..", "../foo", "foo/bar", "foo\\bar", ".", ""]:
+        response = client.get(f"/api/wiki/{bad}")
+        # empty slug → routed elsewhere (list endpoint), but any slug that
+        # actually reaches the handler must be rejected
+        assert response.status_code in (400, 404, 405), f"unexpected {response.status_code} for {bad!r}"
+
+
 def test_wiki_export_endpoint(client: TestClient, config) -> None:
     config.wiki_dir.mkdir(parents=True, exist_ok=True)
     (config.wiki_dir / "test_article.md").write_text("# Test\n\nContent.")

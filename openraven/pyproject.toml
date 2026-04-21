@@ -13,7 +13,6 @@ classifiers = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "langextract>=0.1.0",
     "lightrag-hku>=1.0.0",
     "docling>=2.0.0",
     "fastapi>=0.115.0",
@@ -33,6 +32,7 @@ dependencies = [
     "bcrypt>=4.1.0",
     "alembic>=1.13.0",
     "python-multipart>=0.0.9",
+    "rapidfuzz>=3.0",
     "neo4j>=5.0.0",
     "cryptography>=43.0.0",
 ]

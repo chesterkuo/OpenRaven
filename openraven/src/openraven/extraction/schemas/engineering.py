@@ -1,6 +1,6 @@
 """Engineering domain extraction schema for ADRs, tech specs, and architecture docs."""
 
-from langextract.core.data import ExampleData, Extraction
+from openraven.extraction.schemas.types import Example as ExampleData, Extraction
 
 ENGINEERING_EXAMPLES = [
     ExampleData(
