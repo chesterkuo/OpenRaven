@@ -212,3 +212,49 @@ async def test_extract_entities_unexpected_shape_returns_empty():
         result = await extract_entities("x", "d.md", SCHEMA, "gemini-2.5-flash")
 
     assert result.entities == []
+
+
+@pytest.mark.asyncio
+async def test_extract_entities_warns_when_drop_ratio_exceeds_threshold(caplog):
+    """When >=20% of spans fail to align, a WARNING must be emitted so ops can notice."""
+    text = "Alice works here."
+    # 1 aligns, 3 hallucinated — 75% drop rate, well above 20% threshold
+    client = _fake_gemini_response([
+        {"extraction_text": "Alice",     "extraction_class": "Person", "attributes": {}},
+        {"extraction_text": "Nonexistent Corp One",   "extraction_class": "Org", "attributes": {}},
+        {"extraction_text": "Another Ghost Entity",   "extraction_class": "Org", "attributes": {}},
+        {"extraction_text": "Third Fabricated Label", "extraction_class": "Org", "attributes": {}},
+    ])
+    with caplog.at_level("WARNING", logger="openraven.extraction.extractor"):
+        with patch("openraven.extraction.extractor.openai.AsyncOpenAI", return_value=client):
+            result = await extract_entities(text, "doc.md", SCHEMA, "gemini-2.5-flash")
+
+    assert [e.name for e in result.entities] == ["Alice"]
+    # The warning must be observable
+    warnings = [r for r in caplog.records if r.levelname == "WARNING"]
+    assert any("dropped 3 of 4" in r.getMessage() for r in warnings), \
+        f"expected drop-ratio warning, got: {[r.getMessage() for r in warnings]}"
+
+
+@pytest.mark.asyncio
+async def test_extract_entities_no_warning_under_threshold(caplog):
+    """Drops below the 20% threshold log at DEBUG, not WARNING."""
+    text = "Alice and Bob and Carol and Dave and Eve all work here."
+    # 4 align + 1 hallucinated = 20% drop, exactly at threshold → still WARNING (>=)
+    # so use 5 align + 1 hallucinated = 16.7% < 20% → DEBUG only
+    client = _fake_gemini_response([
+        {"extraction_text": "Alice", "extraction_class": "Person", "attributes": {}},
+        {"extraction_text": "Bob",   "extraction_class": "Person", "attributes": {}},
+        {"extraction_text": "Carol", "extraction_class": "Person", "attributes": {}},
+        {"extraction_text": "Dave",  "extraction_class": "Person", "attributes": {}},
+        {"extraction_text": "Eve",   "extraction_class": "Person", "attributes": {}},
+        {"extraction_text": "Nonexistent Mallory", "extraction_class": "Person", "attributes": {}},
+    ])
+    with caplog.at_level("WARNING", logger="openraven.extraction.extractor"):
+        with patch("openraven.extraction.extractor.openai.AsyncOpenAI", return_value=client):
+            result = await extract_entities(text, "doc.md", SCHEMA, "gemini-2.5-flash")
+
+    assert len(result.entities) == 5
+    # No warning when drop ratio is under threshold
+    warnings = [r for r in caplog.records if r.levelname == "WARNING"]
+    assert warnings == [], f"unexpected warning: {[r.getMessage() for r in warnings]}"

@@ -1,12 +1,20 @@
 from __future__ import annotations
 
 import json
+import logging
 import os
 from dataclasses import dataclass, field
 
 import openai
 
 from openraven.extraction.alignment import align_span
+
+logger = logging.getLogger(__name__)
+
+# If more than this share of raw spans fail to align, log at WARNING — a
+# signal that align_span's threshold is miscalibrated or the LLM is
+# hallucinating entities not present in the source.
+_DROP_RATIO_WARN_THRESHOLD = 0.20
 
 
 @dataclass
@@ -168,6 +176,21 @@ async def extract_entities(
             char_end=end,
             attributes=item.get("attributes") if isinstance(item.get("attributes"), dict) else {},
         ))
+
+    total_raw = len(raw_entities)
+    dropped = total_raw - len(entities)
+    if dropped > 0:
+        ratio = dropped / total_raw
+        if ratio >= _DROP_RATIO_WARN_THRESHOLD:
+            logger.warning(
+                "extractor: dropped %d of %d spans (%.0f%%) from %s — threshold may be miscalibrated or LLM hallucinating",
+                dropped, total_raw, 100 * ratio, source_document,
+            )
+        else:
+            logger.debug(
+                "extractor: dropped %d of %d unalignable spans from %s",
+                dropped, total_raw, source_document,
+            )
 
     return ExtractionResult(entities=entities, source_document=source_document)
 
