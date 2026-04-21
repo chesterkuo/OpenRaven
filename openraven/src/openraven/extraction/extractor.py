@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-import asyncio
+import json
+import os
 from dataclasses import dataclass, field
 
-import langextract as lx
+import openai
+
+from openraven.extraction.alignment import align_span
 
 
 @dataclass
@@ -23,19 +26,40 @@ class ExtractionResult:
     source_document: str
 
 
-def _run_langextract(text: str, schema: dict, model_id: str):
-    # Defaults (max_char_buffer=1000, max_workers=10, batch_length=10) split a
-    # 77K-char doc into 77 tiny chunks processed in 8 sequential batches ~= 7min.
-    # Larger chunks + more parallel workers bring this under 1 min on Gemini flash.
-    return lx.extract(
-        text_or_documents=text,
-        prompt_description=schema["prompt_description"],
-        examples=schema.get("examples", []),
-        model_id=model_id,
-        max_char_buffer=5000,
-        max_workers=20,
-        batch_length=20,
+_SYSTEM = (
+    "You are an information-extraction system. Return a JSON object with a single key "
+    '"entities" whose value is an array of objects. Each object must have keys '
+    '"extraction_text" (verbatim span copied character-for-character from the document), '
+    '"extraction_class" (the entity type label), and optional "attributes" (object). '
+    "Do not invent text that is not present. Do not return character offsets — only the "
+    "verbatim span. Output JSON only, no prose."
+)
+
+
+def _build_prompt(schema: dict, text: str) -> str:
+    parts = [schema.get("prompt_description", "")]
+    examples = schema.get("examples") or []
+    if examples:
+        parts.append("\n\nExamples:\n" + json.dumps(examples, ensure_ascii=False, default=str))
+    parts.append("\n\nDocument:\n" + text)
+    return "".join(parts)
+
+
+async def _extract_single_call(
+    text: str, schema: dict, model_id: str, api_key: str, base_url: str,
+) -> list[dict]:
+    client = openai.AsyncOpenAI(api_key=api_key or "none", base_url=base_url)
+    resp = await client.chat.completions.create(
+        model=model_id,
+        messages=[
+            {"role": "system", "content": _SYSTEM},
+            {"role": "user", "content": _build_prompt(schema, text)},
+        ],
+        response_format={"type": "json_object"},
     )
+    raw = resp.choices[0].message.content or "{}"
+    data = json.loads(raw)
+    return data.get("entities", []) or []
 
 
 async def extract_entities(
@@ -44,23 +68,29 @@ async def extract_entities(
     schema: dict,
     model_id: str = "gemini-2.5-flash",
 ) -> ExtractionResult:
-    result = await asyncio.to_thread(_run_langextract, text, schema, model_id)
+    api_key = os.environ.get("GEMINI_API_KEY", "") or os.environ.get("OPENAI_API_KEY", "")
+    base_url = os.environ.get(
+        "OPENRAVEN_LLM_BASE_URL",
+        "https://generativelanguage.googleapis.com/v1beta/openai/",
+    )
+    raw_entities = await _extract_single_call(text, schema, model_id, api_key, base_url)
 
-    entities = []
-    for extraction in result.extractions:
-        char_interval = getattr(extraction, "char_interval", None)
-        extraction_text = getattr(extraction, "extraction_text", str(extraction))
-        extraction_class = getattr(extraction, "extraction_class", "concept")
-        attributes = getattr(extraction, "attributes", {})
-
+    entities: list[Entity] = []
+    for item in raw_entities:
+        span = (item.get("extraction_text") or "").strip()
+        if not span:
+            continue
+        start, end = align_span(text, span)
+        if start is None:
+            continue                       # drop hallucinated / unalignable spans
         entities.append(Entity(
-            name=extraction_text,
-            entity_type=extraction_class,
-            context=extraction_text,
+            name=span,
+            entity_type=item.get("extraction_class") or "concept",
+            context=span,
             source_document=source_document,
-            char_start=getattr(char_interval, "start", None) if char_interval else None,
-            char_end=getattr(char_interval, "end", None) if char_interval else None,
-            attributes=attributes if isinstance(attributes, dict) else {},
+            char_start=start,
+            char_end=end,
+            attributes=item.get("attributes") if isinstance(item.get("attributes"), dict) else {},
         ))
 
     return ExtractionResult(entities=entities, source_document=source_document)
