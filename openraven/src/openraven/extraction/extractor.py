@@ -105,7 +105,7 @@ async def _try_single_call(
     """
     try:
         return await _extract_single_call(text, schema, model_id, api_key, base_url)
-    except (json.JSONDecodeError, ValueError, IndexError, AttributeError):
+    except (json.JSONDecodeError, ValueError, IndexError):
         return None
 
 
