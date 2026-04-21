@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -147,7 +148,12 @@ class RavenPipeline:
                         ),
                     )
                 else:
-                    doc = parse_document(fp)
+                    # parse_document (Docling) is CPU-heavy; offload to a thread
+                    # so it doesn't block the event loop while other requests
+                    # (e.g. job-status polls) are in flight.
+                    doc = await asyncio.get_running_loop().run_in_executor(
+                        None, parse_document, fp
+                    )
                 parsed_docs.append(doc)
                 self.store.upsert_file(FileRecord(
                     path=str(fp), hash=compute_file_hash(fp_path) if fp_path.exists() else "url",
@@ -244,6 +250,9 @@ class RavenPipeline:
         return result
 
     def _filter_unchanged(self, file_paths: list[Path | str]) -> list[Path | str]:
+        """Skip only files that completed Stage 2 (status='graphed').
+        Files stuck at 'ingested' (interrupted mid-pipeline) must be reprocessed
+        so re-upload isn't a silent no-op."""
         changed: list[Path | str] = []
         for fp in file_paths:
             fp_str = str(fp)
@@ -252,6 +261,6 @@ class RavenPipeline:
                 continue
             current_hash = compute_file_hash(Path(fp))
             existing = self.store.get_file(fp_str)
-            if existing is None or existing.hash != current_hash:
+            if existing is None or existing.hash != current_hash or existing.status != "graphed":
                 changed.append(fp)
         return changed
