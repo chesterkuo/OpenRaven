@@ -475,11 +475,17 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
 
     @app.get("/api/wiki/{slug}")
     async def wiki_article(slug: str, cfg: RavenConfig = Depends(get_tenant_config)):
-        import re as _re
         from fastapi.responses import JSONResponse
-        if not _re.fullmatch(r"[a-zA-Z0-9_-]+", slug):
+        # Allow any Unicode (CJK slugs are legitimate), but block path traversal
+        # and verify the resolved file stays inside wiki_dir.
+        if not slug or "/" in slug or "\\" in slug or "\x00" in slug or slug in (".", ".."):
             return JSONResponse({"error": "Invalid slug"}, status_code=400)
-        wiki_file = cfg.wiki_dir / f"{slug}.md"
+        wiki_dir = cfg.wiki_dir.resolve()
+        wiki_file = (cfg.wiki_dir / f"{slug}.md").resolve()
+        try:
+            wiki_file.relative_to(wiki_dir)
+        except ValueError:
+            return JSONResponse({"error": "Invalid slug"}, status_code=400)
         if not wiki_file.exists():
             return JSONResponse({"error": "Article not found"}, status_code=404)
         content = wiki_file.read_text(encoding="utf-8")
