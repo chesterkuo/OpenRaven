@@ -1,11 +1,32 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 from dataclasses import dataclass
 from pathlib import Path
 
 import openai
+
+
+_MAX_FILENAME_BYTES = 200  # leave room for ".md" suffix under ext4's 255-byte limit
+
+
+def _safe_filename(name: str) -> str:
+    """Produce a filesystem-safe stem from an entity name.
+
+    Mis-extractions occasionally yield entity names that are whole paragraphs;
+    raw slugs then overflow ext4's 255-byte filename limit. Truncate by UTF-8
+    byte length and append a short hash to keep truncated names unique.
+    """
+    base = name.replace("/", "_").replace(" ", "_").lower()
+    encoded = base.encode("utf-8")
+    if len(encoded) <= _MAX_FILENAME_BYTES:
+        return base
+    digest = hashlib.sha1(encoded).hexdigest()[:8]
+    # truncate conservatively; -9 for "_<hash>" suffix in bytes
+    truncated = encoded[: _MAX_FILENAME_BYTES - 9].decode("utf-8", errors="ignore")
+    return f"{truncated}_{digest}"
 
 logger = logging.getLogger(__name__)
 
@@ -181,8 +202,7 @@ async def compile_wiki_for_graph(
     articles: list[WikiArticle] = []
     for i, name in enumerate(entities, start=1):
         article = _render_entity_from_graph(name, graph, sources_map)
-        safe_name = name.replace("/", "_").replace(" ", "_").lower()
-        (output_dir / f"{safe_name}.md").write_text(
+        (output_dir / f"{_safe_filename(name)}.md").write_text(
             render_article_markdown(article), encoding="utf-8"
         )
         articles.append(article)

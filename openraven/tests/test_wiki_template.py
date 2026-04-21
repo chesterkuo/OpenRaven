@@ -85,3 +85,30 @@ def test_compile_wiki_for_graph_writes_md_files_without_llm(tmp_path: Path):
     alpha_md = (tmp_path / "alpha.md").read_text(encoding="utf-8")
     assert "Alpha" in alpha_md
     assert "Related One" in alpha_md
+
+
+def test_compile_wiki_for_graph_handles_oversized_entity_name(tmp_path: Path):
+    """Mis-extracted 'entity' names can be whole paragraphs that overflow the
+    255-byte ext4 filename limit. The writer must truncate safely and still
+    emit a unique file."""
+    from openraven.wiki.compiler import compile_wiki_for_graph, _safe_filename
+
+    graph = MagicMock()
+    graph.get_subgraph.return_value = _fake_subgraph("X", [])
+
+    # 120 CJK chars × 3 bytes = 360 bytes; over the 255-byte filename limit.
+    huge_name = "部署選項雲端快速上線彈性擴充託管基礎設施按用量計費地端資料隱私法規合規" * 4
+
+    articles = asyncio.run(compile_wiki_for_graph(
+        graph=graph, entities=[huge_name], sources_map={},
+        api_key="unused", output_dir=tmp_path,
+    ))
+
+    # One file written, name short enough to be valid
+    written = list(tmp_path.glob("*.md"))
+    assert len(written) == 1
+    assert len(written[0].name.encode("utf-8")) <= 255
+    # Article is returned with the original (untruncated) title
+    assert articles[0].title == huge_name
+    # And _safe_filename is deterministic for the same input
+    assert _safe_filename(huge_name) == _safe_filename(huge_name)
