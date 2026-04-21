@@ -118,3 +118,57 @@ def test_build_prompt_handles_dict_examples():
     prompt = _build_prompt(schema, "doc")
     assert '"extraction_text": "Bob"' in prompt
     assert '"text": "Bob drinks tea."' in prompt
+
+
+@pytest.mark.asyncio
+async def test_extract_retries_on_json_decode_error():
+    """First Gemini response is invalid JSON, second is valid → final result succeeds."""
+    bad_resp  = MagicMock(); bad_resp.choices  = [MagicMock()]; bad_resp.choices[0].message.content  = "not-json{{{"
+    good_resp = MagicMock(); good_resp.choices = [MagicMock()]; good_resp.choices[0].message.content = json.dumps({"entities": [
+        {"extraction_text": "Alice", "extraction_class": "Person", "attributes": {}},
+    ]})
+    client = AsyncMock()
+    client.chat.completions.create = AsyncMock(side_effect=[bad_resp, good_resp])
+    with patch("openraven.extraction.extractor.openai.AsyncOpenAI", return_value=client):
+        result = await extract_entities("Alice works here.", "doc.md", SCHEMA, "gemini-2.5-flash")
+    assert [e.name for e in result.entities] == ["Alice"]
+    assert client.chat.completions.create.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_extract_chunks_on_repeated_failure():
+    """Both attempts on the full doc fail → fall back to chunked extraction and merge."""
+    bad = MagicMock(); bad.choices = [MagicMock()]; bad.choices[0].message.content = "not-json"
+    chunk_ok_a = MagicMock(); chunk_ok_a.choices = [MagicMock()]; chunk_ok_a.choices[0].message.content = json.dumps({"entities": [
+        {"extraction_text": "Alice", "extraction_class": "Person", "attributes": {}},
+    ]})
+    chunk_ok_b = MagicMock(); chunk_ok_b.choices = [MagicMock()]; chunk_ok_b.choices[0].message.content = json.dumps({"entities": [
+        {"extraction_text": "Acme", "extraction_class": "Org", "attributes": {}},
+    ]})
+    client = AsyncMock()
+    # sequence: full-doc attempt 1 fails, full-doc retry fails, then 2 chunk calls succeed
+    client.chat.completions.create = AsyncMock(side_effect=[bad, bad, chunk_ok_a, chunk_ok_b])
+    # Text sized to split into exactly 2 chunks at CHUNK_SIZE_CHARS=8000.
+    # "Alice works here. "=18 chars * 300 = 5400. "Acme is a company. "=19 * 300 = 5700. Total 11100 → 2 chunks.
+    text = ("Alice works here. " * 300) + ("Acme is a company. " * 300)
+    with patch("openraven.extraction.extractor.openai.AsyncOpenAI", return_value=client):
+        result = await extract_entities(text, "doc.md", SCHEMA, "gemini-2.5-flash")
+    assert {e.name for e in result.entities} == {"Alice", "Acme"}
+    assert client.chat.completions.create.await_count >= 3
+
+
+@pytest.mark.asyncio
+async def test_extract_handles_empty_choices_and_falls_through():
+    """If Gemini returns empty choices (content-safety block), treat as malformed and retry/chunk.
+
+    This prevents IndexError on resp.choices[0] from crashing the pipeline.
+    """
+    empty = MagicMock(); empty.choices = []
+    good = MagicMock(); good.choices = [MagicMock()]; good.choices[0].message.content = json.dumps({"entities": [
+        {"extraction_text": "Alice", "extraction_class": "Person", "attributes": {}},
+    ]})
+    client = AsyncMock()
+    client.chat.completions.create = AsyncMock(side_effect=[empty, good])
+    with patch("openraven.extraction.extractor.openai.AsyncOpenAI", return_value=client):
+        result = await extract_entities("Alice works here.", "doc.md", SCHEMA, "gemini-2.5-flash")
+    assert [e.name for e in result.entities] == ["Alice"]

@@ -92,6 +92,27 @@ async def _extract_single_call(
     return data.get("entities", []) or []
 
 
+CHUNK_SIZE_CHARS = 8000      # happy-path single-call preferred; only used on retry failure
+
+
+async def _try_single_call(
+    text: str, schema: dict, model_id: str, api_key: str, base_url: str,
+) -> list[dict] | None:
+    """Single call returning parsed entities, or None on malformed/empty response.
+
+    Catches json.JSONDecodeError (truncation/repetition bugs) and IndexError
+    (empty choices from content-safety blocks) so the caller can retry or chunk.
+    """
+    try:
+        return await _extract_single_call(text, schema, model_id, api_key, base_url)
+    except (json.JSONDecodeError, ValueError, IndexError, AttributeError):
+        return None
+
+
+def _chunk_text(text: str, size: int) -> list[str]:
+    return [text[i:i + size] for i in range(0, len(text), size)] or [text]
+
+
 async def extract_entities(
     text: str,
     source_document: str,
@@ -103,7 +124,26 @@ async def extract_entities(
         "OPENRAVEN_LLM_BASE_URL",
         "https://generativelanguage.googleapis.com/v1beta/openai/",
     )
-    raw_entities = await _extract_single_call(text, schema, model_id, api_key, base_url)
+
+    raw_entities: list[dict] | None = None
+    # Happy path: one call. Retry once on malformed JSON / empty choices (known flash quirk).
+    for _ in range(2):
+        raw_entities = await _try_single_call(text, schema, model_id, api_key, base_url)
+        if raw_entities is not None:
+            break
+
+    # Fallback: chunk and merge. Only kicks in on repeated failure.
+    if raw_entities is None:
+        raw_entities = []
+        seen = set()
+        for chunk in _chunk_text(text, CHUNK_SIZE_CHARS):
+            items = await _try_single_call(chunk, schema, model_id, api_key, base_url) or []
+            for item in items:
+                key = (item.get("extraction_text", ""), item.get("extraction_class", ""))
+                if key in seen:
+                    continue
+                seen.add(key)
+                raw_entities.append(item)
 
     entities: list[Entity] = []
     for item in raw_entities:
