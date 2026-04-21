@@ -199,7 +199,7 @@ app.all("/api/auth/*", async (c) => {
   if (cookie) headers["cookie"] = cookie;
 
   const init: RequestInit = { method: c.req.method, headers };
-  if (c.req.method === "POST") {
+  if (c.req.method !== "GET" && c.req.method !== "HEAD") {
     init.body = await c.req.text();
   }
 

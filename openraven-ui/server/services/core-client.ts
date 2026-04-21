@@ -21,6 +21,24 @@ export interface IngestResponse {
   errors: string[];
 }
 
+export interface IngestStartResponse {
+  job_id: string;
+  files_total: number;
+  stage: string;
+}
+
+export interface IngestStatusResponse {
+  job_id: string;
+  stage: string;
+  files_total: number;
+  files_done: number;
+  entities_extracted: number;
+  articles_total: number;
+  articles_done: number;
+  errors: string[];
+  result: IngestResponse | null;
+}
+
 export interface DiscoveryInsight {
   insight_type: string;
   title: string;
@@ -70,12 +88,25 @@ export async function askQuestion(question: string, mode: string = "mix"): Promi
   return res.json();
 }
 
-export async function ingestFiles(formData: FormData, cookie?: string): Promise<IngestResponse> {
+export async function ingestFiles(
+  formData: FormData,
+  cookie?: string,
+): Promise<{ body: IngestStartResponse; status: number }> {
   const headers: Record<string, string> = {};
   if (cookie) headers["cookie"] = cookie;
   const res = await fetch(`${CORE_API_URL}/api/ingest`, { method: "POST", body: formData, headers });
-  if (!res.ok) throw new Error(`Core API error: ${res.status}`);
-  return res.json();
+  if (!res.ok && res.status !== 202) throw new Error(`Core API error: ${res.status}`);
+  return { body: await res.json(), status: res.status };
+}
+
+export async function getIngestStatus(
+  jobId: string,
+  cookie?: string,
+): Promise<{ body: IngestStatusResponse; status: number }> {
+  const headers: Record<string, string> = {};
+  if (cookie) headers["cookie"] = cookie;
+  const res = await fetch(`${CORE_API_URL}/api/ingest/status/${encodeURIComponent(jobId)}`, { headers });
+  return { body: await res.json(), status: res.status };
 }
 
 export interface WikiListItem {

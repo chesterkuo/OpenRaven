@@ -25,10 +25,23 @@ const mockGetDiscoveryInsights = mock(async () => [
 ]);
 
 const mockIngestFiles = mock(async (_formData: FormData) => ({
-  files_processed: 1,
-  entities_extracted: 5,
-  articles_generated: 2,
-  errors: [],
+  body: { job_id: "abc12345", files_total: 1, stage: "processing" },
+  status: 202,
+}));
+
+const mockGetIngestStatus = mock(async (_jobId: string) => ({
+  body: {
+    job_id: "abc12345",
+    stage: "done",
+    files_total: 1,
+    files_done: 1,
+    entities_extracted: 5,
+    articles_total: 0,
+    articles_done: 2,
+    errors: [],
+    result: { files_processed: 1, entities_extracted: 5, articles_generated: 2, errors: [] },
+  },
+  status: 200,
 }));
 
 const mockGetGraphData = mock(async (_maxNodes: number) => ({
@@ -54,6 +67,7 @@ mock.module("../../server/services/core-client", () => ({
   getStatus: mockGetStatus,
   getDiscoveryInsights: mockGetDiscoveryInsights,
   ingestFiles: mockIngestFiles,
+  getIngestStatus: mockGetIngestStatus,
   getGraphData: mockGetGraphData,
   getWikiList: mockGetWikiList,
   getWikiArticle: mockGetWikiArticle,

@@ -1,5 +1,5 @@
 import { Hono } from "hono";
-import { ingestFiles } from "../services/core-client";
+import { ingestFiles, getIngestStatus } from "../services/core-client";
 
 const ingestRouter = new Hono();
 
@@ -15,8 +15,20 @@ ingestRouter.post("/", async (c) => {
   }
   try {
     const cookie = c.req.header("cookie");
-    const result = await ingestFiles(coreForm, cookie);
-    return c.json(result);
+    const { body: result, status } = await ingestFiles(coreForm, cookie);
+    return c.json(result, status as any);
+  } catch (e) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    return c.json({ error: `Core engine error: ${message}` }, 502);
+  }
+});
+
+ingestRouter.get("/status/:jobId", async (c) => {
+  const jobId = c.req.param("jobId");
+  try {
+    const cookie = c.req.header("cookie");
+    const { body, status } = await getIngestStatus(jobId, cookie);
+    return c.json(body, status as any);
   } catch (e) {
     const message = e instanceof Error ? e.message : "Unknown error";
     return c.json({ error: `Core engine error: ${message}` }, 502);

@@ -62,6 +62,12 @@ class IngestResponse(BaseModel):
     errors: list[str]
 
 
+class IngestStartResponse(BaseModel):
+    job_id: str
+    files_total: int
+    stage: str = "processing"
+
+
 class DiscoveryInsightResponse(BaseModel):
     insight_type: str
     title: str
@@ -194,6 +200,7 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
 
     pipeline = RavenPipeline(config)
     ingest_jobs: dict[str, IngestJob] = {}
+    ingest_tasks: dict[str, asyncio.Task] = {}
 
     async def get_tenant_config(request: Request) -> RavenConfig:
         ctx = getattr(request.state, "auth", None)
@@ -328,48 +335,68 @@ def create_app(config: RavenConfig | None = None) -> FastAPI:
             "result": job.result,
         }
 
-    @app.post("/api/ingest", response_model=IngestResponse)
+    @app.post("/api/ingest", response_model=IngestStartResponse, status_code=202)
     async def ingest(request: Request, files: list[UploadFile] = File(...), schema: str | None = Form(default=None), cfg: RavenConfig = Depends(get_tenant_config), pipe: RavenPipeline = Depends(get_tenant_pipeline)):
         schema_name: str | None = schema if schema and schema != "auto" else None
 
         saved_paths: list[Path] = []
         cfg.ingestion_dir.mkdir(parents=True, exist_ok=True)
+        file_names: list[str] = []
         for upload in files:
             safe_name = Path(upload.filename).name if upload.filename else f"upload_{uuid.uuid4().hex[:8]}"
             dest = cfg.ingestion_dir / safe_name
             content = await upload.read()
             dest.write_bytes(content)
             saved_paths.append(dest)
+            file_names.append(safe_name)
 
         job_id = str(uuid.uuid4())[:8]
         job = IngestJob(job_id=job_id, files_total=len(saved_paths), stage="processing")
         ingest_jobs[job_id] = job
 
-        result = await pipe.add_files(saved_paths, schema_name=schema_name)
+        # Capture auth context now — Request state may not be safe to touch
+        # after this handler returns while the background task is still running.
+        auth_ctx = getattr(request.state, "auth", None)
+        client_ip = request.client.host if request.client else ""
 
-        job.stage = "done"
-        job.files_done = result.files_processed
-        job.entities_extracted = result.entities_extracted
-        job.articles_done = result.articles_generated
-        job.errors = result.errors
-        job.result = {
-            "files_processed": result.files_processed,
-            "entities_extracted": result.entities_extracted,
-            "articles_generated": result.articles_generated,
-            "errors": result.errors,
-        }
+        async def _run_ingest() -> None:
+            try:
+                result = await pipe.add_files(saved_paths, schema_name=schema_name)
+                job.files_done = result.files_processed
+                job.entities_extracted = result.entities_extracted
+                job.articles_done = result.articles_generated
+                job.errors = list(result.errors)
+                job.result = {
+                    "files_processed": result.files_processed,
+                    "entities_extracted": result.entities_extracted,
+                    "articles_generated": result.articles_generated,
+                    "errors": result.errors,
+                }
+                job.stage = "done"
+                if config.auth_enabled and auth_engine:
+                    from openraven.audit.logger import log_action
+                    log_action(
+                        engine=auth_engine,
+                        user_id=auth_ctx.user_id if auth_ctx else None,
+                        tenant_id=auth_ctx.tenant_id if auth_ctx else None,
+                        action="file_ingest",
+                        details={
+                            "files": file_names,
+                            "files_processed": result.files_processed,
+                            "entities_extracted": result.entities_extracted,
+                        },
+                        ip_address=client_ip,
+                    )
+            except Exception as e:
+                job.stage = "error"
+                job.errors.append(str(e))
+                logger.exception("Ingest job %s failed", job_id)
 
-        _audit(request, "file_ingest", {
-            "files": [Path(upload.filename).name for upload in files if upload.filename],
-            "files_processed": result.files_processed,
-            "entities_extracted": result.entities_extracted,
-        })
-        return IngestResponse(
-            files_processed=result.files_processed,
-            entities_extracted=result.entities_extracted,
-            articles_generated=result.articles_generated,
-            errors=result.errors,
-        )
+        task = asyncio.create_task(_run_ingest())
+        ingest_tasks[job_id] = task
+        task.add_done_callback(lambda _t: ingest_tasks.pop(job_id, None))
+
+        return IngestStartResponse(job_id=job_id, files_total=len(saved_paths), stage="processing")
 
     @app.get("/api/graph/export")
     async def graph_export(background_tasks: BackgroundTasks, pipe: RavenPipeline = Depends(get_tenant_pipeline)):

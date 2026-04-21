@@ -4,6 +4,31 @@ import FileUploader from "../components/FileUploader";
 
 interface IngestResult { files_processed: number; entities_extracted: number; articles_generated: number; errors: string[]; }
 interface SchemaOption { id: string; name: string; description: string; }
+interface IngestStatus {
+  stage: string;
+  files_total: number;
+  files_done: number;
+  entities_extracted: number;
+  articles_total: number;
+  articles_done: number;
+  errors: string[];
+  result: IngestResult | null;
+}
+
+async function pollIngestStatus(
+  jobId: string,
+  onStage: (stage: string) => void,
+  intervalMs = 2000,
+): Promise<IngestStatus> {
+  while (true) {
+    const res = await fetch(`/api/ingest/status/${encodeURIComponent(jobId)}`);
+    if (!res.ok) throw new Error(`status poll failed: ${res.status}`);
+    const data = await res.json() as IngestStatus;
+    onStage(data.stage);
+    if (data.stage === "done" || data.stage === "error") return data;
+    await new Promise(r => setTimeout(r, intervalMs));
+  }
+}
 
 export default function IngestPage() {
   const { t } = useTranslation('ingest');
@@ -26,11 +51,27 @@ export default function IngestPage() {
     for (const file of files) formData.append("files", file);
     formData.append("schema", selectedSchema);
     try {
-      setStage("processing");
       const res = await fetch("/api/ingest", { method: "POST", body: formData });
-      const data = await res.json();
-      setResult(data);
-      setStage("done");
+      if (!res.ok && res.status !== 202) throw new Error(`ingest failed: ${res.status}`);
+      const start = await res.json() as { job_id: string; stage: string };
+      setStage(start.stage || "processing");
+
+      // Poll status until the job reports done or error. The core API
+      // processes the pipeline in the background so the initial POST
+      // returns immediately — this avoids Cloudflare's 100s edge timeout.
+      const final = await pollIngestStatus(start.job_id, (s) => setStage(s));
+      if (final.stage === "error" || !final.result) {
+        setResult({
+          files_processed: final.files_done,
+          entities_extracted: final.entities_extracted,
+          articles_generated: final.articles_done,
+          errors: final.errors.length ? final.errors : [t('uploadError')],
+        });
+        setStage("error");
+      } else {
+        setResult(final.result);
+        setStage("done");
+      }
     } catch {
       setResult({ files_processed: 0, entities_extracted: 0, articles_generated: 0, errors: [t('uploadError')] });
       setStage("error");
