@@ -2,9 +2,12 @@ from __future__ import annotations
 
 import base64
 import logging
+import tempfile
+import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
 
+import opendataloader_pdf
 import openai
 from docling.document_converter import DocumentConverter
 
@@ -49,12 +52,32 @@ def parse_url(url: str) -> ParsedDocument:
     )
 
 
+def _parse_pdf(file_path: Path) -> str:
+    """Extract plain text from a PDF via the OpenDataLoader Java CLI.
+
+    NFKC-normalized to repair Kangxi-radical codepoints (U+2F00 block) that
+    some CJK PDF authoring tools emit in place of CJK Unified (U+4E00 block) —
+    e.g. U+2F64 ⽤ → U+7528 用. Matters for downstream exact-string entity match.
+    """
+    with tempfile.TemporaryDirectory() as out_dir:
+        opendataloader_pdf.convert(
+            input_path=str(file_path),
+            output_dir=out_dir,
+            format="text",
+            quiet=True,
+        )
+        raw = (Path(out_dir) / f"{file_path.stem}.txt").read_text(encoding="utf-8")
+    return unicodedata.normalize("NFKC", raw)
+
+
 def parse_document(file_path: Path | str) -> ParsedDocument:
     """Parse a document file or URL into plain text.
 
     Supports:
-    - Files: PDF, DOCX, PPTX, XLSX, MD, TXT, HTML (via Docling)
-    - URLs: any http/https URL (via Jina Reader)
+    - PDF files via OpenDataLoader (Java CLI, fast + low-RAM)
+    - DOCX, PPTX, XLSX, HTML via Docling
+    - MD, TXT read directly
+    - URLs via Jina Reader
     """
     path_str = str(file_path)
 
@@ -66,16 +89,12 @@ def parse_document(file_path: Path | str) -> ParsedDocument:
 
     if suffix in ("md", "txt"):
         text = file_path.read_text(encoding="utf-8")
-        return ParsedDocument(
-            text=text,
-            source_path=file_path,
-            format=suffix,
-            char_count=len(text),
-        )
-
-    converter = _get_converter()
-    result = converter.convert(str(file_path))
-    text = result.document.export_to_markdown()
+    elif suffix == "pdf":
+        text = _parse_pdf(file_path)
+    else:
+        converter = _get_converter()
+        result = converter.convert(str(file_path))
+        text = result.document.export_to_markdown()
 
     return ParsedDocument(
         text=text,

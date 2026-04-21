@@ -41,6 +41,28 @@ def test_parse_document_returns_metadata(tmp_path: Path) -> None:
     assert result.source_path.name == "report.md"
 
 
+def test_parse_pdf_normalizes_kangxi_radicals(tmp_path: Path) -> None:
+    """PDF path must NFKC-normalize U+2F00-block codepoints that some CJK PDF
+    authoring tools emit instead of CJK Unified — downstream exact-string entity
+    matching would otherwise fail on user/customer-facing terms."""
+    from unittest.mock import patch
+
+    def _fake_convert(input_path, output_dir, format, quiet):
+        stem = Path(input_path).stem
+        (Path(output_dir) / f"{stem}.txt").write_text("⽤⼾管理 / ⾃訂⼯具", encoding="utf-8")
+
+    fake_pdf = tmp_path / "sample.pdf"
+    fake_pdf.write_bytes(b"%PDF-1.4\n%\xe2\xe3\xcf\xd3\n")
+
+    with patch("openraven.ingestion.parser.opendataloader_pdf.convert", side_effect=_fake_convert):
+        result = parse_document(fake_pdf)
+
+    assert result.format == "pdf"
+    assert result.text == "用戶管理 / 自訂工具"
+    # Guard against any Kangxi-radical codepoints leaking through
+    assert not any("\u2E80" <= c <= "\u2FDF" for c in result.text)
+
+
 from unittest.mock import AsyncMock, patch
 import pytest
 
