@@ -117,6 +117,51 @@ def render_article_markdown(article: WikiArticle) -> str:
     return "\n".join(lines)
 
 
+def _render_entity_from_graph(
+    name: str,
+    graph,
+    sources_map: dict,
+) -> WikiArticle:
+    """Build a WikiArticle from graph data alone — no LLM calls.
+
+    Pulls the entity's node + 1-hop neighbors via RavenGraph.get_subgraph,
+    synthesizes a summary from the node's description attribute, and uses
+    pre-collected source excerpts from sources_map.
+    """
+    subgraph = graph.get_subgraph(entities=[name], max_nodes=30)
+    nodes = subgraph.get("nodes", [])
+
+    seed = next((n for n in nodes if n.get("is_seed") or n.get("id") == name), None)
+    description = ""
+    entity_type = "Concept"
+    if seed:
+        props = seed.get("properties", {}) or {}
+        description = props.get("description", "") or ""
+        entity_type = props.get("entity_type") or (seed.get("labels", ["Concept"]) or ["Concept"])[0]
+
+    related = [n["id"] for n in nodes if n.get("id") != name]
+
+    sources = sources_map.get(name, [])
+
+    summary = description if description else name
+    sections = [
+        {"heading": "Type", "content": entity_type},
+    ]
+    if sources:
+        excerpts = "\n\n".join(f"> {s.get('excerpt', '').strip()}" for s in sources if s.get("excerpt"))
+        if excerpts:
+            sections.append({"heading": "Source Excerpts", "content": excerpts})
+
+    return WikiArticle(
+        title=name,
+        summary=summary,
+        sections=sections,
+        sources=sources,
+        related_topics=related,
+        confidence_score=1.0,
+    )
+
+
 async def compile_wiki_for_graph(
     graph, entities: list[str], sources_map: dict, api_key: str,
     output_dir: Path, model: str = "claude-sonnet-4-6", max_concurrent: int = 5,
