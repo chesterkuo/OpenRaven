@@ -89,7 +89,13 @@ async def _extract_single_call(
     )
     raw = resp.choices[0].message.content or "{}"
     data = json.loads(raw)
-    return data.get("entities", []) or []
+    # Gemini sometimes returns the entity array directly instead of wrapping
+    # it under an "entities" key. Accept both shapes as happy-path.
+    if isinstance(data, list):
+        return data
+    if isinstance(data, dict):
+        return data.get("entities", []) or []
+    return []
 
 
 CHUNK_SIZE_CHARS = 8000      # happy-path single-call preferred; only used on retry failure

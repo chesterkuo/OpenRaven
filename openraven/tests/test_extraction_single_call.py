@@ -172,3 +172,43 @@ async def test_extract_handles_empty_choices_and_falls_through():
     with patch("openraven.extraction.extractor.openai.AsyncOpenAI", return_value=client):
         result = await extract_entities("Alice works here.", "doc.md", SCHEMA, "gemini-2.5-flash")
     assert [e.name for e in result.entities] == ["Alice"]
+
+
+@pytest.mark.asyncio
+async def test_extract_entities_handles_bare_list_response():
+    """Gemini sometimes returns a raw JSON array instead of {"entities": [...]}.
+
+    Must be treated as a happy-path response, not an error to retry.
+    """
+    text = "Alice works at Acme."
+    resp = MagicMock()
+    resp.choices = [MagicMock()]
+    # Bare list at top level — no "entities" wrapper
+    resp.choices[0].message.content = json.dumps([
+        {"extraction_text": "Alice", "extraction_class": "Person", "attributes": {}},
+        {"extraction_text": "Acme",  "extraction_class": "Org",    "attributes": {}},
+    ])
+    client = AsyncMock()
+    client.chat.completions.create = AsyncMock(return_value=resp)
+
+    with patch("openraven.extraction.extractor.openai.AsyncOpenAI", return_value=client):
+        result = await extract_entities(text, "doc.md", SCHEMA, "gemini-2.5-flash")
+
+    assert {e.name for e in result.entities} == {"Alice", "Acme"}
+    # Exactly ONE call — bare list must be treated as success, not failure to retry
+    assert client.chat.completions.create.await_count == 1
+
+
+@pytest.mark.asyncio
+async def test_extract_entities_unexpected_shape_returns_empty():
+    """If Gemini returns something that's neither a list nor a dict (e.g. a string), return no entities."""
+    resp = MagicMock()
+    resp.choices = [MagicMock()]
+    resp.choices[0].message.content = json.dumps("some random string")
+    client = AsyncMock()
+    client.chat.completions.create = AsyncMock(return_value=resp)
+
+    with patch("openraven.extraction.extractor.openai.AsyncOpenAI", return_value=client):
+        result = await extract_entities("x", "d.md", SCHEMA, "gemini-2.5-flash")
+
+    assert result.entities == []
