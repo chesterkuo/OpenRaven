@@ -54,3 +54,34 @@ def test_render_entity_from_graph_uses_node_description():
     }
     article = _render_entity_from_graph("X", graph, {})
     assert article.summary == "A specific concept about data ingestion."
+
+
+import asyncio
+from pathlib import Path
+
+
+def test_compile_wiki_for_graph_writes_md_files_without_llm(tmp_path: Path):
+    """compile_wiki_for_graph must write one .md per entity using only graph data (no LLM client)."""
+    from openraven.wiki.compiler import compile_wiki_for_graph
+
+    graph = MagicMock()
+    graph.get_subgraph.side_effect = lambda entities, max_nodes: _fake_subgraph(
+        entities[0],
+        [("Related One", "Concept")] if entities[0] == "Alpha" else [],
+    )
+    sources_map = {"Alpha": [{"document": "doc.md", "excerpt": "Alpha excerpt", "char_start": 0, "char_end": 13}]}
+
+    articles = asyncio.run(compile_wiki_for_graph(
+        graph=graph,
+        entities=["Alpha", "Beta"],
+        sources_map=sources_map,
+        api_key="unused",          # MUST be ignored by the new path
+        output_dir=tmp_path,
+    ))
+
+    assert {a.title for a in articles} == {"Alpha", "Beta"}
+    assert (tmp_path / "alpha.md").exists()
+    assert (tmp_path / "beta.md").exists()
+    alpha_md = (tmp_path / "alpha.md").read_text(encoding="utf-8")
+    assert "Alpha" in alpha_md
+    assert "Related One" in alpha_md

@@ -168,37 +168,25 @@ async def compile_wiki_for_graph(
     on_progress: callable | None = None,
     base_url: str = "https://generativelanguage.googleapis.com/v1beta/openai/",
 ) -> list[WikiArticle]:
-    import asyncio
+    """Render one wiki article per entity directly from the graph.
 
+    No LLM is invoked; `api_key`, `model`, `base_url`, and `max_concurrent`
+    are accepted for call-site compatibility but unused. Use
+    `compile_article()` (still exported) for on-demand LLM prose via a
+    future "Improve with AI" UI button.
+    """
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    semaphore = asyncio.Semaphore(max_concurrent)
-    completed_count = 0
+    articles: list[WikiArticle] = []
+    for i, name in enumerate(entities, start=1):
+        article = _render_entity_from_graph(name, graph, sources_map)
+        safe_name = name.replace("/", "_").replace(" ", "_").lower()
+        (output_dir / f"{safe_name}.md").write_text(
+            render_article_markdown(article), encoding="utf-8"
+        )
+        articles.append(article)
+        if on_progress:
+            on_progress(i, len(entities))
 
-    async def compile_one(entity_name: str) -> WikiArticle | None:
-        nonlocal completed_count
-        async with semaphore:
-            try:
-                context = await graph.query(
-                    f"Tell me everything about: {entity_name}", mode="local"
-                )
-                sources = sources_map.get(entity_name, [])
-                article = await compile_article(
-                    topic=entity_name, context=context, sources=sources,
-                    api_key=api_key, model=model, base_url=base_url,
-                )
-                safe_name = entity_name.replace("/", "_").replace(" ", "_").lower()
-                md_path = output_dir / f"{safe_name}.md"
-                md_path.write_text(render_article_markdown(article), encoding="utf-8")
-                completed_count += 1
-                if on_progress:
-                    on_progress(completed_count, len(entities))
-                return article
-            except Exception as e:
-                logger.warning(f"Failed to compile wiki for '{entity_name}': {e}")
-                completed_count += 1
-                return None
-
-    results = await asyncio.gather(*[compile_one(name) for name in entities])
-    return [a for a in results if a is not None]
+    return articles
