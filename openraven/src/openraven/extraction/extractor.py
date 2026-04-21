@@ -24,11 +24,17 @@ class ExtractionResult:
 
 
 def _run_langextract(text: str, schema: dict, model_id: str):
+    # Defaults (max_char_buffer=1000, max_workers=10, batch_length=10) split a
+    # 77K-char doc into 77 tiny chunks processed in 8 sequential batches ~= 7min.
+    # Larger chunks + more parallel workers bring this under 1 min on Gemini flash.
     return lx.extract(
         text_or_documents=text,
         prompt_description=schema["prompt_description"],
         examples=schema.get("examples", []),
         model_id=model_id,
+        max_char_buffer=5000,
+        max_workers=20,
+        batch_length=20,
     )
 
 
