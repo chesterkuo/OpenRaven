@@ -36,11 +36,41 @@ _SYSTEM = (
 )
 
 
+def _normalize_examples(examples: list) -> list[dict]:
+    """Convert langextract ExampleData/Extraction dataclass instances (or dicts)
+    into the structured JSON shape the LLM is asked to produce.
+
+    Robust to both dataclass instances and plain dicts.
+    """
+    def _get(obj, key, default=None):
+        if isinstance(obj, dict):
+            return obj.get(key, default)
+        return getattr(obj, key, default)
+
+    normalized: list[dict] = []
+    for ex in examples:
+        text = _get(ex, "text", "") or ""
+        extractions = _get(ex, "extractions", []) or []
+        normalized.append({
+            "text": text,
+            "entities": [
+                {
+                    "extraction_text": _get(e, "extraction_text", "") or "",
+                    "extraction_class": _get(e, "extraction_class", "") or "",
+                    "attributes": _get(e, "attributes", {}) or {},
+                }
+                for e in extractions
+            ],
+        })
+    return normalized
+
+
 def _build_prompt(schema: dict, text: str) -> str:
     parts = [schema.get("prompt_description", "")]
     examples = schema.get("examples") or []
     if examples:
-        parts.append("\n\nExamples:\n" + json.dumps(examples, ensure_ascii=False, default=str))
+        normalized = _normalize_examples(examples)
+        parts.append("\n\nExamples:\n" + json.dumps(normalized, ensure_ascii=False))
     parts.append("\n\nDocument:\n" + text)
     return "".join(parts)
 

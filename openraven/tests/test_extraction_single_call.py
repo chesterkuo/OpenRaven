@@ -71,3 +71,50 @@ async def test_extract_entities_cjk_text():
     assert [e.name for e in result.entities] == ["台積電", "本益比"]
     assert result.entities[0].attributes == {}
     assert result.entities[1].attributes == {"value": "25"}
+
+
+def test_build_prompt_normalizes_langextract_example_dataclasses():
+    """Real schemas use langextract.ExampleData; they must become structured JSON, not repr() strings."""
+    from openraven.extraction.extractor import _build_prompt
+    from langextract.core.data import ExampleData, Extraction
+
+    schema = {
+        "prompt_description": "extract",
+        "examples": [
+            ExampleData(
+                text="Alice works at Acme.",
+                extractions=[
+                    Extraction(extraction_class="Person", extraction_text="Alice"),
+                    Extraction(extraction_class="Organization", extraction_text="Acme"),
+                ],
+            ),
+        ],
+    }
+
+    prompt = _build_prompt(schema, "some doc text")
+
+    # Must NOT contain Python repr artifacts like 'ExampleData(', 'Extraction(', 'char_interval=None'
+    assert "ExampleData(" not in prompt
+    assert "Extraction(" not in prompt
+    assert "char_interval" not in prompt
+    # Must contain the structured JSON keys
+    assert '"extraction_text": "Alice"' in prompt
+    assert '"extraction_class": "Person"' in prompt
+    assert '"entities":' in prompt
+    # And the output-shape entities list (not a flat list of Extraction reprs)
+    assert '"text": "Alice works at Acme."' in prompt
+
+
+def test_build_prompt_handles_dict_examples():
+    """Plain-dict examples (used in tests) must still work identically."""
+    from openraven.extraction.extractor import _build_prompt
+
+    schema = {
+        "prompt_description": "extract",
+        "examples": [
+            {"text": "Bob drinks tea.", "extractions": [{"extraction_class": "Person", "extraction_text": "Bob"}]},
+        ],
+    }
+    prompt = _build_prompt(schema, "doc")
+    assert '"extraction_text": "Bob"' in prompt
+    assert '"text": "Bob drinks tea."' in prompt
