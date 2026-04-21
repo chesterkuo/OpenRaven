@@ -37,8 +37,8 @@ _SYSTEM = (
 
 
 def _normalize_examples(examples: list) -> list[dict]:
-    """Convert langextract ExampleData/Extraction dataclass instances (or dicts)
-    into the structured JSON shape the LLM is asked to produce.
+    """Convert Example / Extraction dataclass instances (or dicts) into the
+    structured JSON shape the LLM is asked to produce.
 
     Robust to both dataclass instances and plain dicts.
     """

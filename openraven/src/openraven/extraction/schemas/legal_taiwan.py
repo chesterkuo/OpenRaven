@@ -1,6 +1,6 @@
 """Legal-Taiwan domain extraction schema for court rulings, statutes, and legal documents."""
 
-from langextract.core.data import ExampleData, Extraction
+from openraven.extraction.schemas.types import Example as ExampleData, Extraction
 
 LEGAL_TAIWAN_EXAMPLES = [
     ExampleData(

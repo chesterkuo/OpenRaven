@@ -1,6 +1,6 @@
 """Finance-Taiwan domain extraction schema for TWSE filings and Taiwan financial reports."""
 
-from langextract.core.data import ExampleData, Extraction
+from openraven.extraction.schemas.types import Example as ExampleData, Extraction
 
 FINANCE_TAIWAN_EXAMPLES = [
     ExampleData(

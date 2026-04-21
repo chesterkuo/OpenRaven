@@ -73,10 +73,10 @@ async def test_extract_entities_cjk_text():
     assert result.entities[1].attributes == {"value": "25"}
 
 
-def test_build_prompt_normalizes_langextract_example_dataclasses():
-    """Real schemas use langextract.ExampleData; they must become structured JSON, not repr() strings."""
+def test_build_prompt_normalizes_example_dataclasses():
+    """Real schemas use Example dataclass instances; they must become structured JSON, not repr() strings."""
     from openraven.extraction.extractor import _build_prompt
-    from langextract.core.data import ExampleData, Extraction
+    from openraven.extraction.schemas.types import Example as ExampleData, Extraction
 
     schema = {
         "prompt_description": "extract",
@@ -93,8 +93,8 @@ def test_build_prompt_normalizes_langextract_example_dataclasses():
 
     prompt = _build_prompt(schema, "some doc text")
 
-    # Must NOT contain Python repr artifacts like 'ExampleData(', 'Extraction(', 'char_interval=None'
-    assert "ExampleData(" not in prompt
+    # Must NOT contain Python repr artifacts like 'Example(', 'Extraction(', 'char_interval=None'
+    assert "Example(" not in prompt
     assert "Extraction(" not in prompt
     assert "char_interval" not in prompt
     # Must contain the structured JSON keys

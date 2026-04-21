@@ -13,7 +13,6 @@ classifiers = [
 ]
 requires-python = ">=3.12"
 dependencies = [
-    "langextract>=0.1.0",
     "lightrag-hku>=1.0.0",
     "docling>=2.0.0",
     "fastapi>=0.115.0",
